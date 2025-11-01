@@ -1,30 +1,32 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { useDriverAuth } from '@/hooks/use-driver-auth';
+import { GoogleIcon } from '@/components/google-icon';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GoogleIcon } from '@/components/google-icon';
-import { useAuth } from '@/hooks/use-auth';
-import { Loader2, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
-import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp';
-import { RecaptchaVerifier } from 'firebase/auth';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const { 
     signInWithGoogle, 
     signInWithEmail, 
     signUpWithEmail, 
-    loading 
+    loading,
+    appUser 
   } = useAuth();
+  const { isDriver } = useDriverAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [emailLogin, setEmailLogin] = useState('');
   const [passwordLogin, setPasswordLogin] = useState('');
@@ -35,7 +37,32 @@ export default function LoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
+  // Función para redirigir según el tipo de usuario
+  const redirectUserAfterLogin = () => {
+    if (hasRedirected) return;
+    
+    setHasRedirected(true);
+    if (isMobile) {
+      // En móvil, redirigir según el rol del usuario
+      if (appUser?.role === 'driver') {
+        router.push('/driver');
+      } else {
+        router.push('/ride');
+      }
+    } else {
+      // En desktop, ir a la página principal
+      router.push('/');
+    }
+  };
+
+  // Efecto para redirigir automáticamente después del login
+  useEffect(() => {
+    if (appUser && !loading && !hasRedirected) {
+      redirectUserAfterLogin();
+    }
+  }, [appUser, loading, hasRedirected]);
 
   if (loading) {
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -47,7 +74,6 @@ export default function LoginPage() {
     try {
       await signInWithEmail(emailLogin, passwordLogin);
       toast({ title: '¡Bienvenido de vuelta!' });
-      router.push('/');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error al iniciar sesión', description: error.message });
     } finally {
@@ -61,24 +87,8 @@ export default function LoginPage() {
     try {
       await signUpWithEmail(emailRegister, passwordRegister);
       toast({ title: '¡Registro exitoso!', description: 'Bienvenido a Hello Taxi.' });
-      router.push('/');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error en el registro', description: error.message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-
-  const handleOtpConfirm = async () => {
-    if (!confirmationResult) return;
-    setIsSubmitting(true);
-    try {
-      await confirmationResult.confirm(otp);
-      toast({ title: '¡Inicio de sesión exitoso!' });
-      router.push('/');
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error en la verificación', description: 'El código OTP no es válido.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +99,6 @@ export default function LoginPage() {
       try {
           await signInWithGoogle();
           toast({ title: '¡Bienvenido!' });
-          router.push('/');
       } catch (error: any) {
           toast({ variant: 'destructive', title: 'Error con Google', description: error.message });
       } finally {
@@ -97,15 +106,31 @@ export default function LoginPage() {
       }
   }
 
-
   return (
-    <div className="flex items-center justify-center p-4 min-h-[80vh]">
-      <Card className="max-w-md w-full shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-headline">Inicia Sesión o Regístrate</CardTitle>
-            <CardDescription>Elige tu método preferido para continuar</CardDescription>
+    <div className={`${
+      isMobile 
+        ? 'min-h-screen bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] flex flex-col'
+        : 'flex items-center justify-center p-4 min-h-[80vh]'
+    }`}>
+      {isMobile && (
+        <div className="px-4 py-10 text-center my-10">
+          <h1 className="text-3xl font-bold text-white">HELLO Taxi</h1>
+        </div>
+      )}
+      <Card className={`${
+        isMobile 
+          ? 'mx-4 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-t-3xl' 
+          : 'max-w-md w-full shadow-2xl'
+      }`}>
+          <CardHeader className={`text-center ${isMobile ? 'pb-4' : ''}`}>
+            <CardTitle className={`font-headline ${isMobile ? 'text-xl text-[#2E4CA6]' : 'text-2xl'}`}>
+              {isMobile ? 'Bienvenido' : 'Inicia Sesión o Regístrate'}
+            </CardTitle>
+            <CardDescription className={isMobile ? 'text-sm text-gray-600' : ''}>
+              {isMobile ? 'Accede a tu cuenta de HelloTaxi' : 'Elige tu método preferido para continuar'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? 'px-6 pb-6' : ''}>
             <Tabs defaultValue="email-login">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="email-login">Ingresar</TabsTrigger>
@@ -114,17 +139,43 @@ export default function LoginPage() {
               <TabsContent value="email-login" className="space-y-4 pt-4">
                  <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email-login">Correo Electrónico</Label>
-                      <Input id="email-login" type="email" placeholder="tu@correo.com" value={emailLogin} onChange={(e) => setEmailLogin(e.target.value)} required />
+                      <Label htmlFor="email-login" className={`font-medium ${isMobile ? 'text-[#2E4CA6]' : ''}`}>Correo Electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input 
+                          id="email-login" 
+                          type="email" 
+                          placeholder="tu@correo.com" 
+                          value={emailLogin} 
+                          onChange={(e) => setEmailLogin(e.target.value)} 
+                          required 
+                          className={`pl-10 ${isMobile ? 'h-12 border-2 border-gray-200 focus:border-[#05C7F2] transition-colors' : ''}`}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2 relative">
-                        <Label htmlFor="password-login">Contraseña</Label>
-                        <Input id="password-login" type={showPassword ? "text" : "password"} placeholder="••••••••" value={passwordLogin} onChange={(e) => setPasswordLogin(e.target.value)} required />
-                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 bottom-1 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                        <Label htmlFor="password-login" className={`font-medium ${isMobile ? 'text-[#2E4CA6]' : ''}`}>Contraseña</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input 
+                            id="password-login" 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            value={passwordLogin} 
+                            onChange={(e) => setPasswordLogin(e.target.value)} 
+                            required 
+                            className={`pl-10 pr-10 ${isMobile ? 'h-12 border-2 border-gray-200 focus:border-[#05C7F2] transition-colors' : ''}`}
+                          />
+                          <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setShowPassword(!showPassword)}>
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
                     </div>
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    <Button 
+                      type="submit" 
+                      className={`w-full ${isMobile ? 'h-12 bg-gradient-to-r from-[#05C7F2] to-[#049DD9] hover:from-[#049DD9] hover:to-[#0477BF] text-white font-semibold shadow-lg' : ''}`} 
+                      disabled={isSubmitting}
+                    >
                       {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
                       <Mail className="mr-2" /> Ingresar con Correo
                     </Button>
@@ -133,17 +184,43 @@ export default function LoginPage() {
                <TabsContent value="email-register" className="space-y-4 pt-4">
                  <form onSubmit={handleEmailRegister} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email-register">Correo Electrónico</Label>
-                      <Input id="email-register" type="email" placeholder="tu@correo.com" value={emailRegister} onChange={(e) => setEmailRegister(e.target.value)} required />
+                      <Label htmlFor="email-register" className={`font-medium ${isMobile ? 'text-[#2E4CA6]' : ''}`}>Correo Electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input 
+                          id="email-register" 
+                          type="email" 
+                          placeholder="tu@correo.com" 
+                          value={emailRegister} 
+                          onChange={(e) => setEmailRegister(e.target.value)} 
+                          required 
+                          className={`pl-10 ${isMobile ? 'h-12 border-2 border-gray-200 focus:border-[#05C7F2] transition-colors' : ''}`}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2 relative">
-                      <Label htmlFor="password-register">Contraseña</Label>
-                      <Input id="password-register" type={showPassword ? "text" : "password"} placeholder="Crea una contraseña segura" value={passwordRegister} onChange={(e) => setPasswordRegister(e.target.value)} required />
-                      <Button type="button" variant="ghost" size="icon" className="absolute right-1 bottom-1 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                      <Label htmlFor="password-register" className={`font-medium ${isMobile ? 'text-[#2E4CA6]' : ''}`}>Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input 
+                          id="password-register" 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="Crea una contraseña segura" 
+                          value={passwordRegister} 
+                          onChange={(e) => setPasswordRegister(e.target.value)} 
+                          required 
+                          className={`pl-10 pr-10 ${isMobile ? 'h-12 border-2 border-gray-200 focus:border-[#05C7F2] transition-colors' : ''}`}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setShowPassword(!showPassword)}>
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    <Button 
+                      type="submit" 
+                      className={`w-full ${isMobile ? 'h-12 bg-gradient-to-r from-[#05C7F2] to-[#049DD9] hover:from-[#049DD9] hover:to-[#0477BF] text-white font-semibold shadow-lg' : ''}`} 
+                      disabled={isSubmitting}
+                    >
                       {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
                       <Mail className="mr-2" /> Registrarme
                     </Button>
@@ -158,13 +235,20 @@ export default function LoginPage() {
                     <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
                 </div>
             </div>
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={handleGoogleSignIn} 
+              disabled={isSubmitting}
+            >
                 {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
                 <GoogleIcon className="mr-2"/>
                 Google
             </Button>
           </CardContent>
         </Card>
+        
+
     </div>
   );
 }

@@ -1,0 +1,99 @@
+{
+  "name": "HelloTaxi - Servicio de Taxi",
+  "short_name": "HelloTaxi",
+  "description": "Tu servicio de taxi confiable con negociación de tarifa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["travel", "navigation", "transportation"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/android/android-launchericon-48-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/android/android-launchericon-72-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/android/android-launchericon-96-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/ios/128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/android/android-launchericon-144-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/ios/152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/android/android-launchericon-192-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/ios/192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/android/android-launchericon-512-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/ios/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Solicitar Taxi",
+      "short_name": "Solicitar",
+      "description": "Solicitar un taxi rápidamente",
+      "url": "/ride?shortcut=true",
+      "icons": [{ "src": "/icons/android/android-launchericon-96-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ser Conductor",
+      "short_name": "Conductor",
+      "description": "Unirse como conductor",
+      "url": "/driver?shortcut=true",
+      "icons": [{ "src": "/icons/android/android-launchericon-96-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-screenshot.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

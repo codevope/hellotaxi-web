@@ -124,11 +124,21 @@ export default function UserDetailsPage() {
             async (rideDoc) => {
               const rideData = { id: rideDoc.id, ...rideDoc.data() } as Ride
               let driver: Driver | undefined;
+              let vehicle: Vehicle | undefined;
+              
               if (rideData.driver) {
                 const driverSnap = await getDoc(rideData.driver as DocumentReference);
                 if (driverSnap.exists()) driver = driverSnap.data() as Driver;
               }
-              return { ...rideData, driver, passenger: userData };
+              
+              if (rideData.vehicle) {
+                const vehicleSnap = await getDoc(rideData.vehicle as DocumentReference);
+                if (vehicleSnap.exists()) vehicle = vehicleSnap.data() as Vehicle;
+              }
+              
+              // Crear un objeto que coincida con EnrichedRide
+              const { driver: _driver, passenger: _passenger, vehicle: _vehicle, ...rest } = rideData;
+              return { ...rest, driver, passenger: userData, vehicle };
             }
           );
           const userRides = await Promise.all(userRidesPromises);

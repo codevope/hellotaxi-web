@@ -26,9 +26,15 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function HomePage() {
   const [currentCarIndex, setCurrentCarIndex] = useState(0);
+  const isMobile = useIsMobile();
+  const router = useRouter();
+  const { user, loading } = useAuth();
 
   const cars = [
     {
@@ -60,6 +66,13 @@ export default function HomePage() {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Redirigir al login si es móvil y NO está autenticado
+  useEffect(() => {
+    if (isMobile && !loading && !user) {
+      router.push('/login');
+    }
+  }, [isMobile, router, user, loading]);
 
   return (
     <>

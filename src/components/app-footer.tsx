@@ -4,8 +4,8 @@ import { Mail, MapPin, Phone } from "lucide-react";
 export default function AppFooter() {
   return (
     <footer className="bg-card border-t mt-auto">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {/* Logo y descripción */}
           <div className="space-y-4">
             <Link href="/" className="inline-block">
@@ -112,12 +112,11 @@ export default function AppFooter() {
         </div>
 
         {/* Copyright y Legal */}
-        <div className="border-t mt-8 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground text-center md:text-left">
-            &copy; {new Date().getFullYear()} Hello TAXI. Todos los derechos
-            reservados.
+        <div className="border-t mt-6 md:mt-8 pt-4 md:pt-6 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
+          <p className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
+            &copy; {new Date().getFullYear()} Hello TAXI. Todos los derechos reservados.
           </p>
-          <div className="flex gap-4 text-sm text-muted-foreground">
+          <div className="flex gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground">
             <Link
               href="/privacy"
               className="hover:text-primary transition-colors"

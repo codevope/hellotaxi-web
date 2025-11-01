@@ -3,7 +3,6 @@ import { doc, collection, query, where, onSnapshot, runTransaction, getDoc, upda
 import { db } from '@/lib/firebase';
 import type { Ride, User, EnrichedDriver } from '@/lib/types';
 import { useDriverRideStore } from '@/store/driver-ride-store';
-import { useToast } from '@/hooks/use-toast';
 
 interface IncomingRide extends Omit<Ride, 'passenger'> { passenger: User }
 
@@ -12,13 +11,14 @@ interface UseIncomingRideRequestsParams {
   isAvailable: boolean;
   rejectedRideIds: string[];
   setRejectedRideIds: React.Dispatch<React.SetStateAction<string[]>>;
+  toast?: any;
+  playNotificationSound?: () => Promise<boolean>;
 }
 
-export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, setRejectedRideIds }: UseIncomingRideRequestsParams) {
+export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, setRejectedRideIds, toast, playNotificationSound }: UseIncomingRideRequestsParams) {
   const { incomingRequest, activeRide, setIncomingRequest, isCountering, setIsCountering } = useDriverRideStore();
   const [requestTimeLeft, setRequestTimeLeft] = useState(30);
-  const [counterOfferAmount, setCounterOfferAmount] = useState(0);
-  const { toast } = useToast();
+  const [counterOfferAmount, setCounterOfferAmount] = useState('0');
 
   // Listener de viajes buscando (searching)
   useEffect(() => {
@@ -49,7 +49,39 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         if (passengerSnap.exists()) {
           const passengerData = passengerSnap.data() as User;
           const { passenger: _p, ...rest } = rideToOffer;
-          setIncomingRequest({ ...rest, passenger: passengerData });
+          const newRequest = { ...rest, passenger: passengerData };
+          
+          // Usar setTimeout para evitar actualizaciones de estado durante render
+          setTimeout(async () => {
+            console.log('🚖 MOBILE: Nueva solicitud detectada:', newRequest);
+            setIncomingRequest(newRequest);
+            
+            // Reproducir sonido de notificación
+            if (playNotificationSound) {
+              try {
+                console.log('🔊 MOBILE: Reproduciendo sonido de notificación...');
+                const soundResult = await playNotificationSound();
+                console.log('🔊 MOBILE: Sonido reproducido:', soundResult);
+              } catch (error) {
+                console.error('❌ MOBILE: Error playing notification sound:', error);
+              }
+            } else {
+              console.log('⚠️ MOBILE: playNotificationSound no disponible');
+            }
+            
+            // Mostrar toast inmediatamente para dispositivos móviles
+            if (toast) {
+              console.log('📱 MOBILE: Mostrando toast...');
+              toast({
+                title: '🚖 Nueva solicitud de viaje',
+                description: `Recogida: ${newRequest.pickup}`,
+                duration: 10000,
+                className: 'border-l-4 border-l-[#2E4CA6] bg-gradient-to-r from-blue-50 to-white',
+              });
+            } else {
+              console.log('⚠️ MOBILE: toast no disponible');
+            }
+          }, 0);
         }
       } catch (e) {
         console.log('Could not secure ride offer:', (e as Error).message);
@@ -59,18 +91,35 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
   }, [driver, isAvailable, activeRide, incomingRequest, rejectedRideIds, setIncomingRequest]);
 
   // Countdown / auto reject
+  const autoRejectRequest = useCallback(async (requestId: string) => {
+    if (!driver) return;
+    const rideRef = doc(db, 'rides', requestId);
+    setIncomingRequest(null);
+    setRejectedRideIds(prevIds => [...prevIds, requestId]);
+    try {
+      await updateDoc(rideRef, { 
+        rejectedBy: arrayUnion(doc(db, 'drivers', driver.id)), 
+        offeredTo: null 
+      });
+    } catch (err) {
+      console.error('Auto-reject error', err);
+    }
+  }, [driver, setIncomingRequest, setRejectedRideIds]);
+
   useEffect(() => {
-    if (!incomingRequest) { setRequestTimeLeft(30); return; }
+    if (!incomingRequest) { 
+      setRequestTimeLeft(30); 
+      return; 
+    }
+    
     setRequestTimeLeft(30);
     const timer = setInterval(() => {
       setRequestTimeLeft(prev => {
         if (prev <= 1) {
           const current = useDriverRideStore.getState().incomingRequest;
           if (current && driver) {
-            const rideRef = doc(db, 'rides', current.id);
-            setIncomingRequest(null);
-            setRejectedRideIds(prevIds => [...prevIds, current.id]);
-            updateDoc(rideRef, { rejectedBy: arrayUnion(doc(db, 'drivers', driver.id)), offeredTo: null }).catch(err => console.error('Auto-reject error', err));
+            // Usar setTimeout para evitar actualizaciones de estado durante render
+            setTimeout(() => autoRejectRequest(current.id), 0);
           }
           return 0;
         }
@@ -78,7 +127,7 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [incomingRequest, driver, setIncomingRequest, setRejectedRideIds]);
+  }, [incomingRequest, driver, autoRejectRequest]);
 
   const acceptRequest = useCallback(async () => {
     if (!incomingRequest || !driver) return;
@@ -92,7 +141,9 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         tx.update(doc(db, 'drivers', driver.id), { status: 'on-ride' });
       });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Error', description: e.message || 'No se pudo aceptar el viaje.' });
+      if (toast) {
+        toast({ variant: 'destructive', title: 'Error', description: e.message || 'No se pudo aceptar el viaje.' });
+      }
     }
   }, [incomingRequest, driver, setIncomingRequest, toast]);
 
@@ -108,19 +159,23 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     if (!incomingRequest || !counterOfferAmount || !driver) return;
     const rideRef = doc(db, 'rides', incomingRequest.id);
     try {
-      await updateDoc(rideRef, { fare: counterOfferAmount, status: 'counter-offered', offeredTo: doc(db, 'drivers', driver.id) });
-      toast({ title: 'Contraoferta Enviada', description: `Has propuesto una tarifa de S/${counterOfferAmount.toFixed(2)}` });
+      await updateDoc(rideRef, { fare: parseFloat(counterOfferAmount), status: 'counter-offered', offeredTo: doc(db, 'drivers', driver.id) });
+      if (toast) {
+        toast({ title: 'Contraoferta Enviada', description: `Has propuesto una tarifa de S/${parseFloat(counterOfferAmount).toFixed(2)}` });
+      }
       setIncomingRequest(null);
       setIsCountering(false);
     } catch (e) {
       console.error('Error submitting counter offer:', e);
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar la contraoferta.' });
+      if (toast) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar la contraoferta.' });
+      }
     }
   }, [incomingRequest, counterOfferAmount, driver, toast, setIncomingRequest, setIsCountering]);
 
   const startCounterMode = useCallback(() => {
     if (!incomingRequest) return;
-    setCounterOfferAmount(incomingRequest.fare);
+    setCounterOfferAmount(incomingRequest.fare.toString());
     setIsCountering(true);
   }, [incomingRequest, setIsCountering]);
 

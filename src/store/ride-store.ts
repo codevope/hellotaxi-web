@@ -24,6 +24,7 @@ interface RideState {
   routeInfo: RouteInfo | null;
   driverLocation: Location | null;
   counterOfferValue: number | null;
+  originalFare: number | null;
 }
 
 interface RideActions {
@@ -36,6 +37,7 @@ interface RideActions {
   setRouteInfo: (info: RouteInfo | null) => void;
   setDriverLocation: (location: Location | null) => void;
   setCounterOffer: (value: number | null) => void;
+  setOriginalFare: (fare: number | null) => void;
   toggleSupportChat: () => void;
   assignDriver: (driver: DriverWithVehicleInfo) => void;
   completeRideForRating: (driver: DriverWithVehicleInfo) => void;
@@ -54,6 +56,7 @@ const initialState: RideState = {
   routeInfo: null,
   driverLocation: null,
   counterOfferValue: null,
+  originalFare: null,
 };
 
 export const useRideStore = create<RideState & RideActions>((set, get) => ({
@@ -69,18 +72,29 @@ export const useRideStore = create<RideState & RideActions>((set, get) => ({
   setCounterOffer: (value) => {
     console.log('💰 Setting counter offer:', value);
     if (value !== null) {
-      set({ status: 'counter-offered', counterOfferValue: value });
+      const currentState = get();
+      // Store original fare if not already stored
+      if (currentState.originalFare === null && currentState.activeRide) {
+        set({ 
+          status: 'counter-offered', 
+          counterOfferValue: value,
+          originalFare: currentState.activeRide.fare 
+        });
+      } else {
+        set({ status: 'counter-offered', counterOfferValue: value });
+      }
     } else {
       // If clearing counter offer, check if we should go back to a different state
       const currentState = get();
       if (currentState.activeRide) {
         const newStatus = currentState.activeRide.status === 'searching' ? 'searching' : 'assigned';
-        set({ counterOfferValue: null, status: newStatus });
+        set({ counterOfferValue: null, status: newStatus, originalFare: null });
       } else {
-        set({ counterOfferValue: null, status: 'idle' });
+        set({ counterOfferValue: null, status: 'idle', originalFare: null });
       }
     }
   },
+  setOriginalFare: (fare) => set({ originalFare: fare }),
   setRouteInfo: (info) => {
     console.log('📍 Setting route info:', !!info);
     const currentState = get();

@@ -89,10 +89,15 @@ const estimateRideFareDeterministicFlow = ai.defineFlow(
     if (input.couponCode) {
         const couponRef = doc(db, 'coupons', input.couponCode);
         const couponSnap = await getDoc(couponRef);
+        
         if (couponSnap.exists()) {
             const coupon = couponSnap.data() as Coupon;
             const isExpired = new Date(coupon.expiryDate) < new Date();
-            if (coupon.status === 'active' && !isExpired) {
+            
+            // Check if coupon is valid (active, not expired, meets minimum spend requirement)
+            const meetsMinSpend = !coupon.minSpend || total >= coupon.minSpend;
+            
+            if (coupon.status === 'active' && !isExpired && meetsMinSpend) {
                 if (coupon.discountType === 'percentage') {
                     couponDiscount = total * (coupon.value / 100);
                 } else { // fixed amount

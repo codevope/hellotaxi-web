@@ -1,6 +1,6 @@
 "use client";
 
-import { Car, Star } from "lucide-react";
+import { Car, Star, Tag } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PriceDisplay } from "@/components/price-display";
-import type { User, EnrichedDriver } from "@/lib/types";
+import type { User, EnrichedDriver, FareBreakdown } from "@/lib/types";
 
 interface ActiveRideCardProps {
   status: "accepted" | "arrived" | "in-progress";
@@ -19,6 +19,8 @@ interface ActiveRideCardProps {
   pickup: string;
   dropoff: string;
   fare: number;
+  fareBreakdown?: FareBreakdown;
+  couponCode?: string;
   isCompletingRide: boolean;
   onStatusUpdate: (newStatus: "arrived" | "in-progress" | "completed") => void;
 }
@@ -29,6 +31,8 @@ export function ActiveRideCard({
   pickup,
   dropoff,
   fare,
+  fareBreakdown,
+  couponCode,
   isCompletingRide,
   onStatusUpdate,
 }: ActiveRideCardProps) {
@@ -125,7 +129,20 @@ export function ActiveRideCard({
               </div>
             </div>
             <div className="text-right">
-              <PriceDisplay amount={fare} label="Tarifa" size="lg" variant="highlight" />
+              {fareBreakdown?.couponDiscount && fareBreakdown.couponDiscount > 0 ? (
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-500 line-through">
+                    S/ {(fare + fareBreakdown.couponDiscount).toFixed(2)}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-green-600">
+                    <Tag className="h-3 w-3" />
+                    <span>{couponCode}: -S/ {fareBreakdown.couponDiscount.toFixed(2)}</span>
+                  </div>
+                  <PriceDisplay amount={fare} label="Total" size="lg" variant="highlight" />
+                </div>
+              ) : (
+                <PriceDisplay amount={fare} label="Tarifa" size="lg" variant="highlight" />
+              )}
             </div>
           </div>
         </div>

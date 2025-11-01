@@ -81,35 +81,85 @@ export default function RideDetailsPage() {
         const rideSnap = await getDoc(rideDocRef);
 
         if (rideSnap.exists()) {
-            const rideData = { id: rideSnap.id, ...rideSnap.data() } as Ride;
+            const rawData = rideSnap.data();
+            const rideData = { id: rideSnap.id, ...rawData } as Ride;
             
-            const driverSnap = rideData.driver ? await getDoc(rideData.driver) : null;
-            const passengerSnap = await getDoc(rideData.passenger);
-            const vehicleSnap = rideData.vehicle ? await getDoc(rideData.vehicle) : null;
+            console.log('🔍 Raw ride data:', rawData);
+            console.log('📋 Processed ride data:', rideData);
+            
+            try {
+              // Verificar pasajero (requerido)
+              if (!rideData.passenger) {
+                console.error("❌ No passenger reference in ride");
+                return;
+              }
+              
+              const passengerSnap = await getDoc(rideData.passenger);
+              if (!passengerSnap.exists()) {
+                console.error("❌ Passenger document does not exist");
+                return;
+              }
+              
+              const passengerData = { id: passengerSnap.id, ...passengerSnap.data() } as User;
+              console.log('👤 Passenger data loaded:', passengerData);
 
-            if (passengerSnap.exists()) {
-                const driverData = driverSnap?.exists() ? { id: driverSnap.id, ...driverSnap.data() } as Driver : null;
-                const passengerData = { id: passengerSnap.id, ...passengerSnap.data() } as User;
-                const vehicleData = vehicleSnap?.exists() ? {id: vehicleSnap.id, ...vehicleSnap.data()} as Vehicle : null;
-                
-                if (driverData && vehicleData) {
-                    const enrichedRide = { 
-                        ...rideData, 
-                        driver: driverData, 
-                        passenger: passengerData,
-                        vehicle: vehicleData
-                    } as EnrichedRide;
-                    setRide(enrichedRide);
-
-                    // Fetch driver reviews
-                    const reviewsQuery = query(collection(db, 'drivers', driverData.id, 'reviews'), orderBy('createdAt', 'desc'));
-                    const reviewsSnapshot = await getDocs(reviewsQuery);
-                    const driverReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-                    setReviews(driverReviews);
+              // Verificar conductor (opcional)
+              let driverData: Driver | null = null;
+              if (rideData.driver) {
+                const driverSnap = await getDoc(rideData.driver);
+                if (driverSnap.exists()) {
+                  driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+                  console.log('🚗 Driver data loaded:', driverData);
+                } else {
+                  console.warn("⚠️ Driver reference exists but document not found");
                 }
+              } else {
+                console.log("ℹ️ No driver assigned to this ride");
+              }
+
+              // Verificar vehículo (opcional)
+              let vehicleData: Vehicle | null = null;
+              if (rideData.vehicle) {
+                const vehicleSnap = await getDoc(rideData.vehicle);
+                if (vehicleSnap.exists()) {
+                  vehicleData = { id: vehicleSnap.id, ...vehicleSnap.data() } as Vehicle;
+                  console.log('🚙 Vehicle data loaded:', vehicleData);
+                } else {
+                  console.warn("⚠️ Vehicle reference exists but document not found");
+                }
+              } else {
+                console.log("ℹ️ No vehicle assigned to this ride");
+              }
+              
+              // Crear el ride enriquecido
+              const enrichedRide = { 
+                ...rideData, 
+                driver: driverData, 
+                passenger: passengerData,
+                vehicle: vehicleData
+              } as EnrichedRide;
+              
+              setRide(enrichedRide);
+              console.log('✅ Enriched ride set:', enrichedRide);
+
+              // Cargar reviews del conductor si existe
+              if (driverData) {
+                try {
+                  const reviewsQuery = query(collection(db, 'drivers', driverData.id, 'reviews'), orderBy('createdAt', 'desc'));
+                  const reviewsSnapshot = await getDocs(reviewsQuery);
+                  const driverReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+                  setReviews(driverReviews);
+                  console.log('⭐ Reviews loaded:', driverReviews.length);
+                } catch (reviewError) {
+                  console.warn("⚠️ Error loading reviews:", reviewError);
+                }
+              }
+              
+            } catch (dataError) {
+              console.error("❌ Error processing ride data:", dataError);
             }
         } else {
-          console.error("No such ride!");
+          console.error("❌ Ride document does not exist with ID:", id);
         }
       } catch (error) {
         console.error("Error fetching ride data:", error);
@@ -165,9 +215,6 @@ export default function RideDetailsPage() {
                     <CardTitle>Resumen del Viaje</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative h-64 w-full rounded-lg overflow-hidden bg-muted mb-6">
-                        <Image src={mapImageUrl} alt="Mapa de la ruta" fill className="object-cover" data-ai-hint="city map route" />
-                    </div>
                     <div className="space-y-4 text-sm">
                         <div className="flex items-start gap-4">
                             <MapPin className="h-5 w-5 text-primary mt-1" />
@@ -340,8 +387,20 @@ export default function RideDetailsPage() {
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         <span>{driver.rating.toFixed(1)} de calificación</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">{vehicle.brand} {vehicle.model}</p>
-                    <p className="text-sm font-mono bg-muted px-2 py-1 rounded-md mt-1">{vehicle.licensePlate}</p>
+                    {vehicle ? (
+                      <>
+                    {vehicle ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mt-2">{vehicle.brand} {vehicle.model}</p>
+                        <p className="text-sm font-mono bg-muted px-2 py-1 rounded-md mt-1">{vehicle.licensePlate}</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-2 italic">Vehículo no asignado</p>
+                    )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-2 italic">Sin vehículo asignado</p>
+                    )}
                 </CardContent>
             </Card>
           )}

@@ -57,6 +57,17 @@ export interface Driver {
   totalRides?: number;
   location?: Location;
   vehicle: DocumentReference;
+  // Preferencias de notificación
+  notificationPreferences?: {
+    browserNotifications: boolean;
+    soundNotifications: boolean;
+    lastAudioPermissionGranted?: string; // ISO Date string cuando se habilitó por última vez
+    deviceInfo?: {
+      userAgent: string;
+      platform: string;
+      timestamp: string;
+    }[];
+  };
 }
 
 // EnrichedDriver has the full vehicle object instead of just a reference

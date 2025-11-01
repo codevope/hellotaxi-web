@@ -8,8 +8,6 @@ import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supportChat } from '@/ai/flows/support-chat';
 import { useToast } from '@/hooks/use-toast';
-import { SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
-
 type Message = {
   text: string;
   isUser: boolean;
@@ -76,12 +74,12 @@ export default function SupportChat() {
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <SheetHeader className="text-center px-6">
-        <SheetTitle>Asistente de Soporte</SheetTitle>
-        <SheetDescription>
-            Haz una pregunta sobre la aplicación y la IA te ayudará.
-        </SheetDescription>
-      </SheetHeader>
+      <div className="text-center px-6 py-4 border-b">
+        <h3 className="text-lg font-semibold">Asistente de Soporte</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Haz una pregunta sobre la aplicación y la IA te ayudará.
+        </p>
+      </div>
 
       <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
         <div className="space-y-4 py-4">

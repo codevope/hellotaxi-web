@@ -1,7 +1,7 @@
 "use client";
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Car, Siren, MessageCircle } from 'lucide-react';
+import { Car, MessageCircle } from 'lucide-react';
 import { IncomingRideRequest } from '@/components/driver/incoming-ride-request';
 import { ActiveRideCard } from '@/components/driver/active-ride-card';
 import RatingForm from '@/components/rating-form';
@@ -10,14 +10,14 @@ import type { EnrichedRide } from '@/hooks/driver/use-driver-active-ride';
 import { Button } from '@/components/ui/button';
 import Chat from '@/components/chat';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 interface DriverStatePanelProps {
   incomingRequest: any | null;
   requestTimeLeft: number;
   isCountering: boolean;
-  counterOfferAmount: number;
-  setCounterOfferAmount: (n: number) => void;
+  counterOfferAmount: string;
+  setCounterOfferAmount: (n: string) => void;
   acceptRequest: () => void;
   rejectRequest: () => void;
   startCounterMode: () => void;
@@ -32,7 +32,6 @@ interface DriverStatePanelProps {
   setIsDriverChatOpen: (o: boolean) => void;
   chatMessages: any[];
   onSendMessage: (text: string) => void;
-  onSos: () => void;
   passengerNameForChat?: string;
 }
 
@@ -57,7 +56,6 @@ export function DriverStatePanel(props: DriverStatePanelProps) {
     setIsDriverChatOpen,
     chatMessages,
     onSendMessage,
-    onSos,
     passengerNameForChat,
   } = props;
 
@@ -78,7 +76,7 @@ export function DriverStatePanel(props: DriverStatePanelProps) {
         onReject={rejectRequest}
         onStartCounterOffer={startCounterMode}
         onSubmitCounterOffer={submitCounterOffer}
-        onCancelCounterOffer={() => setCounterOfferAmount(0)}
+        onCancelCounterOffer={() => setCounterOfferAmount('0')}
       />
     );
   }
@@ -92,34 +90,11 @@ export function DriverStatePanel(props: DriverStatePanelProps) {
           pickup={activeRide.pickup}
           dropoff={activeRide.dropoff}
           fare={activeRide.fare}
+          fareBreakdown={activeRide.fareBreakdown}
+          couponCode={activeRide.couponCode}
           isCompletingRide={isCompletingRide}
           onStatusUpdate={updateRideStatus}
         />
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-4 right-4 h-16 w-16 rounded-full shadow-2xl animate-pulse"
-            >
-              <Siren className="h-8 w-8" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro de que quieres activar la alerta de pánico?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción notificará inmediatamente a nuestra central de seguridad. Úsalo solo en caso de una emergencia real.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={onSos}>
-                Sí, Activar Alerta
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
         <Sheet open={isDriverChatOpen} onOpenChange={setIsDriverChatOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="absolute bottom-4 left-4 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90">

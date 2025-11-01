@@ -24,6 +24,7 @@ import {
   Sparkles,
   ChevronRight,
   Ticket,
+  Tag,
 } from 'lucide-react';
 import type {
   Ride,
@@ -247,63 +248,92 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
   // === Confirmación de viaje ===
   if (status === 'confirmed' && routeInfo) {
     return (
-      <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] p-6 text-white">
+      <div className="space-y-2">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] py-1.5 text-white">
           <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6]/90 via-[#0477BF]/80 to-[#05C7F2]/80"></div>
           <div className="relative z-10 text-center">
-            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-              <Car className="h-8 w-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Confirmar tu viaje</h2>
-            <p className="text-blue-100">Revisa los detalles antes de buscar conductor</p>
-          </div>
+            <h2 className="text-lg font-bold">Confirmar tu viaje</h2>
+           </div>
         </div>
 
         <Card className="border-0 shadow-lg bg-gradient-to-r from-gray-50 to-white">
-          <CardContent className="p-6 space-y-6">
-            <div className="flex items-start space-x-4">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start space-x-3">
               <div className="flex flex-col items-center">
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                <div className="h-8 w-0.5 bg-gray-300"></div>
-                <MapPin className="h-4 w-4 text-red-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-green-500"></div>
+                <div className="h-6 w-0.5 bg-gray-300"></div>
+                <MapPin className="h-3.5 w-3.5 text-red-500" />
               </div>
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-2">
                 <div>
-                  <p className="text-sm font-medium text-green-700">Recojo</p>
-                  <p className="text-gray-900 font-medium">{pickupLocation?.address}</p>
+                  <p className="text-xs font-medium text-green-700">Recojo</p>
+                  <p className="text-gray-900 text-xs">{pickupLocation?.address}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-red-700">Destino</p>
-                  <p className="text-gray-900 font-medium">{dropoffLocation?.address}</p>
+                  <p className="text-xs font-medium text-red-700">Destino</p>
+                  <p className="text-gray-900 text-xs">{dropoffLocation?.address}</p>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 rounded-xl bg-[#F2F2F2] p-4">
+            <div className="grid grid-cols-3 gap-2 text-center border-b pb-2">
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#2E4CA6]">{routeInfo.distance.text}</p>
-                <p className="text-xs text-gray-600 font-medium">Distancia</p>
+                <p className="text-lg font-bold text-[#2E4CA6]">{routeInfo.distance.text}</p>
+                <p className="text-[10px] text-gray-600 font-medium">Distancia</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#0477BF]">{routeInfo.duration.text}</p>
-                <p className="text-xs text-gray-600 font-medium">Duración</p>
+                <p className="text-lg font-bold text-[#0477BF]">{routeInfo.duration.text}</p>
+                <p className="text-[10px] text-gray-600 font-medium">Duración</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</p>
-                <p className="text-xs text-gray-600 font-medium">Precio</p>
+                {(routeInfo.fareBreakdown?.couponDiscount || 0) > 0 ? (
+                  <div className="space-y-0.5">
+                    <p className="text-sm line-through text-gray-400">S/ {((routeInfo.estimatedFare || 0) + (routeInfo.fareBreakdown?.couponDiscount || 0)).toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</p>
+                    <p className="text-[10px] text-green-600 font-medium">Con descuento</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-lg font-bold text-green-600">S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</p>
+                    <p className="text-[10px] text-gray-600 font-medium">Precio</p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Desglose de tarifa con cupón */}
+            {(routeInfo.fareBreakdown?.couponDiscount || 0) > 0 && form.getValues('couponCode') && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Tarifa base:</span>
+                  <span className="font-medium">S/ {((routeInfo.estimatedFare || 0) + (routeInfo.fareBreakdown?.couponDiscount || 0)).toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-green-600">
+                  <span className="flex items-center gap-1">
+                    <Tag className="h-3 w-3" />
+                    Descuento ({form.getValues('couponCode')}):
+                  </span>
+                  <span className="font-medium">-S/ {(routeInfo.fareBreakdown?.couponDiscount || 0).toFixed(2)}</span>
+                </div>
+                <div className="border-t border-green-200 pt-1">
+                  <div className="flex items-center justify-between text-sm font-bold text-green-700">
+                    <span>Total a pagar:</span>
+                    <span>S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {routeInfo.duration && (
-              <div className="rounded-lg shadow p-4 space-y-3 bg-gradient-to-br from-[#F2F2F2] via-white to-[#F2F2F2]">
+              <div className="rounded-lg shadow p-2 bg-gradient-to-br from-[#F2F2F2] via-white to-[#F2F2F2]">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[#2E4CA6] flex items-center gap-2">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#05C7F2] animate-pulse" />
+                  <p className="text-xs font-semibold text-[#2E4CA6] flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-full bg-[#05C7F2] animate-pulse" />
                     Tráfico en Tiempo Real
                   </p>
                   <span
                     className={cn(
-                      "text-xs font-medium px-2 py-0.5 rounded-full border",
+                      "text-[10px] font-medium px-1.5 py-0.5 rounded-full border",
                       routeInfo.trafficCondition === 'light' && "bg-[#05C7F2]/15 text-[#049DD9] border-[#049DD9]/40",
                       routeInfo.trafficCondition === 'moderate' && "bg-[#049DD9]/15 text-[#0477BF] border-[#0477BF]/40",
                       routeInfo.trafficCondition === 'heavy' && "bg-[#0477BF]/15 text-[#2E4CA6] border-[#2E4CA6]/40",
@@ -316,74 +346,29 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                     {routeInfo.trafficCondition === 'unknown' && 'Desconocido'}
                   </span>
                 </div>
-                {/* <div className="text-xs text-[#0477BF] flex flex-wrap gap-4">
-                  {routeInfo.baselineDuration && (
-                    <span>
-                      Base: <strong>{routeInfo.baselineDuration.text}</strong>
-                    </span>
-                  )}
-                  <span>
-                    Actual: <strong>{routeInfo.duration.text}</strong>
-                  </span>
-                  {routeInfo.trafficDelaySeconds !== undefined && routeInfo.baselineDuration && (
-                    <span>
-                      Retraso: {Math.round(routeInfo.trafficDelaySeconds / 60)} min
-                    </span>
-                  )}
-                </div> */}
-                {/* {routeInfo.baselineDuration && routeInfo.trafficDelaySeconds !== undefined && (
-                  <div className="space-y-1">
-                    {(() => {
-                      const base = routeInfo.baselineDuration.value;
-                      const actual = routeInfo.duration.value;
-                      const ratio = Math.min(actual / base, 2); // cap 2x
-                      const pct = Math.min(((actual - base) / base) * 100, 100);
-                      return (
-                        <>
-                          <div className="h-2 w-full bg-[#F2F2F2] rounded-full overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full transition-all",
-                                ratio <= 1.15 && "bg-gradient-to-r from-[#05C7F2] to-[#049DD9]",
-                                ratio > 1.15 && ratio <= 1.4 && "bg-gradient-to-r from-[#049DD9] to-[#0477BF]",
-                                ratio > 1.4 && "bg-gradient-to-r from-[#0477BF] to-[#2E4CA6]"
-                              )}
-                              style={{ width: `${(ratio / 2) * 100}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-[#0477BF]">
-                            <span>0%</span>
-                            <span>{pct.toFixed(0)}% atraso</span>
-                            <span>+100%</span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                )} */}
-                <p className="text-[11px] text-[#2E4CA6] italic">Los tiempos incluyen condiciones actuales de tráfico y pueden variar.</p>
-              </div>
+           
+               </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Button
-            size="lg"
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
+            size="sm"
+            className="w-full h-10 text-xs font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
             onClick={async () => {
               if (routeInfo.fareBreakdown) {
                 await handleCreateRide(routeInfo.estimatedFare || 0, routeInfo.fareBreakdown);
               }
             }}
           >
-            <Car className="mr-3 h-6 w-6" />
+            <Car className="mr-1 h-3 w-3" />
             Buscar Conductor
           </Button>
           <Button
             variant="secondary"
-            size="lg"
-            className="w-full h-12 border-2 border-gray-300"
+            size="sm"
+            className="w-full h-10 border border-gray-300 text-xs"
             onClick={() => setStatus('idle')}
           >
             Volver a editar
@@ -415,37 +400,35 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
       </Dialog>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
           {(status === 'idle' || isCalculating || status === 'calculated') && (
             <>
               {/* Pickup */}
-              <div className="space-y-2">
-                <Label>Punto de Recojo</Label>
+              <div className="space-y-0.5">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full justify-start h-14 rounded-lg transition"
+                  className="w-full justify-start h-10 rounded-lg transition text-xs"
                   onClick={() => setLocationPickerFor('pickup')}
                   disabled={isFormLocked}
                 >
-                  <MapPin className="mr-2 h-5 w-5" />
-                  {pickupLocation ? pickupLocation.address : 'Seleccionar punto de recojo'}
+                  <MapPin className="mr-1.5 h-3 w-3 text-green-500" />
+                  <span className="truncate">{pickupLocation ? pickupLocation.address : 'Tu ubicación'}</span>
                 </Button>
                 <FormMessage>{form.formState.errors.pickup?.message}</FormMessage>
               </div>
 
               {/* Dropoff */}
-              <div className="space-y-2">
-                <Label>Punto de Destino</Label>
+              <div className="space-y-0.5">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full justify-start h-14 rounded-lg  transition"
+                  className="w-full justify-start h-10 rounded-lg transition text-xs"
                   onClick={() => setLocationPickerFor('dropoff')}
                   disabled={isFormLocked}
                 >
-                  <MapPin className="mr-2 h-5 w-5" />
-                  {dropoffLocation ? dropoffLocation.address : 'Seleccionar destino'}
+                  <MapPin className="mr-1.5 h-3 w-3 text-red-500" />
+                  <span className="truncate">{dropoffLocation ? dropoffLocation.address : 'Seleccionar destino'}</span>
                 </Button>
                 <FormMessage>{form.formState.errors.dropoff?.message}</FormMessage>
               </div>
@@ -455,25 +438,24 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 control={form.control}
                 name="serviceType"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel className="text-[#2E4CA6] font-semibold">Tipo de Servicio</FormLabel>
-                    <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-4">
+                  <FormItem className="space-y-0.5">
+                     <FormControl>
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-1">
                         {appSettings.serviceTypes.map((service) => (
                           <FormItem key={service.id}>
                             <RadioGroupItem value={service.id} id={`service-${service.id}`} className="peer sr-only" />
                             <FormLabel
                               htmlFor={`service-${service.id}`}
                               className={cn(
-                                "flex flex-col items-center rounded-xl border-2 p-4 shadow-sm cursor-pointer transition",
+                                "flex flex-col items-center rounded-lg border shadow-sm cursor-pointer transition text-xs",
                                 field.value === service.id
                                   ? "border-[#0477BF] bg-[#05C7F2]/10"
                                   : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
                                 isFormLocked && "cursor-not-allowed opacity-50"
                               )}
                             >
-                              {serviceTypeIcons[service.id]}
-                              <span className="font-semibold mt-2 text-[#2E4CA6]">{service.name}</span>
+                              <div className="scale-[0.8]">{serviceTypeIcons[service.id]}</div>
+                              <span className="font-medium text-[#2E4CA6] text-xs mt-1">{service.name}</span>
                             </FormLabel>
                           </FormItem>
                         ))}
@@ -488,25 +470,23 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 control={form.control}
                 name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel className="text-[#2E4CA6] font-semibold">Método de Pago</FormLabel>
+                  <FormItem className="space-y-0.5">
                     <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-4">
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-1">
                         {(Object.keys(paymentMethodIcons) as Array<keyof typeof paymentMethodIcons>).map((method) => (
                           <FormItem key={method}>
                             <RadioGroupItem value={method} id={`payment-${method}`} className="peer sr-only" />
                             <FormLabel
                               htmlFor={`payment-${method}`}
                               className={cn(
-                                "flex flex-col items-center justify-center rounded-xl border-2 p-2 h-20 cursor-pointer transition shadow-sm",
+                                "flex flex-col items-center justify-center rounded-lg border cursor-pointer transition shadow-sm h-14",
                                 field.value === method
                                   ? "border-[#0477BF] bg-[#05C7F2]/10"
                                   : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
                                 isFormLocked && "cursor-not-allowed opacity-50"
                               )}
                             >
-                              {paymentMethodIcons[method]}
-                              {/* <span className="mt-2 text-sm font-bold text-[#2E4CA6]">{method.toUpperCase()}</span> */}
+                              <div className="scale-[0.8]">{paymentMethodIcons[method]}</div>
                             </FormLabel>
                           </FormItem>
                         ))}
@@ -522,14 +502,13 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 name="couponCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#2E4CA6] font-semibold">Código de Cupón (Opcional)</FormLabel>
-                    <FormControl>
+                     <FormControl>
                       <div className="relative">
-                        <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#0477BF]" />
+                        <Ticket className="absolute left-1.5 top-1/2 -translate-y-1/2 h-2.5 w-2.5 text-[#0477BF]" />
                         <Input
                           {...field}
-                          placeholder="Ej: BIENVENIDO10"
-                          className="pl-10 rounded-lg"
+                          placeholder="Código de descuento"
+                          className="pl-6 h-10 rounded-lg text-xs"
                           disabled={isFormLocked}
                         />
                       </div>
@@ -539,42 +518,37 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 )}
               />
 
-              {/* ETA */}
-              {/* {(isCalculating || status === 'calculated') && routeInfo && (
-                <ETADisplay routeInfo={routeInfo} isCalculating={isCalculating} error={routeError} />
-              )} */}
-
               {/* Botones */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-0.5 pt-0.5">
                 {status === 'idle' && (
                   <Button
                     type="submit"
-                    className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
+                    className="w-full h-10 text-xs font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
                     disabled={isCalculating || !pickupLocation || !dropoffLocation}
                   >
-                    {isCalculating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                    {isCalculating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
                     {isCalculating ? 'Calculando...' : 'Pedir Ahora'}
                   </Button>
                 )}
               </div>
 
               {status === 'calculated' && routeInfo && (
-                <div className="space-y-4">
+                <div className="space-y-1">
                   <Button
                     type="button"
-                    className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
+                    className="w-full h-8 text-sm font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
                     onClick={() => setStatus('confirmed')}
                   >
                     Confirmar Viaje
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                    <ChevronRight className="ml-1 h-3 w-3" />
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
-                    className="w-full text-muted-foreground shadow"
+                    className="w-full text-muted-foreground shadow h-7 text-xs"
                     onClick={resetForm}
                   >
-                    <X className="mr-2 h-4 w-4" />
+                    <X className="mr-1 h-3 w-3" />
                     Empezar de Nuevo
                   </Button>
                 </div>

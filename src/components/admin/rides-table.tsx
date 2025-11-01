@@ -114,7 +114,6 @@ export default function RidesTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Historial de Viajes</CardTitle>
         <CardDescription>Mostrando los últimos 100 viajes registrados en la plataforma.</CardDescription>
       </CardHeader>
       <CardContent>

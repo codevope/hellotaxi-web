@@ -1,6 +1,5 @@
 "use client";
 
-import AppHeader from "@/components/app-header";
 import {
   Card,
   CardContent,
@@ -26,6 +25,7 @@ import {
   Save,
   CreditCard,
   CalendarCheck,
+  Volume2,
 } from "lucide-react";
 import { useDriverAuth } from "@/hooks/use-driver-auth";
 import { useCounterOffer } from "@/hooks/use-counter-offer";
@@ -111,6 +111,12 @@ import { useDriverChat } from "@/hooks/driver/use-driver-chat";
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { useDriverPaymentPlan } from "@/hooks/driver/use-driver-payment-plan";
 import { DriverStatePanel } from "@/components/driver/driver-state-panel";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileHeader } from "@/components/mobile-header";
+import { MobileDriverDashboard } from "@/components/driver/mobile-dashboard";
+import { useDriverNotifications } from "@/hooks/use-driver-notifications";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const statusConfig: Record<
   Driver["status"],
@@ -137,6 +143,17 @@ const rideStatusConfig: Record<
 type EnrichedRide = Omit<Ride, "passenger" | "driver"> & { passenger: User; driver: EnrichedDriver };
 
 function DriverPageContent() {
+  const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const router = useRouter();
+
+  // Sincronizar activeTab con los parámetros de la URL
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
+
   const {
     isAvailable,
     incomingRequest,
@@ -162,13 +179,89 @@ function DriverPageContent() {
   // Hook: activo y rating
   const { activeRide: activeRideHook, completedRideForRating, setCompletedRideForRating, updateRideStatus, isCompletingRide, driverLocation } = useDriverActiveRide({ driver, setAvailability });
 
+  // Hook: notificaciones con sonido - debe estar activo cuando el conductor está disponible
+  const { hasPermission, audioEnabled, audioPermissionGranted, hasTriedReactivation, enableAudio, tryReenableAudio, requestNotificationPermission, updateNotificationPermissions, shouldAttemptReactivation, testNotification, isLoaded, playSound } = useDriverNotifications(driver);
+
+  // Efecto para solicitar permisos de notificación cuando el conductor se conecta por primera vez
+  useEffect(() => {
+    const checkAndRequestPermissions = async () => {
+      if (driver && isLoaded && hasPermission === false) {
+        const granted = await requestNotificationPermission();
+        
+        // Actualizar preferencias en BD
+        await updateNotificationPermissions(granted);
+        
+        if (granted) {
+          toast({
+            title: 'Notificaciones habilitadas',
+            description: 'Ahora puedes habilitar el sonido para recibir alertas de audio.',
+            duration: 8000,
+            className: 'border-l-4 border-l-[#2E4CA6]',
+          });
+        } else {
+          toast({
+            title: 'Notificaciones desactivadas',
+            description: 'Puedes habilitarlas desde la configuración de tu navegador.',
+            duration: 8000,
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    checkAndRequestPermissions();
+  }, [driver, isLoaded, hasPermission, requestNotificationPermission, updateNotificationPermissions, toast]);
+
+  // Estado para controlar si ya se intentó reactivar el audio
+  const [hasAttemptedAutoReactivation, setHasAttemptedAutoReactivation] = useState(false);
+
+  // Efecto para intentar reactivar automáticamente el audio basado en preferencias de BD
+  useEffect(() => {
+    const attemptAutoReactivation = async () => {
+      // Verificar tanto localStorage como BD
+      const shouldTryDB = shouldAttemptReactivation();
+      const shouldTryLocal = audioPermissionGranted && !audioEnabled;
+      
+      if (driver && isLoaded && (shouldTryDB || shouldTryLocal) && !hasAttemptedAutoReactivation && !hasTriedReactivation) {
+        setHasAttemptedAutoReactivation(true);
+        console.log('🔄 Intentando reactivar audio automáticamente...', { 
+          fromDB: shouldTryDB, 
+          fromLocal: shouldTryLocal 
+        });
+        
+        const reactivated = await tryReenableAudio();
+        if (reactivated) {
+          toast({
+            title: 'Sonido reactivado',
+            description: 'Las alertas de audio están funcionando nuevamente.',
+            duration: 3000,
+            className: 'border-l-4 border-l-[#05C7F2]',
+          });
+        } else {
+          toast({
+            title: 'Sonido disponible',
+            description: 'Haz clic en "Reactivar Sonido" para volver a habilitar las alertas de audio.',
+            duration: 8000,
+            className: 'border-l-4 border-l-[#049DD9]',
+          });
+        }
+      }
+    };
+
+    // Solo ejecutar si no se ha intentado ya
+    if (!hasAttemptedAutoReactivation && !hasTriedReactivation) {
+      const timer = setTimeout(attemptAutoReactivation, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [driver, isLoaded, audioPermissionGranted, audioEnabled, hasAttemptedAutoReactivation, hasTriedReactivation, shouldAttemptReactivation, tryReenableAudio, toast]);
+
   // Chat (reemplaza chatMessages + listener manual) - debe ir después de obtener activeRideHook
   const { messages: chatMessages, sendMessage } = useDriverChat({ rideId: activeRideHook?.id, userId: user?.uid });
 
   // Mantener compat con store hasta migración completa
   useEffect(() => {
     if (activeRideHook && !activeRide) {
-      setActiveRide(activeRideHook as any);
+      setActiveRide(activeRideHook);
     }
   }, [activeRideHook, activeRide, setActiveRide]);
 
@@ -183,11 +276,18 @@ function DriverPageContent() {
     rejectRequest,
     submitCounterOffer,
     startCounterMode,
-  } = useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, setRejectedRideIds });
+  } = useIncomingRideRequests({ 
+    driver, 
+    isAvailable, 
+    rejectedRideIds, 
+    setRejectedRideIds, 
+    toast,
+    playNotificationSound: () => playSound({ volume: 0.8 })
+  });
 
   useEffect(() => {
     if (incomingRequestHook !== incomingRequest) {
-      setIncomingRequest(incomingRequestHook as any);
+      setIncomingRequest(incomingRequestHook);
     }
   }, [incomingRequestHook, incomingRequest, setIncomingRequest]);
 
@@ -196,7 +296,7 @@ function DriverPageContent() {
     useCounterOffer(driver, activeRide);
 
   // Plan de pago (hook)
-  const { selectedPaymentModel, setSelectedPaymentModel, save: handleSavePaymentPlan, isSavingPlan, membershipStatus } = useDriverPaymentPlan(driver, setDriver as any);
+  const { selectedPaymentModel, setSelectedPaymentModel, save: handleSavePaymentPlan, isSavingPlan, membershipStatus } = useDriverPaymentPlan(driver, setDriver);
 
   // Sync driver availability status with local state
   useEffect(() => {
@@ -333,10 +433,191 @@ function DriverPageContent() {
   const isApproved = driver.documentsStatus === "approved";
   // membershipStatus lo provee hook de plan de pago
 
+  // Vista móvil optimizada
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <div className="flex-1 relative w-full h-full">
+          {activeTab === 'dashboard' && (
+            <MobileDriverDashboard
+              driver={driver}
+              isApproved={isApproved}
+              hasPermission={hasPermission || false}
+              audioEnabled={audioEnabled}
+              isLoaded={isLoaded}
+              audioPermissionGranted={audioPermissionGranted}
+              enableAudio={enableAudio}
+              rideLocation={driverLocation}
+              activeRide={activeRideHook}
+              incomingRequest={incomingRequestHook}
+              requestTimeLeft={requestTimeLeft}
+              isCountering={isCounteringHook}
+              counterOfferAmount={counterOfferAmount}
+              setCounterOfferAmount={setCounterOfferAmount}
+              acceptRequest={acceptRequest}
+              rejectRequest={rejectRequest}
+              startCounterMode={startCounterMode}
+              submitCounterOffer={submitCounterOffer}
+              updateRideStatus={(status: "arrived" | "in-progress" | "completed") => activeRideHook && updateRideStatus(activeRideHook, status)}
+              isCompletingRide={isCompletingRide}
+              completedRideForRating={completedRideForRating}
+              onRatingSubmit={handleRatingSubmit}
+              isRatingSubmitting={isRatingSubmitting}
+              isDriverChatOpen={isDriverChatOpen}
+              setIsDriverChatOpen={setIsDriverChatOpen}
+              chatMessages={chatMessages}
+              onSendMessage={sendMessage}
+              toast={toast}
+              isAvailable={isAvailable}
+              handleAvailabilityChange={handleAvailabilityChange}
+            />
+          )}
+          
+          {activeTab === 'history' && (
+            <div className="p-4 pt-4 pb-24">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Historial de Viajes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={rideHistoryColumns}
+                    data={allRides}
+                    searchKey="passenger"
+                    searchPlaceholder="Buscar por pasajero..."
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {activeTab === 'documents' && (
+            <div className="p-4 pt-4 pb-24">
+              <DriverDocuments driver={driver} onUpdate={setDriver} />
+            </div>
+          )}
+          
+          {activeTab === 'vehicle' && (
+            <div className="p-4 pt-4 pb-24">
+              <DriverVehicle driver={driver} onUpdate={setDriver} />
+            </div>
+          )}
+          
+          {activeTab === 'profile' && (
+            <div className="p-4 pt-4 pb-24 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mi Perfil</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={driver.avatarUrl} alt={driver.name} />
+                      <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-xl font-bold">{driver.name}</p>
+                      <p className="text-muted-foreground">
+                        {driver.vehicle.brand} {driver.vehicle.model}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted rounded-lg text-center">
+                      <p className="text-2xl font-bold">
+                        {allRides.filter(r => r.status === "completed").length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Viajes</p>
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg text-center">
+                      <p className="text-2xl font-bold flex items-center justify-center gap-1">
+                        <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                        {(driver.rating || 0).toFixed(1)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Rating</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Plan de Pago</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={selectedPaymentModel}
+                    onValueChange={(value) => setSelectedPaymentModel(value as PaymentModel)}
+                  >
+                    <div className="space-y-2">
+                      <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-accent/50">
+                        <RadioGroupItem value="commission" />
+                        <div>
+                          <div className="font-medium">Comisión por Viaje</div>
+                          <div className="text-sm text-muted-foreground">
+                            Ideal para conductores a tiempo parcial
+                          </div>
+                        </div>
+                      </Label>
+                      <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-accent/50">
+                        <RadioGroupItem value="membership" />
+                        <div>
+                          <div className="font-medium">Membresía Mensual</div>
+                          <div className="text-sm text-muted-foreground">
+                            Ideal para conductores a tiempo completo
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <Button 
+                    onClick={handleSavePaymentPlan} 
+                    disabled={isSavingPlan || selectedPaymentModel === driver.paymentModel}
+                    className="w-full mt-4"
+                  >
+                    {isSavingPlan && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Cambios
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+        
+        {/* Botón SOS Flotante - Solo durante viaje activo */}
+        {(activeRideHook || incomingRequestHook) && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-50"
+            onClick={handleSosConfirm}
+          >
+            <Siren className="h-6 w-6" />
+          </Button>
+        )}
+        
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            if (tab === 'dashboard') {
+              router.push('/driver');
+            } else {
+              router.push(`/driver?tab=${tab}`);
+            }
+          }}
+          type="driver"
+          hasActiveRide={!!activeRideHook}
+          hasIncomingRequest={!!incomingRequestHook}
+        />
+      </div>
+    );
+  }
+
+  // Vista desktop original
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <main className="flex-1 p-4 lg:p-8">
-        <Tabs defaultValue="dashboard">
+      <main className="flex-1 p-4 lg:p-8 pt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5 max-w-2xl mx-auto">
             <TabsTrigger value="dashboard">
               <UserCog className="mr-2 h-4 w-4" />
@@ -469,6 +750,54 @@ function DriverPageContent() {
                         </AlertDescription>
                       </Alert>
                     )}
+                    
+                    {/* Control de notificaciones de sonido */}
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2">
+                          <MessageCircle className="h-4 w-4" />
+                          Notificaciones
+                        </Label>
+                        <Badge variant={hasPermission ? "default" : "secondary"}>
+                          {hasPermission ? "Habilitadas" : "Deshabilitadas"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2">
+                          <Volume2 className="h-4 w-4 text-[#0477BF]" />
+                          Sonido de Alertas
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={audioEnabled ? "default" : (audioPermissionGranted ? "outline" : "secondary")}>
+                            {audioEnabled ? "Activo" : (audioPermissionGranted ? "Reactivar" : "Inactivo")}
+                          </Badge>
+                          {!audioEnabled && isLoaded && (
+                            <Button 
+                              size="sm" 
+                              variant={audioPermissionGranted ? "default" : "outline"}
+                              onClick={async () => {
+                                const enabled = audioPermissionGranted ? 
+                                  await enableAudio() : 
+                                  await enableAudio();
+                                if (enabled) {
+                                  toast({
+                                    title: 'Sonido habilitado',
+                                    description: audioPermissionGranted ? 
+                                      'Sonido reactivado correctamente.' : 
+                                      'Ahora recibirás alertas de audio cuando lleguen nuevas solicitudes.',
+                                    duration: 5000,
+                                    className: 'border-l-4 border-l-[#05C7F2]',
+                                  });
+                                }
+                              }}
+                            >
+                              {audioPermissionGranted ? "Reactivar Sonido" : "Habilitar Sonido"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -482,17 +811,16 @@ function DriverPageContent() {
                   rejectRequest={rejectRequest}
                   startCounterMode={startCounterMode}
                   submitCounterOffer={submitCounterOffer}
-                  activeRide={activeRideHook as any}
-                  updateRideStatus={(status) => updateRideStatus(activeRideHook as any, status)}
+                  activeRide={activeRideHook}
+                  updateRideStatus={(status) => activeRideHook && updateRideStatus(activeRideHook, status)}
                   isCompletingRide={isCompletingRide}
-                  completedRideForRating={completedRideForRating as any}
+                  completedRideForRating={completedRideForRating}
                   onRatingSubmit={handleRatingSubmit}
                   isRatingSubmitting={isRatingSubmitting}
                   isDriverChatOpen={isDriverChatOpen}
                   setIsDriverChatOpen={setIsDriverChatOpen}
                   chatMessages={chatMessages}
                   onSendMessage={sendMessage}
-                  onSos={handleSosConfirm}
                   passengerNameForChat={activeRideHook?.passenger.name}
                 />
               </div>
@@ -500,19 +828,19 @@ function DriverPageContent() {
           </TabsContent>
 
           <TabsContent value="documents">
-            <div className="mb-4 space-x-4 w-full max-w-5xl mx-auto">
+            <div className="mb-16 space-x-4 w-full max-w-5xl mx-auto pb-8">
               <DriverDocuments driver={driver} onUpdate={setDriver} />
             </div>
           </TabsContent>
 
           <TabsContent value="vehicle">
-            <div className="mb-4 space-x-4 w-full max-w-5xl mx-auto">
+            <div className="mb-16 space-x-4 w-full max-w-5xl mx-auto pb-8">
               <DriverVehicle driver={driver} onUpdate={setDriver} />
             </div>
           </TabsContent>
 
           <TabsContent value="history">
-            <div className="mb-4 w-full max-w-5xl mx-auto">
+            <div className="mb-16 w-full max-w-5xl mx-auto pb-8">
               <Card>
                 <CardHeader>
                   <CardTitle>Historial de Viajes</CardTitle>
@@ -533,7 +861,7 @@ function DriverPageContent() {
           </TabsContent>
 
           <TabsContent value="profile">
-            <div className="mb-4 space-x-4 w-full max-w-5xl mx-auto">
+            <div className="mb-16 space-x-4 w-full max-w-5xl mx-auto pb-8">
               <div className="grid md:grid-cols-2 gap-8">
                 <Card className="md:col-span-2">
                   <CardHeader>
@@ -704,9 +1032,7 @@ export default function DriverPage() {
 
   if (!user) {
     return (
-      <>
-        <AppHeader />
-        <main className="flex flex-col items-center justify-center text-center p-4 py-16 md:py-24">
+      <main className="flex flex-col items-center justify-center text-center p-4 py-16 md:py-24">
           <Card className="max-w-md p-8">
             <CardHeader>
               <CardTitle>Acceso de Conductores</CardTitle>
@@ -724,15 +1050,12 @@ export default function DriverPage() {
             </CardContent>
           </Card>
         </main>
-      </>
     );
   }
 
   if (!isDriver) {
     return (
-      <>
-        <AppHeader />
-        <div className="flex flex-col items-center justify-center text-center flex-1 p-8">
+      <div className="flex flex-col items-center justify-center text-center flex-1 p-8">
           <Card className="max-w-md p-8">
             <CardHeader>
               <CardTitle>No eres un conductor</CardTitle>
@@ -747,7 +1070,6 @@ export default function DriverPage() {
             </CardContent>
           </Card>
         </div>
-      </>
     );
   }
 

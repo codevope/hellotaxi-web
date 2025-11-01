@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Star, Car } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -47,8 +47,9 @@ export function DriverProfileCard({
 
           {/* Vehículo */}
           <div className="mt-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-base text-gray-700 mb-2">
-              🚗 Mi Vehículo
+            <h3 className="font-semibold text-base text-gray-700 mb-2 flex items-center gap-2">
+              <Car className="h-4 w-4 text-[#2E4CA6]" />
+              Mi Vehículo
             </h3>
             <p className="text-gray-900 font-medium">
               {driver.vehicle.brand} {driver.vehicle.model}

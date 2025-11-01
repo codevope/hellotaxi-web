@@ -69,6 +69,10 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useMobileOptimized } from "@/hooks/use-mobile-optimized";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileHeader } from "@/components/mobile-header";
+import { UberStylePassengerDashboard } from "@/components/ride/uber-style-passenger-dashboard";
 import {
   Dialog,
   DialogContent,
@@ -115,6 +119,9 @@ async function enrichDriverWithVehicle(
 }
 
 function RidePageContent() {
+  const { isMobile } = useMobileOptimized();
+  const { appUser } = useAuth();
+  
   const {
     status,
     activeRide,
@@ -124,6 +131,8 @@ function RidePageContent() {
     pickupLocation,
     dropoffLocation,
     driverLocation,
+    counterOfferValue,
+    originalFare,
     setActiveRide,
     setChatMessages,
     setDriverLocation,
@@ -136,7 +145,7 @@ function RidePageContent() {
     setStatus,
   } = useRideStore();
 
-  const [activeTab, setActiveTab] = useState("book");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isCancelReasonDialogOpen, setIsCancelReasonDialogOpen] =
     useState(false);
   const [isDriverChatOpen, setIsDriverChatOpen] = useState(false);
@@ -449,6 +458,90 @@ function RidePageContent() {
     }
   };
 
+  // Vista móvil optimizada
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <MobileHeader
+          type="passenger"
+          userName={appUser?.name || 'Usuario'}
+        />
+        
+        <div className="flex-1 relative">
+          {activeTab === 'dashboard' && (
+            <UberStylePassengerDashboard
+              user={appUser!}
+              currentRide={activeRide}
+              assignedDriver={assignedDriver}
+              counterOffer={counterOfferValue ? { amount: counterOfferValue, originalFare: originalFare } : null}
+              isSearching={status === 'searching'}
+              searchStartTime={null}
+              pickupLocation={pickupLocation}
+              dropoffLocation={dropoffLocation}
+              rideLocation={driverLocation}
+              chatMessages={chatMessages}
+              onSendMessage={handleSendMessage}
+              onCancelRide={() => handleCancelRide({ code: 'user_cancelled', reason: 'Cancelado por el usuario' })}
+              onAcceptCounterOffer={handleAcceptCounterOffer}
+              onRejectCounterOffer={() => handleCancelRide({ code: 'counter_offer_rejected', reason: 'Contraoferta rechazada' })}
+              isPassengerChatOpen={isDriverChatOpen}
+              setIsPassengerChatOpen={setIsDriverChatOpen}
+              completedRideForRating={status === 'rating' ? assignedDriver : null}
+              onRatingSubmit={handleRatingSubmit}
+              isRatingSubmitting={isRatingSubmitting}
+            />
+          )}
+          
+          {activeTab === 'history' && (
+            <div className="p-4">
+              <RideHistory />
+            </div>
+          )}
+          
+          {activeTab === 'chat' && assignedDriver && (
+            <div className="p-4 h-full flex flex-col">
+              <div className="p-4 border-b">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Chat con {assignedDriver.name}
+                </h3>
+              </div>
+              <div className="flex-1">
+                <Chat messages={chatMessages} onSendMessage={handleSendMessage} />
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'support' && (
+            <div className="p-4">
+              <SupportChat />
+            </div>
+          )}
+        </div>
+        
+        {/* Botón SOS Flotante - Solo durante viaje activo */}
+        {(status === 'assigned' || status === 'searching') && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-50"
+            onClick={handleSosConfirm}
+          >
+            <Siren className="h-6 w-6" />
+          </Button>
+        )}
+
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          type="passenger"
+          hasActiveRide={!!activeRide}
+        />
+      </div>
+    );
+  }
+
+  // Vista desktop original
   return (
     <div className="p-4 lg:p-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

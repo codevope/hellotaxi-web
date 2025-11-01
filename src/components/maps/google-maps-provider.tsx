@@ -16,7 +16,7 @@ const GoogleMapsProvider: React.FC<GoogleMapsProviderProps> = ({
 
   if (!apiKey) {
     return (
-      <div className="flex items-center justify-center h-64 bg-red-50 rounded-lg border border-red-200">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600 font-medium">Error de configuración</p>
           <p className="text-sm text-red-500">Google Maps API key no configurada</p>
