@@ -13,12 +13,13 @@ out/
 build
 dist
 
-# Variables de entorno (NO incluir archivos con secretos)
+# Variables de entorno locales (NO incluir archivos con secretos)
 .env*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+# Nota: .env se incluye para el build, pero ten cuidado con secretos
 
 # Archivos del sistema
 .DS_Store
