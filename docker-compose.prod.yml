@@ -51,10 +51,12 @@ services:
       - ./webroot:/var/www/html
       - /var/run/docker.sock:/var/run/docker.sock:ro
     # Renovar cada 12 horas
-    command: sh -c "while :; do sleep 12h; certbot renew --quiet && docker exec hellotaxi-nginx nginx -s reload; done"
+    command: sh -c "while true; do sleep 43200; certbot renew --quiet && docker exec hellotaxi-nginx nginx -s reload; done"
     restart: unless-stopped
     networks:
       - hellotaxi-network
+    depends_on:
+      - nginx
 
 networks:
   hellotaxi-network:
