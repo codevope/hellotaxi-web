@@ -115,8 +115,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileHeader } from "@/components/mobile-header";
 import { MobileDriverDashboard } from "@/components/driver/mobile-dashboard";
-import { useDriverNotifications } from "@/hooks/use-driver-notifications";
+import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications-safe";
 import { useSearchParams, useRouter } from "next/navigation";
+import { SSLWarningBanner } from "@/components/ssl-warning-banner";
 
 const statusConfig: Record<
   Driver["status"],
@@ -179,8 +180,8 @@ function DriverPageContent() {
   // Hook: activo y rating
   const { activeRide: activeRideHook, completedRideForRating, setCompletedRideForRating, updateRideStatus, isCompletingRide, driverLocation } = useDriverActiveRide({ driver, setAvailability });
 
-  // Hook: notificaciones con sonido - debe estar activo cuando el conductor está disponible
-  const { hasPermission, audioEnabled, audioPermissionGranted, hasTriedReactivation, enableAudio, tryReenableAudio, requestNotificationPermission, updateNotificationPermissions, shouldAttemptReactivation, testNotification, isLoaded, playSound } = useDriverNotifications(driver);
+  // Hook: notificaciones con sonido SEGURO - previene bucles en HTTP
+  const { hasPermission, audioEnabled, audioPermissionGranted, hasTriedReactivation, enableAudio, tryReenableAudio, requestNotificationPermission, updateNotificationPermissions, shouldAttemptReactivation, testNotification, isLoaded, playSound, isSecureContext, canUseNotifications } = useDriverNotificationsSafe(driver);
 
   // Efecto para solicitar permisos de notificación cuando el conductor se conecta por primera vez
   useEffect(() => {
@@ -188,8 +189,8 @@ function DriverPageContent() {
       if (driver && isLoaded && hasPermission === false) {
         const granted = await requestNotificationPermission();
         
-        // Actualizar preferencias en BD
-        await updateNotificationPermissions(granted);
+        // Actualizar preferencias en BD (función sin argumentos en el hook seguro)
+        await updateNotificationPermissions();
         
         if (granted) {
           toast({
@@ -436,7 +437,9 @@ function DriverPageContent() {
   // Vista móvil optimizada
   if (isMobile) {
     return (
-      <div className="flex flex-col h-screen bg-gray-50">
+      <>
+        <SSLWarningBanner />
+        <div className="flex flex-col h-screen bg-gray-50">
         <div className="flex-1 relative w-full h-full">
           {activeTab === 'dashboard' && (
             <MobileDriverDashboard
@@ -609,13 +612,16 @@ function DriverPageContent() {
           hasActiveRide={!!activeRideHook}
           hasIncomingRequest={!!incomingRequestHook}
         />
-      </div>
+        </div>
+      </>
     );
   }
 
   // Vista desktop original
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <>
+      <SSLWarningBanner />
+      <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 p-4 lg:p-8 pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5 max-w-2xl mx-auto">
@@ -740,6 +746,17 @@ function DriverPageContent() {
                     </div>
                   </CardHeader>
                   <CardContent>
+                    {!isSecureContext && (
+                      <Alert variant="destructive">
+                        <ShieldAlert className="h-4 w-4" />
+                        <AlertTitle>Conexión No Segura</AlertTitle>
+                        <AlertDescription>
+                          Esta aplicación requiere HTTPS para funcionar completamente. 
+                          Las notificaciones y geolocalización precisa no estarán disponibles en HTTP.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     {!isApproved && (
                       <Alert variant="destructive">
                         <ShieldAlert className="h-4 w-4" />
@@ -757,9 +774,15 @@ function DriverPageContent() {
                         <Label className="flex items-center gap-2">
                           <MessageCircle className="h-4 w-4" />
                           Notificaciones
+                          {!isSecureContext && (
+                            <Badge variant="outline" className="text-xs">HTTPS Requerido</Badge>
+                          )}
                         </Label>
-                        <Badge variant={hasPermission ? "default" : "secondary"}>
-                          {hasPermission ? "Habilitadas" : "Deshabilitadas"}
+                        <Badge variant={canUseNotifications && hasPermission ? "default" : "secondary"}>
+                          {canUseNotifications ? 
+                            (hasPermission ? "Habilitadas" : "Deshabilitadas") : 
+                            "No Disponible"
+                          }
                         </Badge>
                       </div>
                       
@@ -772,7 +795,7 @@ function DriverPageContent() {
                           <Badge variant={audioEnabled ? "default" : (audioPermissionGranted ? "outline" : "secondary")}>
                             {audioEnabled ? "Activo" : (audioPermissionGranted ? "Reactivar" : "Inactivo")}
                           </Badge>
-                          {!audioEnabled && isLoaded && (
+                          {!audioEnabled && isLoaded && canUseNotifications && (
                             <Button 
                               size="sm" 
                               variant={audioPermissionGranted ? "default" : "outline"}
@@ -794,6 +817,11 @@ function DriverPageContent() {
                             >
                               {audioPermissionGranted ? "Reactivar Sonido" : "Habilitar Sonido"}
                             </Button>
+                          )}
+                          {!canUseNotifications && (
+                            <Badge variant="destructive" className="text-xs">
+                              Requiere HTTPS
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -1014,7 +1042,8 @@ function DriverPageContent() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 

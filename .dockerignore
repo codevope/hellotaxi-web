@@ -60,5 +60,11 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
+# Deployment (no necesario en imagen)
+deployment/
+ssl/
+webroot/
+*.md
+
 # Otros
 .vercel
