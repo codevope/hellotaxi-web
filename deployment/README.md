@@ -7,10 +7,10 @@ Esta carpeta contiene todos los archivos necesarios para el deployment de HelloT
 ```
 deployment/
 ├── nginx/
-│   └── nginx.conf          # Configuración Nginx con SSL
+│   ├── nginx.conf          # Configuración Nginx con SSL
+│   └── nginx-temp.conf     # Configuración temporal para SSL  
 ├── scripts/
-│   ├── deploy.sh           # Script deployment Linux/Mac
-│   └── deploy.ps1          # Script deployment Windows
+│   └── deploy.sh # Script único que hace TODO
 ├── env/
 │   └── .env.example        # Variables de entorno ejemplo
 └── README.md              # Esta guía
@@ -30,16 +30,18 @@ nano .env.local
 
 ### 2. Ejecutar Deployment
 
-**Linux/Mac:**
+**Un solo comando:**
 ```bash
 chmod +x deployment/scripts/deploy.sh
 ./deployment/scripts/deploy.sh
 ```
 
-**Windows:**
-```powershell
-.\deployment\scripts\deploy.ps1
-```
+**¡Eso es todo!** El script hace:
+- ✅ Verifica DNS automáticamente
+- ✅ Construye la imagen Docker
+- ✅ Genera certificados SSL con Let's Encrypt
+- ✅ Configura Nginx con HTTPS
+- ✅ Inicia todos los servicios
 
 ## 🔧 Variables de Entorno Requeridas
 

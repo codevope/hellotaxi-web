@@ -2,21 +2,34 @@
 
 Aplicación web PWA para servicio de taxi desarrollada con Next.js 15 y Firebase.
 
-## 🚀 Deployment con Docker + SSL
+## 🚀 Deployment con Docker + SSL Automático
 
-**Deployment completo con un comando:**
-
-Ver → [`DEPLOY.md`](./DEPLOY.md) para instrucciones de deployment
+**Deployment completo con UN SOLO comando:**
 
 ```bash
-# Linux/Mac
-./deployment/scripts/deploy.sh
+# En tu servidor VPS:
+git clone https://github.com/codevope/hellotaxi-web.git
+cd hellotaxi-web
 
-# Windows
-.\deployment\scripts\deploy.ps1
+# Configurar variables de entorno:
+cp deployment/env/.env.example .env.production
+
+# Deployment completo:
+chmod +x deployment/scripts/deploy-everything.sh
+./deployment/scripts/deploy-everything.sh
 ```
 
-⚠️ **Importante**: Esta aplicación requiere **HTTPS** para funcionar completamente. Las funciones de geolocalización y notificaciones no están disponibles en HTTP por razones de seguridad del navegador.
+**🎯 El script hace TODO:**
+- ✅ Construye la imagen Docker
+- ✅ Genera certificados SSL automáticamente
+- ✅ Configura Nginx con HTTPS
+- ✅ Inicia todos los servicios
+
+⚠️ **Requisito**: Configura tu DNS antes del deployment:
+```
+hellotaxi.pe      A    TU_IP_SERVIDOR
+www.hellotaxi.pe  A    TU_IP_SERVIDOR
+```
 
 ## 🛠️ Desarrollo Local
 
