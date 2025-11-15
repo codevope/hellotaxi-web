@@ -92,18 +92,40 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
 
   // Countdown / auto reject
   const autoRejectRequest = useCallback(async (requestId: string) => {
+    console.log('⏰ Auto-rejecting request due to timeout:', requestId);
     if (!driver) return;
+    
+    // Check if the ride is still in a state that can be auto-rejected
     const rideRef = doc(db, 'rides', requestId);
-    setIncomingRequest(null);
-    setRejectedRideIds(prevIds => [...prevIds, requestId]);
     try {
+      const rideSnap = await getDoc(rideRef);
+      if (!rideSnap.exists()) {
+        console.log('📋 Ride no longer exists, skipping auto-reject');
+        return;
+      }
+      
+      const rideData = rideSnap.data();
+      if (rideData.status === 'counter-offered') {
+        console.log('💰 Ride is in counter-offered state, skipping auto-reject');
+        return;
+      }
+      
+      if (!['searching'].includes(rideData.status)) {
+        console.log('📋 Ride status changed to', rideData.status, 'skipping auto-reject');
+        return;
+      }
+      
+      console.log('❌ Auto-rejecting ride:', requestId);
       await updateDoc(rideRef, { 
         rejectedBy: arrayUnion(doc(db, 'drivers', driver.id)), 
         offeredTo: null 
       });
     } catch (err) {
-      console.error('Auto-reject error', err);
+      console.error('❌ Auto-reject error', err);
     }
+    
+    setIncomingRequest(null);
+    setRejectedRideIds(prevIds => [...prevIds, requestId]);
   }, [driver, setIncomingRequest, setRejectedRideIds]);
 
   useEffect(() => {
@@ -157,16 +179,39 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
 
   const submitCounterOffer = useCallback(async () => {
     if (!incomingRequest || !counterOfferAmount || !driver) return;
+    
+    console.log('🚛 Submitting counter offer:', {
+      rideId: incomingRequest.id,
+      driverId: driver.id,
+      counterOfferAmount,
+      originalFare: incomingRequest.fare
+    });
+    
     const rideRef = doc(db, 'rides', incomingRequest.id);
+    const driverRef = doc(db, 'drivers', driver.id);
+    
     try {
-      await updateDoc(rideRef, { fare: parseFloat(counterOfferAmount), status: 'counter-offered', offeredTo: doc(db, 'drivers', driver.id) });
+      const updateData = { 
+        fare: parseFloat(counterOfferAmount), 
+        status: 'counter-offered', 
+        offeredTo: driverRef 
+      };
+      
+      console.log('📤 Updating ride with data:', updateData);
+      
+      await updateDoc(rideRef, updateData);
+      
+      console.log('✅ Counter offer submitted successfully');
+      
+      // Clear the incoming request immediately to prevent auto-reject
+      setIncomingRequest(null);
+      setIsCountering(false);
+      
       if (toast) {
         toast({ title: 'Contraoferta Enviada', description: `Has propuesto una tarifa de S/${parseFloat(counterOfferAmount).toFixed(2)}` });
       }
-      setIncomingRequest(null);
-      setIsCountering(false);
     } catch (e) {
-      console.error('Error submitting counter offer:', e);
+      console.error('❌ Error submitting counter offer:', e);
       if (toast) {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar la contraoferta.' });
       }

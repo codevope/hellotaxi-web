@@ -109,25 +109,21 @@ export default function LoginPage() {
   return (
     <div className={`${
       isMobile 
-        ? 'min-h-screen bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] flex flex-col'
+        ? 'min-h-screen bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] flex flex-col justify-center'
         : 'flex items-center justify-center p-4 min-h-[80vh]'
     }`}>
-      {isMobile && (
-        <div className="px-4 py-10 text-center my-10">
-          <h1 className="text-3xl font-bold text-white">HELLO Taxi</h1>
-        </div>
-      )}
+
       <Card className={`${
         isMobile 
-          ? 'mx-4 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-t-3xl' 
+          ? 'mx-4 bg-white/95 backdrop-blur-sm border-0 shadow-2xl' 
           : 'max-w-md w-full shadow-2xl'
       }`}>
-          <CardHeader className={`text-center ${isMobile ? 'pb-4' : ''}`}>
-            <CardTitle className={`font-headline ${isMobile ? 'text-xl text-[#2E4CA6]' : 'text-2xl'}`}>
-              {isMobile ? 'Bienvenido' : 'Inicia Sesión o Regístrate'}
+          <CardHeader className={`text-center ${isMobile ? 'pb-8' : ''}`}>
+            <CardTitle className={`font-headline ${isMobile ? 'text-3xl text-[#2E4CA6]' : 'text-2xl'}`}>
+              {isMobile ? 'HELLO Taxi' : 'Inicia Sesión o Regístrate'}
             </CardTitle>
-            <CardDescription className={isMobile ? 'text-sm text-gray-600' : ''}>
-              {isMobile ? 'Accede a tu cuenta de HelloTaxi' : 'Elige tu método preferido para continuar'}
+            <CardDescription className={isMobile ? 'text-xs text-gray-600' : ''}>
+              {isMobile ? 'Bienvenido, accede a tu cuenta' : 'Elige tu método preferido para continuar'}
             </CardDescription>
           </CardHeader>
           <CardContent className={isMobile ? 'px-6 pb-6' : ''}>

@@ -63,6 +63,7 @@ import { Label } from './ui/label';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useRideStore } from '@/store/ride-store';
+import { PriceSelector } from '@/components/price-selector';
 
 const formSchema = z.object({
   pickup: z.string().min(5, 'Por favor, introduce una ubicación de recojo válida.'),
@@ -94,9 +95,11 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
     pickupLocation,
     dropoffLocation,
     routeInfo,
+    customFare,
     setPickupLocation,
     setDropoffLocation,
     setRouteInfo,
+    setCustomFare,
     resetRide,
     setStatus,
   } = useRideStore();
@@ -166,6 +169,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
     );
     if (route && route.fareBreakdown) {
       setRouteInfo(route);
+      setCustomFare(null); // Reset custom fare when recalculating
       setStatus('confirmed');
     }
   };
@@ -234,6 +238,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
 
   function resetForm() {
     resetRide();
+    setCustomFare(null);
     form.reset();
   }
 
@@ -276,7 +281,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center border-b pb-2">
+            <div className="grid grid-cols-2 gap-2 text-center border-b pb-2">
               <div className="text-center">
                 <p className="text-lg font-bold text-[#2E4CA6]">{routeInfo.distance.text}</p>
                 <p className="text-[10px] text-gray-600 font-medium">Distancia</p>
@@ -285,20 +290,17 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 <p className="text-lg font-bold text-[#0477BF]">{routeInfo.duration.text}</p>
                 <p className="text-[10px] text-gray-600 font-medium">Duración</p>
               </div>
-              <div className="text-center">
-                {(routeInfo.fareBreakdown?.couponDiscount || 0) > 0 ? (
-                  <div className="space-y-0.5">
-                    <p className="text-sm line-through text-gray-400">S/ {((routeInfo.estimatedFare || 0) + (routeInfo.fareBreakdown?.couponDiscount || 0)).toFixed(2)}</p>
-                    <p className="text-lg font-bold text-green-600">S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</p>
-                    <p className="text-[10px] text-green-600 font-medium">Con descuento</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-lg font-bold text-green-600">S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-600 font-medium">Precio</p>
-                  </div>
-                )}
-              </div>
+            </div>
+
+            {/* Selector de precio personalizable */}
+            <div className="pt-2">
+              <PriceSelector
+                originalPrice={routeInfo.estimatedFare || 0}
+                onPriceChange={setCustomFare}
+                maxIncrease={15}
+                maxDecrease={15}
+                step={0.50}
+              />
             </div>
 
             {/* Desglose de tarifa con cupón */}
@@ -317,10 +319,13 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 </div>
                 <div className="border-t border-green-200 pt-1">
                   <div className="flex items-center justify-between text-sm font-bold text-green-700">
-                    <span>Total a pagar:</span>
+                    <span>Total sugerido:</span>
                     <span>S/ {(routeInfo.estimatedFare || 0).toFixed(2)}</span>
                   </div>
                 </div>
+                <p className="text-xs text-green-600 text-center mt-1">
+                  💡 Puedes ajustar el precio arriba
+                </p>
               </div>
             )}
 
@@ -358,12 +363,18 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
             className="w-full h-10 text-xs font-semibold bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] text-white shadow-lg"
             onClick={async () => {
               if (routeInfo.fareBreakdown) {
-                await handleCreateRide(routeInfo.estimatedFare || 0, routeInfo.fareBreakdown);
+                const finalFare = customFare || routeInfo.estimatedFare || 0;
+                await handleCreateRide(finalFare, routeInfo.fareBreakdown);
               }
             }}
           >
             <Car className="mr-1 h-3 w-3" />
             Buscar Conductor
+            {customFare && customFare !== routeInfo.estimatedFare && (
+              <span className="ml-1 text-[10px] bg-white/20 rounded px-1">
+                S/ {customFare.toFixed(2)}
+              </span>
+            )}
           </Button>
           <Button
             variant="secondary"
@@ -404,7 +415,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
           {(status === 'idle' || isCalculating || status === 'calculated') && (
             <>
               {/* Pickup */}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <Button
                   type="button"
                   variant="outline"
@@ -419,7 +430,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
               </div>
 
               {/* Dropoff */}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <Button
                   type="button"
                   variant="outline"
@@ -438,16 +449,16 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 control={form.control}
                 name="serviceType"
                 render={({ field }) => (
-                  <FormItem className="space-y-0.5">
+                  <FormItem className="space-y-1">
                      <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-1">
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-4">
                         {appSettings.serviceTypes.map((service) => (
                           <FormItem key={service.id}>
                             <RadioGroupItem value={service.id} id={`service-${service.id}`} className="peer sr-only" />
                             <FormLabel
                               htmlFor={`service-${service.id}`}
                               className={cn(
-                                "flex flex-col items-center rounded-lg border shadow-sm cursor-pointer transition text-xs",
+                                "flex flex-col items-center rounded-lg border shadow-sm cursor-pointer transition text-xs p-2",
                                 field.value === service.id
                                   ? "border-[#0477BF] bg-[#05C7F2]/10"
                                   : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
@@ -470,16 +481,16 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                 control={form.control}
                 name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className="space-y-0.5">
+                  <FormItem className="space-y-1">
                     <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-1">
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-4">
                         {(Object.keys(paymentMethodIcons) as Array<keyof typeof paymentMethodIcons>).map((method) => (
                           <FormItem key={method}>
                             <RadioGroupItem value={method} id={`payment-${method}`} className="peer sr-only" />
                             <FormLabel
                               htmlFor={`payment-${method}`}
                               className={cn(
-                                "flex flex-col items-center justify-center rounded-lg border cursor-pointer transition shadow-sm h-14",
+                                "flex flex-col items-center justify-center rounded-lg border cursor-pointer transition shadow-sm h-16",
                                 field.value === method
                                   ? "border-[#0477BF] bg-[#05C7F2]/10"
                                   : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
@@ -508,7 +519,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                         <Input
                           {...field}
                           placeholder="Código de descuento"
-                          className="pl-6 h-10 rounded-lg text-xs"
+                          className="pl-6 mt-4 h-10 rounded-lg text-xs"
                           disabled={isFormLocked}
                         />
                       </div>

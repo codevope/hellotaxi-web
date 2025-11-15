@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, DollarSign } from 'lucide-react';
+import { CounterOfferSelector } from '@/components/counter-offer-selector';
 import { ScreenConfig } from '../hooks/use-mobile-dimensions';
 
 interface IncomingRequestProps {
@@ -96,19 +97,16 @@ export function IncomingRequest({
 
             {isCountering ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: screenConfig.spacing }}>
-                <input
-                  type="number"
-                  value={counterOfferAmount}
-                  onChange={(e) => setCounterOfferAmount(e.target.value)}
-                  placeholder="Monto contraoferta"
-                  style={{
-                    width: '100%',
-                    padding: screenConfig.spacing,
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: screenConfig.buttonFontSize
-                  }}
-                />
+                <div style={{ marginBottom: screenConfig.spacing }}>
+                  <CounterOfferSelector
+                    originalFare={incomingRequest.fare}
+                    onPriceChange={(newPrice) => setCounterOfferAmount(newPrice.toFixed(2))}
+                    disabled={false}
+                    maxIncrease={25}
+                    maxDecrease={10}
+                    step={0.50}
+                  />
+                </div>
                 <div style={{ display: 'flex', gap: screenConfig.spacing }}>
                   <Button 
                     onClick={submitCounterOffer}

@@ -9,6 +9,7 @@ import type { User } from '@/lib/types';
 import type { EnrichedRide } from '@/hooks/driver/use-driver-active-ride';
 import { Button } from '@/components/ui/button';
 import Chat from '@/components/chat';
+import EnhancedChat from '@/components/enhanced-chat';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 
@@ -95,22 +96,7 @@ export function DriverStatePanel(props: DriverStatePanelProps) {
           isCompletingRide={isCompletingRide}
           onStatusUpdate={updateRideStatus}
         />
-        <Sheet open={isDriverChatOpen} onOpenChange={setIsDriverChatOpen}>
-          <SheetTrigger asChild>
-            <Button size="icon" className="absolute bottom-4 left-4 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90">
-              <MessageCircle className="h-7 w-7" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-full max-w-sm p-0">
-            <SheetHeader className="p-4 border-b text-left">
-              <SheetTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                <span>Chat con {passengerNameForChat}</span>
-              </SheetTitle>
-            </SheetHeader>
-            <Chat messages={chatMessages} onSendMessage={onSendMessage} />
-          </SheetContent>
-        </Sheet>
+        {/* El botón de chat ahora se maneja desde la página principal */}
       </>
     );
   }

@@ -92,19 +92,19 @@ export default function AppFooter() {
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <a
-                  href="tel:+51987654321"
+                  href="tel:+51952120222"
                   className="hover:text-primary transition-colors"
                 >
-                  +51 999 999 999
+                  +51 952 120 222
                 </a>
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <a
-                  href="mailto:contacto@hellotaxi.pe"
+                  href="mailto:hellotaxi70@gmail.com"
                   className="hover:text-primary transition-colors"
                 >
-                  contacto@hellotaxi.com.pe
+                  hellotaxi70@gmail.com
                 </a>
               </li>
             </ul>

@@ -25,6 +25,7 @@ interface RideState {
   driverLocation: Location | null;
   counterOfferValue: number | null;
   originalFare: number | null;
+  customFare: number | null; // Precio personalizado por el usuario
 }
 
 interface RideActions {
@@ -38,6 +39,7 @@ interface RideActions {
   setDriverLocation: (location: Location | null) => void;
   setCounterOffer: (value: number | null) => void;
   setOriginalFare: (fare: number | null) => void;
+  setCustomFare: (fare: number | null) => void;
   toggleSupportChat: () => void;
   assignDriver: (driver: DriverWithVehicleInfo) => void;
   completeRideForRating: (driver: DriverWithVehicleInfo) => void;
@@ -57,6 +59,7 @@ const initialState: RideState = {
   driverLocation: null,
   counterOfferValue: null,
   originalFare: null,
+  customFare: null,
 };
 
 export const useRideStore = create<RideState & RideActions>((set, get) => ({
@@ -95,6 +98,7 @@ export const useRideStore = create<RideState & RideActions>((set, get) => ({
     }
   },
   setOriginalFare: (fare) => set({ originalFare: fare }),
+  setCustomFare: (fare) => set({ customFare: fare }),
   setRouteInfo: (info) => {
     console.log('📍 Setting route info:', !!info);
     const currentState = get();

@@ -81,6 +81,9 @@ import {
 } from "@/components/ui/dialog";
 import { getSettings } from "@/services/settings-service";
 import Chat from "@/components/chat";
+import EnhancedChat from "@/components/enhanced-chat";
+import { useEnhancedChat, useChatTyping } from "@/hooks/use-enhanced-chat";
+import { ChatNotification, useChatNotifications } from "@/components/chat-notification";
 import { Shield, Clock, Star, Wallet, ArrowRight } from "lucide-react";
 import RatingForm from "@/components/rating-form";
 import { processRating } from "@/ai/flows/process-rating";
@@ -145,7 +148,7 @@ function RidePageContent() {
     setStatus,
   } = useRideStore();
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("book");
   const [isCancelReasonDialogOpen, setIsCancelReasonDialogOpen] =
     useState(false);
   const [isDriverChatOpen, setIsDriverChatOpen] = useState(false);
@@ -157,9 +160,48 @@ function RidePageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Chat mejorado
+  const { messages: enhancedChatMessages, sendMessage, isLoading: isChatLoading } = useEnhancedChat({
+    rideId: activeRide?.id,
+    currentUserId: user?.uid,
+  });
+
+  const { isOtherUserTyping, startTyping, stopTyping } = useChatTyping({
+    rideId: activeRide?.id,
+    currentUserId: user?.uid,
+    otherUserId: assignedDriver?.id,
+  });
+
+  const { 
+    notification: chatNotification,
+    sender: notificationSender,
+    isVisible: isNotificationVisible,
+    showNotification,
+    hideNotification 
+  } = useChatNotifications(!isDriverChatOpen); // Solo mostrar notificación si el chat está cerrado
+
   useEffect(() => {
     getSettings().then(setAppSettings);
   }, []);
+
+  // Mostrar notificación cuando lleguen mensajes nuevos (solo si el chat está cerrado)
+  useEffect(() => {
+    if (enhancedChatMessages.length === 0) return;
+    
+    const lastMessage = enhancedChatMessages[enhancedChatMessages.length - 1];
+    
+    // Solo mostrar notificación si:
+    // 1. El mensaje no es mío
+    // 2. El chat está cerrado
+    // 3. Hay un conductor asignado
+    if (
+      lastMessage.userId !== user?.uid && 
+      !isDriverChatOpen && 
+      assignedDriver
+    ) {
+      showNotification(lastMessage, assignedDriver);
+    }
+  }, [enhancedChatMessages, user?.uid, isDriverChatOpen, assignedDriver, showNotification]);
 
   // MASTER useEffect to listen for ride document changes and update UI state
   useEffect(() => {
@@ -214,6 +256,7 @@ function RidePageContent() {
 
         case "counter-offered":
           console.log("💰 Counter offer received:", rideData.fare);
+          console.log("📋 Ride data offeredTo:", rideData.offeredTo);
           if (useRideStore.getState().counterOfferValue !== rideData.fare) {
             setCounterOffer(rideData.fare);
           }
@@ -358,22 +401,41 @@ function RidePageContent() {
     try {
       const rideRef = doc(db, "rides", activeRide.id);
 
-      // Get the driver reference from offeredTo field
+      console.log("🔄 Current activeRide state:", {
+        id: activeRide.id,
+        status: activeRide.status,
+        offeredTo: activeRide.offeredTo,
+        fare: activeRide.fare
+      });
+
+      // Always fetch fresh data for counter-offers to ensure we have the latest state
+      console.log("🔍 Fetching fresh ride data to ensure accuracy...");
       const currentRideDoc = await getDoc(rideRef);
       if (!currentRideDoc.exists()) {
         throw new Error("Ride not found");
       }
 
       const currentRideData = currentRideDoc.data();
-      const driverRef = currentRideData.offeredTo; // This is the driver who made the counter-offer
+      console.log("📋 Fresh ride data:", {
+        status: currentRideData.status,
+        offeredTo: currentRideData.offeredTo,
+        fare: currentRideData.fare
+      });
+
+      // Verify this is still a counter-offered ride
+      if (currentRideData.status !== 'counter-offered') {
+        throw new Error(`Ride is no longer in counter-offered state. Current status: ${currentRideData.status}`);
+      }
+      
+      const driverRef = currentRideData.offeredTo;
 
       if (!driverRef) {
-        throw new Error("Driver reference not found");
+        throw new Error("Driver reference not found in counter-offered ride");
       }
 
       console.log(
         "🎯 Accepting counter-offer and assigning driver:",
-        driverRef.id
+        driverRef.id || driverRef
       );
 
       const counterOfferAmount = useRideStore.getState().counterOfferValue;
@@ -402,22 +464,6 @@ function RidePageContent() {
         description: "No se pudo aceptar la contraoferta.",
       });
     }
-  };
-
-  const handleSendMessage = async (text: string) => {
-    if (!user || !activeRide) return;
-
-    const chatMessagesRef = collection(
-      db,
-      "rides",
-      activeRide.id,
-      "chatMessages"
-    );
-    await addDoc(chatMessagesRef, {
-      userId: user.uid,
-      text,
-      timestamp: new Date().toISOString(),
-    });
   };
 
   const handleRatingSubmit = async (rating: number, comment: string) => {
@@ -479,8 +525,8 @@ function RidePageContent() {
               pickupLocation={pickupLocation}
               dropoffLocation={dropoffLocation}
               rideLocation={driverLocation}
-              chatMessages={chatMessages}
-              onSendMessage={handleSendMessage}
+              chatMessages={enhancedChatMessages}
+              onSendMessage={sendMessage}
               onCancelRide={() => handleCancelRide({ code: 'user_cancelled', reason: 'Cancelado por el usuario' })}
               onAcceptCounterOffer={handleAcceptCounterOffer}
               onRejectCounterOffer={() => handleCancelRide({ code: 'counter_offer_rejected', reason: 'Contraoferta rechazada' })}
@@ -507,7 +553,16 @@ function RidePageContent() {
                 </h3>
               </div>
               <div className="flex-1">
-                <Chat messages={chatMessages} onSendMessage={handleSendMessage} />
+                <EnhancedChat 
+                  messages={enhancedChatMessages} 
+                  onSendMessage={sendMessage}
+                  isLoading={isChatLoading}
+                  otherUser={assignedDriver}
+                  isTyping={isOtherUserTyping}
+                  onTypingStart={startTyping}
+                  onTypingStop={stopTyping}
+                  rideStatus={activeRide?.status}
+                />
               </div>
             </div>
           )}
@@ -602,15 +657,8 @@ function RidePageContent() {
                 </AlertDialogContent>
               </AlertDialog>
 
+              {/* Chat Sheet - Sin botón trigger directo, se abre desde UberStylePassengerDashboard */}
               <Sheet open={isDriverChatOpen} onOpenChange={setIsDriverChatOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    size="icon"
-                    className="absolute bottom-4 left-4 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-                  >
-                    <MessageCircle className="h-7 w-7" />
-                  </Button>
-                </SheetTrigger>
                 <SheetContent side="left" className="w-full max-w-sm p-0">
                   <SheetHeader className="p-4 border-b text-left">
                     <SheetTitle className="flex items-center gap-2">
@@ -618,9 +666,15 @@ function RidePageContent() {
                       <span>Chat con {assignedDriver?.name}</span>
                     </SheetTitle>
                   </SheetHeader>
-                  <Chat
-                    messages={chatMessages}
-                    onSendMessage={handleSendMessage}
+                  <EnhancedChat
+                    messages={enhancedChatMessages}
+                    onSendMessage={sendMessage}
+                    isLoading={isChatLoading}
+                    otherUser={assignedDriver}
+                    isTyping={isOtherUserTyping}
+                    onTypingStart={startTyping}
+                    onTypingStop={stopTyping}
+                    rideStatus={activeRide?.status}
                   />
                 </SheetContent>
               </Sheet>
@@ -635,7 +689,7 @@ function RidePageContent() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid h-14 w-full grid-cols-2 rounded-none bg-gradient-to-r from-[#2E4CA6] to-[#0477BF] p-4">
+              <TabsList className="grid h-14 w-full grid-cols-3 rounded-none bg-gradient-to-r from-[#2E4CA6] to-[#0477BF] p-4">
                 <TabsTrigger
                   value="book"
                   className="relative h-full rounded-lg font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg"
@@ -647,6 +701,12 @@ function RidePageContent() {
                   className="relative h-full rounded-lg font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg"
                 >
                   <History className="mr-2 h-4 w-4" /> Historial
+                </TabsTrigger>
+                <TabsTrigger
+                  value="chat"
+                  className="relative h-full rounded-lg font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" /> Chat
                 </TabsTrigger>
               </TabsList>
 
@@ -726,6 +786,36 @@ function RidePageContent() {
               </TabsContent>
               <TabsContent value="history" className="p-4 sm:p-6">
                 <RideHistory />
+              </TabsContent>
+              <TabsContent value="chat" className="p-0">
+                {assignedDriver ? (
+                  <div className="h-[600px] flex flex-col overflow-hidden">
+                    <div className="p-4 border-b bg-gray-50 flex-shrink-0">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <MessageCircle className="h-5 w-5" />
+                        Chat con {assignedDriver.name}
+                      </h3>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <EnhancedChat 
+                        messages={enhancedChatMessages} 
+                        onSendMessage={sendMessage}
+                        isLoading={isChatLoading}
+                        otherUser={assignedDriver}
+                        isTyping={isOtherUserTyping}
+                        onTypingStart={startTyping}
+                        onTypingStop={stopTyping}
+                        rideStatus={activeRide?.status}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 p-4">
+                    <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-semibold mb-2">No hay conductor asignado</h3>
+                    <p>El chat estará disponible cuando se asigne un conductor a tu viaje.</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -94,7 +94,7 @@ export function DriverHeader({ currentPage = 'dashboard' }: DriverHeaderProps) {
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg text-white">HELLO Taxi</span>
+          <span className="font-bold text-lg text-white">Hello TAXI</span>
         </div>
 
         {/* Menu Button */}

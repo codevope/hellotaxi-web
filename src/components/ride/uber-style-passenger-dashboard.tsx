@@ -75,6 +75,18 @@ export function UberStylePassengerDashboard(props: UberStylePassengerDashboardPr
 
   const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(true);
 
+  // Debug para verificar estado del chat
+  useEffect(() => {
+    console.log('🔍 UberStylePassengerDashboard props:', {
+      assignedDriver: !!assignedDriver,
+      assignedDriverName: assignedDriver?.name,
+      currentRideStatus: currentRide?.status,
+      shouldShowChat: assignedDriver && ['accepted', 'arrived', 'in-progress'].includes(currentRide?.status || ''),
+      allValidStatuses: ['accepted', 'arrived', 'in-progress'],
+      statusIncludes: currentRide?.status ? ['accepted', 'arrived', 'in-progress'].includes(currentRide.status) : false
+    });
+  }, [assignedDriver, currentRide?.status]);
+
   // Auto-expand bottom sheet when no ride is active, but allow manual control
   useEffect(() => {
     if (!currentRide) {

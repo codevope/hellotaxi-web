@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { CounterOfferSelector } from "@/components/counter-offer-selector";
 import type { User } from "@/lib/types";
 
 interface IncomingRideRequestProps {
@@ -212,33 +213,18 @@ export function IncomingRideRequest({
             <CardContent className="space-y-4">
               {isCountering ? (
                 <>
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="counter-offer"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Tu contraoferta
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Ajusta tu contraoferta
                     </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lg font-bold text-gray-500">
-                        S/
-                      </span>
-                      <Input
-                        id="counter-offer"
-                        type="number"
-                        step="0.10"
-                        min="0"
-                        value={counterOfferAmount}
-                        onChange={(e) =>
-                          onCounterOfferChange(e.target.value)
-                        }
-                        className="pl-10 text-lg font-semibold text-center h-12"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Precio original: S/{fare.toFixed(2)}
-                    </p>
+                    <CounterOfferSelector
+                      originalFare={fare}
+                      onPriceChange={(newPrice) => onCounterOfferChange(newPrice.toFixed(2))}
+                      disabled={false}
+                      maxIncrease={25}
+                      maxDecrease={10}
+                      step={0.50}
+                    />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">

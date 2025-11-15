@@ -23,13 +23,19 @@ export function useDriverChat({ rideId, userId }: UseDriverChatParams) {
   }, [rideId]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!rideId || !userId || !text.trim()) return;
+    console.log('sendMessage called:', { rideId, userId, text: text.trim() });
+    if (!rideId || !userId || !text.trim()) {
+      console.log('sendMessage blocked:', { rideId: !!rideId, userId: !!userId, text: !!text.trim() });
+      return;
+    }
     try {
+      console.log('Sending message to:', `rides/${rideId}/chatMessages`);
       await addDoc(collection(db, 'rides', rideId, 'chatMessages'), {
         userId,
         text,
         timestamp: new Date().toISOString(),
       });
+      console.log('Message sent successfully');
     } catch (e) {
       console.error('Error sending message', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje.' });

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, LogOut, User, LayoutDashboard, Menu, X } from "lucide-react";
+import { Car, LogOut, User, LayoutDashboard, Menu, X, FileText, History, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -147,6 +147,41 @@ export default function AppHeader() {
                     <span>Mi Perfil</span>
                   </Link>
                 </DropdownMenuItem>
+                {isDriver && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/historial">
+                        <History className="mr-2 h-4 w-4" />
+                        <span>Historial</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/configuracion">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configuración</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/documents">
+                        <FileText className="mr-2 h-4 w-4" />
+                        <span>Documentos</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/vehicle">
+                        <Car className="mr-2 h-4 w-4" />
+                        <span>Mi Vehículo</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/driver/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Perfil Conductor</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
