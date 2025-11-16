@@ -2,7 +2,7 @@
 
 import { X, Wallet, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PriceDisplay } from '@/components/price-display';
+import { PriceDisplay } from '@/components/forms/price-display';
 import type { Ride, CancellationReason } from '@/lib/types';
 
 interface CounterOfferCardProps {

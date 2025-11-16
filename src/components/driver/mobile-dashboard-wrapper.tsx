@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
-import { useDriverRideLogic } from "@/components/driver/shared/logic";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
+import { useDriverRideLogic } from '@/hooks/driver/use-driver-ride-logic';
 import { MobileDriverDashboard } from "./mobile-dashboard";
 import { useToast } from "@/hooks/use-toast";
 import { useCounterOffer } from "@/hooks/use-counter-offer";

@@ -21,8 +21,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import MapView from "@/components/map-view";
-import Chat from "@/components/chat";
+import MapView from '@/components/maps/map-view';
+import Chat from '@/components/chat/chat';
 import type { Location, ChatMessage } from "@/lib/types";
 
 interface DriverMapViewProps {

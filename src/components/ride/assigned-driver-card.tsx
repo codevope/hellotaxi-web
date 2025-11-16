@@ -3,8 +3,8 @@
 import { X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { DriverRating } from '@/components/driver-rating';
-import { PriceDisplay } from '@/components/price-display';
+import { DriverRating } from '@/components/driver/driver-rating';
+import { PriceDisplay } from '@/components/forms/price-display';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -1,9 +1,9 @@
 "use client";
 
-import { useDriverAuth } from "@/hooks/use-driver-auth";
-import { useDriverRideLogic } from "@/components/driver/shared/logic";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
+import { useDriverRideLogic } from '@/hooks/driver/use-driver-ride-logic';
 import { DesktopDriverStatePanel } from "./desktop-driver-state-panel";
-import MapView from "@/components/map-view";
+import MapView from '@/components/maps/map-view';
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import "@/styles/desktop/driver-desktop.css";

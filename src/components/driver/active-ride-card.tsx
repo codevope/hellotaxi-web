@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { PriceDisplay } from "@/components/price-display";
+import { PriceDisplay } from '@/components/forms/price-display';
 import type { User, EnrichedDriver, FareBreakdown } from "@/lib/types";
 
 interface ActiveRideCardProps {

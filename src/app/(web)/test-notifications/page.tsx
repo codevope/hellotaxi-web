@@ -1,4 +1,4 @@
-import NotificationTester from '@/components/notification-tester';
+import NotificationTester from '@/components/testing/notification-tester';
 
 export default function TestNotificationsPage() {
   return (

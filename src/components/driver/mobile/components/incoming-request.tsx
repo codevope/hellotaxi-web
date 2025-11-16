@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, DollarSign } from 'lucide-react';
-import { CounterOfferSelector } from '@/components/counter-offer-selector';
-import { ScreenConfig } from '../hooks/use-mobile-dimensions';
+import { CounterOfferSelector } from '@/components/forms/counter-offer-selector';
+import { ScreenConfig } from '@/hooks/driver/use-mobile-dimensions';
 
 interface IncomingRequestProps {
   isExpanded: boolean;

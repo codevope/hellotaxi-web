@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import type { Ride, Driver, User, ScheduledRide } from "@/lib/types";
 import { Loader2, MapPin, Car, Calendar, Clock } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/hooks/auth/use-auth';
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Power, Volume2, VolumeX, Bell } from 'lucide-react';
-import { ScreenConfig } from '../hooks/use-mobile-dimensions';
+import { ScreenConfig } from '@/hooks/driver/use-mobile-dimensions';
 
 interface ControlPanelProps {
   isExpanded: boolean;

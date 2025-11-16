@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useDriverAuth } from '@/hooks/use-driver-auth';
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { GoogleIcon } from '@/components/google-icon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth/use-auth';
 
 export default function LoginPage() {
   const { 

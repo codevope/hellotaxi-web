@@ -48,22 +48,22 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getSettings } from '@/services/settings-service';
-import { useAuth } from '@/hooks/use-auth';
-import { Input } from './ui/input';
+import { useAuth } from '@/hooks/auth/use-auth';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from './ui/dialog';
+} from '@/components/ui/dialog';
 import ETADisplay from './eta-display';
 import { useETACalculator } from '@/hooks/use-eta-calculator';
 import { LocationPicker } from '@/components/maps';
-import { Label } from './ui/label';
+import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useRideStore } from '@/store/ride-store';
-import { PriceSelector } from '@/components/price-selector';
+import { PriceSelector } from '@/components/forms/price-selector';
 
 const formSchema = z.object({
   pickup: z.string().min(5, 'Por favor, introduce una ubicación de recojo válida.'),

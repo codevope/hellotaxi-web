@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Car, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Chat from '@/components/chat';
+import Chat from '@/components/chat/chat';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DesktopIncomingRequest } from './components/desktop-incoming-request';
 import { DesktopActiveRide } from './components/desktop-active-ride';

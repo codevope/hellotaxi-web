@@ -18,7 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Activity, Car, CircleDollarSign, Users, Loader2 } from "lucide-react";
-import RealtimeMap from "./realtime-map";
+// RealtimeMap removed during cleanup - component was not used
 import {
   Bar,
   BarChart,
@@ -284,9 +284,7 @@ export default function AdminDashboard({
         </Card>
       </div>
       <div className="space-y-8">
-        <div className="h-[400px] w-full rounded-xl overflow-hidden shadow-lg border">
-          <RealtimeMap />
-        </div>
+        {/* RealtimeMap component removed during project cleanup */}
 
         <div className="grid gap-8 lg:grid-cols-2">
           <Card>
