@@ -1,0 +1,81 @@
+/**
+ * Estilos Desktop para Passenger (Pasajero)
+ * Optimizado para pantallas grandes con sidebar lateral
+ */
+
+.passenger-desktop-sidebar {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.passenger-desktop-header {
+  padding: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.passenger-profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.passenger-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+}
+
+.passenger-email {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* Navigation */
+.passenger-desktop-nav {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.passenger-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.passenger-nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.passenger-nav-link.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 600;
+}
+
+.passenger-nav-link .icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+/* Responsive - ocultar en mobile */
+@media (max-width: 767px) {
+  .passenger-desktop-sidebar {
+    display: none;
+  }
+}
