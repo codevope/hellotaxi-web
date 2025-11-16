@@ -15,12 +15,12 @@ import "@/styles/mobile/driver-mobile.css";
  * - Sin header superior (maximiza espacio)
  *
  * Rutas que usan este layout:
- * - /driver/(mobile) - Dashboard
- * - /driver/(mobile)/profile - Perfil
- * - /driver/(mobile)/vehicle - Vehículo
- * - /driver/(mobile)/documents - Documentos
- * - /driver/(mobile)/configuracion - Configuración
- * - /driver/(mobile)/historial - Historial
+ * - /mobile/driver - Dashboard
+ * - /mobile/driver/profile - Perfil
+ * - /mobile/driver/vehicle - Vehículo
+ * - /mobile/driver/documents - Documentos
+ * - /mobile/driver/configuracion - Configuración
+ * - /mobile/driver/historial - Historial
  */
 export default function MobileDriverLayout({
   children,
@@ -29,9 +29,9 @@ export default function MobileDriverLayout({
 }) {
   const pathname = usePathname();
 
-  // Determinar ruta activa (sin el prefijo /driver/)
+  // Determinar ruta activa
   const getActiveRoute = () => {
-    if (pathname === "/driver" || pathname === "/driver/mobile") return "dashboard";
+    if (pathname === "/mobile/driver") return "dashboard";
     if (pathname?.includes("/profile")) return "profile";
     if (pathname?.includes("/vehicle")) return "vehicle";
     if (pathname?.includes("/documents")) return "documents";
@@ -52,7 +52,7 @@ export default function MobileDriverLayout({
       {/* Bottom Navigation */}
       <nav className="driver-bottom-nav">
         <Link
-          href="/driver/mobile"
+          href="/mobile/driver"
           className={`driver-nav-item ${activeRoute === "dashboard" ? "active" : ""}`}
         >
           <Home size={20} />
@@ -60,7 +60,7 @@ export default function MobileDriverLayout({
         </Link>
 
         <Link
-          href="/driver/mobile/profile"
+          href="/mobile/driver/profile"
           className={`driver-nav-item ${activeRoute === "profile" ? "active" : ""}`}
         >
           <User size={20} />
@@ -68,7 +68,7 @@ export default function MobileDriverLayout({
         </Link>
 
         <Link
-          href="/driver/mobile/vehicle"
+          href="/mobile/driver/vehicle"
           className={`driver-nav-item ${activeRoute === "vehicle" ? "active" : ""}`}
         >
           <Car size={20} />
@@ -76,7 +76,7 @@ export default function MobileDriverLayout({
         </Link>
 
         <Link
-          href="/driver/mobile/historial"
+          href="/mobile/driver/historial"
           className={`driver-nav-item ${activeRoute === "historial" ? "active" : ""}`}
         >
           <Clock size={20} />
@@ -84,7 +84,7 @@ export default function MobileDriverLayout({
         </Link>
 
         <Link
-          href="/driver/mobile/configuracion"
+          href="/mobile/driver/configuracion"
           className={`driver-nav-item ${activeRoute === "configuracion" ? "active" : ""}`}
         >
           <Settings size={20} />

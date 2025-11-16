@@ -27,12 +27,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
  * - Stats del conductor
  *
  * Rutas que usan este layout:
- * - /driver/(desktop) - Dashboard
- * - /driver/(desktop)/profile - Perfil
- * - /driver/(desktop)/vehicle - Vehículo
- * - /driver/(desktop)/documents - Documentos
- * - /driver/(desktop)/configuracion - Configuración
- * - /driver/(desktop)/historial - Historial
+ * - /desktop/driver - Dashboard
+ * - /desktop/driver/profile - Perfil
+ * - /desktop/driver/vehicle - Vehículo
+ * - /desktop/driver/documents - Documentos
+ * - /desktop/driver/configuracion - Configuración
+ * - /desktop/driver/historial - Historial
  */
 export default function DesktopDriverLayout({
   children,
@@ -44,7 +44,7 @@ export default function DesktopDriverLayout({
 
   // Determinar ruta activa
   const getActiveRoute = () => {
-    if (pathname === "/driver" || pathname === "/driver/desktop") return "dashboard";
+    if (pathname === "/desktop/driver") return "dashboard";
     if (pathname?.includes("/profile")) return "profile";
     if (pathname?.includes("/vehicle")) return "vehicle";
     if (pathname?.includes("/documents")) return "documents";
@@ -92,7 +92,7 @@ export default function DesktopDriverLayout({
         {/* Navegación */}
         <nav className="driver-desktop-nav">
           <Link
-            href="/driver/desktop"
+            href="/desktop/driver"
             className={`driver-nav-link ${activeRoute === "dashboard" ? "active" : ""}`}
           >
             <Home className="icon" />
@@ -100,7 +100,7 @@ export default function DesktopDriverLayout({
           </Link>
 
           <Link
-            href="/driver/desktop/profile"
+            href="/desktop/driver/profile"
             className={`driver-nav-link ${activeRoute === "profile" ? "active" : ""}`}
           >
             <User className="icon" />
@@ -108,7 +108,7 @@ export default function DesktopDriverLayout({
           </Link>
 
           <Link
-            href="/driver/desktop/vehicle"
+            href="/desktop/driver/vehicle"
             className={`driver-nav-link ${activeRoute === "vehicle" ? "active" : ""}`}
           >
             <Car className="icon" />
@@ -116,7 +116,7 @@ export default function DesktopDriverLayout({
           </Link>
 
           <Link
-            href="/driver/desktop/documents"
+            href="/desktop/driver/documents"
             className={`driver-nav-link ${activeRoute === "documents" ? "active" : ""}`}
           >
             <FileText className="icon" />
@@ -124,7 +124,7 @@ export default function DesktopDriverLayout({
           </Link>
 
           <Link
-            href="/driver/desktop/historial"
+            href="/desktop/driver/historial"
             className={`driver-nav-link ${activeRoute === "historial" ? "active" : ""}`}
           >
             <Clock className="icon" />
@@ -132,7 +132,7 @@ export default function DesktopDriverLayout({
           </Link>
 
           <Link
-            href="/driver/desktop/configuracion"
+            href="/desktop/driver/configuracion"
             className={`driver-nav-link ${activeRoute === "configuracion" ? "active" : ""}`}
           >
             <Settings className="icon" />
