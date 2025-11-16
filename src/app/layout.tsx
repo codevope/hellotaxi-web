@@ -5,6 +5,7 @@ import '../styles/mobile-optimized.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/auth-provider';
 import ServiceWorkerProvider from '@/components/service-worker-provider';
+import { DeviceProvider } from '@/components/providers';
 
 export const metadata: Metadata = {
   title: 'HelloTaxi - Servicio de Taxi',
@@ -97,11 +98,13 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/ios/16.png" />
       </head>
       <body className="font-body antialiased bg-background">
-        <AuthProvider>
-          <ServiceWorkerProvider />
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <DeviceProvider>
+          <AuthProvider>
+            <ServiceWorkerProvider />
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </DeviceProvider>
       </body>
     </html>
   );
