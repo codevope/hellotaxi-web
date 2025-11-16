@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useDevice } from "@/components/providers";
+import { useDeviceType } from "@/hooks/device";
 import { Loader2 } from "lucide-react";
 
 /**
@@ -43,7 +43,7 @@ function RedirectLoader({ targetPlatform }: { targetPlatform: string }) {
  */
 export default function ProfilePage() {
   const router = useRouter();
-  const { isMobile, isDesktop } = useDevice();
+  const { isMobile, isDesktop } = useDeviceType();
 
   useEffect(() => {
     // Logging para debugging

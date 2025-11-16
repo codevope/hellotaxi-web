@@ -1,5 +1,6 @@
 "use client";
 
+import { useDeviceType } from "@/hooks/device";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from '@/components/layout/app-header';
@@ -24,17 +25,26 @@ import {
   CheckCircle2,
   Phone,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from '@/hooks/auth/use-auth';
+import { motion } from "framer-motion";
 
 export default function HomePage() {
   const [currentCarIndex, setCurrentCarIndex] = useState(0);
   const isMobile = useIsMobile();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { isMobile: isMobileDevice } = useDeviceType();
+
+  // Redirigir móviles a la app móvil
+  useEffect(() => {
+    if (isMobileDevice && !loading) {
+      console.log("📱 Mobile detected - redirecting to mobile app");
+      router.push("/mobile");
+    }
+  }, [isMobileDevice, loading, router]);
 
   const cars = [
     {
