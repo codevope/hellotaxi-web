@@ -1,6 +1,6 @@
 "use client";
 
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
