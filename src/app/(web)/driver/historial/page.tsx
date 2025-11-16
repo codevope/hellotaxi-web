@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { History, Loader2 } from "lucide-react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 
 export default function HistorialPage() {

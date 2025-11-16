@@ -31,7 +31,7 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth/use-auth';
 
 export default function AdminSidebar() {
   const pathname = usePathname();

@@ -1,6 +1,6 @@
 // Hooks
-export { useMobileDimensions } from './hooks/use-mobile-dimensions';
-export type { ScreenDimensions, ScreenConfig } from './hooks/use-mobile-dimensions';
+export { useMobileDimensions } from '@/hooks/driver/use-mobile-dimensions';
+export type { ScreenDimensions, ScreenConfig } from '@/hooks/driver/use-mobile-dimensions';
 
 // Components
 export { ControlPanel } from './components/control-panel';

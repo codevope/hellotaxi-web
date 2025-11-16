@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageCircle, Star } from 'lucide-react';
-import MapView from '@/components/map-view';
+import MapView from '@/components/maps/map-view';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import Chat from '@/components/chat';
-import RatingForm from '@/components/rating-form';
+import Chat from '@/components/chat/chat';
+import RatingForm from '@/components/forms/rating-form';
 import { MobileBottomSheet, useMobileDimensions } from './mobile';
 import type { Ride, User as UserType, EnrichedDriver } from '@/lib/types';
 

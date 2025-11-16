@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
 import type { FareBreakdown } from '@/lib/types';
 import type { RouteInfo } from '@/hooks/use-eta-calculator';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 
 const PASSENGER_NEGOTIATION_RANGE = 0.20; // Pasajero puede ofrecer hasta 20% menos
 

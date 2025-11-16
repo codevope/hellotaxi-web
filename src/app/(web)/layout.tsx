@@ -1,7 +1,7 @@
 "use client";
 
-import AppHeader from "@/components/app-header";
-import AppFooter from "@/components/app-footer";
+import AppHeader from '@/components/layout/app-header';
+import AppFooter from '@/components/layout/app-footer';
 import { useMobileOptimized } from "@/hooks/use-mobile-optimized";
 import { usePathname } from "next/navigation";
 

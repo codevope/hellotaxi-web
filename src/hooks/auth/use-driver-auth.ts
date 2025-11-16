@@ -4,7 +4,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { AuthContext } from '@/components/auth-provider';
+import { AuthContext } from '@/components/providers/auth-provider';
 import { doc, getDoc, onSnapshot, Unsubscribe, DocumentReference } from 'firebase/firestore';
 import type { Driver, Vehicle, EnrichedDriver } from '@/lib/types';
 import { useAuth as useBaseAuth } from './use-auth';

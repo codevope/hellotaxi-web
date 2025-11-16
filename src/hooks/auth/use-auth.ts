@@ -17,7 +17,7 @@ import {
   EmailAuthProvider,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { AuthContext } from '@/components/auth-provider';
+import { AuthContext } from '@/components/providers/auth-provider';
 import { doc, setDoc, getDoc, updateDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import type { UserRole, User, Vehicle } from '@/lib/types';
 import { vehicles } from '@/lib/seed-data';

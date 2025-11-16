@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import MapView from '@/components/map-view';
-import RideRequestForm from '@/components/ride-request-form';
+import MapView from '@/components/maps/map-view';
+import RideRequestForm from '@/components/forms/ride-request-form';
 import { 
   MessageCircle, 
   Siren,
@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import type { Ride, DriverWithVehicleInfo, User as UserType } from '@/lib/types';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import Chat from '@/components/chat';
-import RatingForm from '@/components/rating-form';
+import Chat from '@/components/chat/chat';
+import RatingForm from '@/components/forms/rating-form';
 
 
 interface UberStylePassengerDashboardProps {

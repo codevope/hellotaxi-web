@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/hooks/auth/use-auth';
 import {
   Card,
   CardContent,
@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MapView from "@/components/map-view";
-import RideRequestForm from "@/components/ride-request-form";
+import MapView from '@/components/maps/map-view';
+import RideRequestForm from '@/components/forms/ride-request-form';
 import RideHistory from "@/components/ride-history";
 import { SearchingRideStatus } from "@/components/ride/searching-ride-status";
 import { AssignedDriverCard } from "@/components/ride/assigned-driver-card";
@@ -53,9 +53,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import SupportChat from "@/components/support-chat";
+import SupportChat from '@/components/chat/support-chat';
 import { Loader2 } from "lucide-react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import Link from "next/link";
 import {
   doc,
@@ -70,8 +70,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useMobileOptimized } from "@/hooks/use-mobile-optimized";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { MobileHeader } from "@/components/mobile-header";
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { MobileHeader } from '@/components/layout/mobile-header';
 import { UberStylePassengerDashboard } from "@/components/ride/uber-style-passenger-dashboard";
 import {
   Dialog,
@@ -80,12 +80,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getSettings } from "@/services/settings-service";
-import Chat from "@/components/chat";
-import EnhancedChat from "@/components/enhanced-chat";
+import Chat from '@/components/chat/chat';
+import EnhancedChat from '@/components/chat/enhanced-chat';
 import { useEnhancedChat, useChatTyping } from "@/hooks/use-enhanced-chat";
-import { ChatNotification, useChatNotifications } from "@/components/chat-notification";
+import { ChatNotification, useChatNotifications } from '@/components/chat/chat-notification';
 import { Shield, Clock, Star, Wallet, ArrowRight } from "lucide-react";
-import RatingForm from "@/components/rating-form";
+import RatingForm from '@/components/forms/rating-form';
 import { processRating } from "@/ai/flows/process-rating";
 import { useRideStore } from "@/store/ride-store";
 import type { Vehicle, DriverWithVehicleInfo } from "@/lib/types";

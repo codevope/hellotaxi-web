@@ -6,7 +6,7 @@ import { es } from "date-fns/locale";
 import { ArrowUpDown, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PriceDisplay } from "@/components/price-display";
+import { PriceDisplay } from '@/components/forms/price-display';
 import { RideStatusBadge } from "@/components/ride-status-badge";
 import type { Ride, User, EnrichedDriver } from "@/lib/types";
 

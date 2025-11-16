@@ -7,7 +7,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth/use-auth';
 import { Loader2, ShieldX } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
