@@ -18,7 +18,7 @@ import type { ChatMessage, User, Driver } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth/use-auth';
 
 interface EnhancedChatProps {
   messages: ChatMessage[];

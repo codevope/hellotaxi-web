@@ -2,7 +2,7 @@
 
 import { Car, MapPin, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PriceDisplay } from '@/components/price-display';
+import { PriceDisplay } from '@/components/forms/price-display';
 import {
   AlertDialog,
   AlertDialogAction,

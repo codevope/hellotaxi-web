@@ -4,12 +4,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Car, MessageCircle } from 'lucide-react';
 import { IncomingRideRequest } from '@/components/driver/incoming-ride-request';
 import { ActiveRideCard } from '@/components/driver/active-ride-card';
-import RatingForm from '@/components/rating-form';
+import RatingForm from '@/components/forms/rating-form';
 import type { User } from '@/lib/types';
 import type { EnrichedRide } from '@/hooks/driver/use-driver-active-ride';
 import { Button } from '@/components/ui/button';
-import Chat from '@/components/chat';
-import EnhancedChat from '@/components/enhanced-chat';
+import Chat from '@/components/chat/chat';
+import EnhancedChat from '@/components/chat/enhanced-chat';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 

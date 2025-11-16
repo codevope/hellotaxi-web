@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Car, LogOut, User, LayoutDashboard, Menu, X, FileText, History, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/hooks/auth/use-auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";

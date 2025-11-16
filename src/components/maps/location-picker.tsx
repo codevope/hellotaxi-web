@@ -14,7 +14,7 @@ import {
 } from './';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useGeolocation } from '@/hooks/use-geolocation-improved';
+import { useGeolocation } from '@/hooks/geolocation/use-geolocation-improved';
 import { GeocodingService } from '@/services/geocoding-service';
 
 

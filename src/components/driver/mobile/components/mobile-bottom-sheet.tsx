@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { useMobileDimensions } from '../hooks/use-mobile-dimensions';
+import { useMobileDimensions } from '@/hooks/driver/use-mobile-dimensions';
 import { ControlPanel } from './control-panel';
 import { IncomingRequest } from './incoming-request';
 import { ActiveRide } from './active-ride';

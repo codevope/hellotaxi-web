@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { useDevice } from "@/components/providers";
+import { useDeviceType } from "@/hooks/device";
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -85,7 +85,7 @@ const DesktopDashboard = dynamic(
  */
 export default function DriverPage() {
   const router = useRouter();
-  const { deviceType, isMobile, isDesktop, isTablet } = useDevice();
+  const { deviceType, isMobile, isDesktop, isTablet } = useDeviceType();
 
   // Logging para debugging (remover en producción)
   useEffect(() => {

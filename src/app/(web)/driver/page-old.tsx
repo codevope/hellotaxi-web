@@ -27,7 +27,7 @@ import {
   CalendarCheck,
   Volume2,
 } from "lucide-react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useCounterOffer } from "@/hooks/use-counter-offer";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -52,9 +52,9 @@ import { useEffect, useState, useCallback } from "react";
 import { collection, doc, updateDoc, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import RatingForm from "@/components/rating-form";
+import RatingForm from '@/components/forms/rating-form';
 import { processRating } from "@/ai/flows/process-rating";
-import MapView from "@/components/map-view";
+import MapView from '@/components/maps/map-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DriverDocuments from "@/components/driver/documents";
 import {
@@ -77,8 +77,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import Chat from "@/components/chat";
-import EnhancedChat from "@/components/enhanced-chat";
+import Chat from '@/components/chat/chat';
+import EnhancedChat from '@/components/chat/enhanced-chat';
 import Link from "next/link";
 import {
   AlertDialog,
@@ -113,8 +113,8 @@ import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { useDriverPaymentPlan } from "@/hooks/driver/use-driver-payment-plan";
 import { DriverStatePanel } from "@/components/driver/driver-state-panel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { MobileHeader } from "@/components/mobile-header";
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { MobileHeader } from '@/components/layout/mobile-header';
 import { MobileDriverDashboard } from "@/components/driver/mobile-dashboard";
 import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications-safe";
 import { useSearchParams, useRouter } from "next/navigation";

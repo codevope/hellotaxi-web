@@ -34,7 +34,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useCounterOffer } from "@/hooks/use-counter-offer";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -59,9 +59,9 @@ import { useEffect, useState, useCallback } from "react";
 import { collection, doc, updateDoc, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import RatingForm from "@/components/rating-form";
+import RatingForm from '@/components/forms/rating-form';
 import { processRating } from "@/ai/flows/process-rating";
-import MapView from "@/components/map-view";
+import MapView from '@/components/maps/map-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DriverDocuments from "@/components/driver/documents";
 import {
@@ -84,8 +84,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import Chat from "@/components/chat";
-import EnhancedChat from "@/components/enhanced-chat";
+import Chat from '@/components/chat/chat';
+import EnhancedChat from '@/components/chat/enhanced-chat';
 import Link from "next/link";
 import {
   AlertDialog,

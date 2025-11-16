@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/hooks/auth/use-auth';
 import {
   Card,
   CardContent,
@@ -43,7 +43,7 @@ import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import type { User as AppUser } from "@/lib/types";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import IncompleteProfile from "@/components/incomplete-profile";

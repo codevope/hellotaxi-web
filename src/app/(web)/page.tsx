@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import AppHeader from "@/components/app-header";
-import AppFooter from "@/components/app-footer";
+import AppHeader from '@/components/layout/app-header';
+import AppFooter from '@/components/layout/app-footer';
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -28,7 +28,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from '@/hooks/auth/use-auth';
 
 export default function HomePage() {
   const [currentCarIndex, setCurrentCarIndex] = useState(0);

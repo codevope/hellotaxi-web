@@ -1,15 +1,16 @@
 
+
 'use client';
 
 import React, { useState, useEffect, Children, isValidElement } from 'react';
-import { useGeolocation } from '@/hooks/use-geolocation-improved';
+import { useGeolocation } from '@/hooks/geolocation/use-geolocation-improved';
 import type { Ride, Location } from '@/lib/types';
 import {
   GoogleMapsProvider,
   InteractiveMap,
   MapMarker,
   RouteDisplay,
-} from './';
+} from '.';
 import { GeocodingService } from '@/services/geocoding-service';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,7 +19,6 @@ interface MapViewProps {
   pickupLocation: Location | null;
   dropoffLocation: Location | null;
   driverLocation?: Location | null;
-  activeRide?: Ride | null;
   className?: string;
   height?: string;
   interactive?: boolean;
@@ -31,7 +31,6 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
   pickupLocation,
   dropoffLocation,
   driverLocation,
-  activeRide,
   className = '',
   height = '100%',
   interactive = true,

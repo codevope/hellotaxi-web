@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { FileText } from "lucide-react";
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 
 export default function DriverVehiclePage() {
   const { driver } = useDriverAuth();
