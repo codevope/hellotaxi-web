@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function AppFooter() {
+  const isMobile = useIsMobile();
+  
+  // No mostrar footer en móvil
+  if (isMobile) {
+    return null;
+  }
+
   return (
     <footer className="bg-card border-t mt-auto">
       <div className="container mx-auto px-4 py-6 md:py-8">

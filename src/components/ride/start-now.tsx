@@ -42,7 +42,7 @@ const StartNow = () => {
   // Tipos de vehículos
   const vehicles = [
     {
-      name: "SUV Premium",
+      name: "Exclusivo",
       image: "/img/suv.png",
       capacity: "6 pasajeros",
       price: "Desde S/ 10",
@@ -51,7 +51,7 @@ const StartNow = () => {
       description: "Máximo confort para grupos grandes",
     },
     {
-      name: "Sedán Confort",
+      name: "Confort",
       image: "/img/sedan.png",
       capacity: "4 pasajeros",
       price: "Desde S/ 8",
@@ -60,7 +60,7 @@ const StartNow = () => {
       description: "La opción perfecta para tu día a día",
     },
     {
-      name: "Hatchback Económico",
+      name: "Económico",
       image: "/img/hatchback.png",
       capacity: "4 pasajeros",
       price: "Desde S/ 6",
@@ -392,7 +392,7 @@ const StartNow = () => {
                             backgroundColor: "rgba(255,255,255,0.2)",
                           }}
                         >
-                          <Users className="h-5 w-5 text-[#05C7F2]" />
+                          <Users className="h-5 w-5 text-[#0e11d5]" />
                           <span className="font-medium">
                             {vehicles[selectedCar].capacity}
                           </span>

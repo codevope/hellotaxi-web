@@ -3,8 +3,6 @@
 import { useDeviceType } from "@/hooks/device";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import AppHeader from '@/components/layout/app-header';
-import AppFooter from '@/components/layout/app-footer';
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -19,17 +17,16 @@ import {
   Users,
   Clock,
   Sparkles,
-  TrendingUp,
   Award,
   ArrowRight,
   CheckCircle2,
-  Phone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from '@/hooks/auth/use-auth';
 import { motion } from "framer-motion";
+import PWAInstallNotification from '@/components/pwa/pwa-install-notification';
 
 export default function HomePage() {
   const [currentCarIndex, setCurrentCarIndex] = useState(0);
@@ -38,31 +35,31 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const { isMobile: isMobileDevice } = useDeviceType();
 
-  // Redirigir móviles a la app móvil
+  // Redirigir móviles al login móvil cuando no estén autenticados
   useEffect(() => {
-    if (isMobileDevice && !loading) {
-      console.log("📱 Mobile detected - redirecting to mobile app");
-      router.push("/mobile");
+    if (isMobileDevice && !loading && !user) {
+      console.log("Mobile detected - redirecting to mobile login");
+      router.push("/login");
     }
-  }, [isMobileDevice, loading, router]);
+  }, [isMobileDevice, loading, router, user]);
 
   const cars = [
     {
-      name: "SUV Premium",
+      name: "Exclusivo",
       image: "/img/suv.png",
       price: "S/ 25",
       capacity: "6",
       gradient: "from-[#2E4CA6] to-[#0477BF]",
     },
     {
-      name: "Sedán Confort",
+      name: "Confort",
       image: "/img/sedan.png",
       price: "S/ 18",
       capacity: "4",
       gradient: "from-[#0477BF] to-[#049DD9]",
     },
     {
-      name: "Hatchback",
+      name: "Económico",
       image: "/img/hatchback.png",
       price: "S/ 12",
       capacity: "4",
@@ -87,7 +84,8 @@ export default function HomePage() {
   return (
     <>
       <main className="flex-1">
-        <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9]">
+        {/* Resto del contenido existente */}
+        <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-br from-[#0095FF] via-[#0095FF] to-[#0095FF]">
           <div className="absolute inset-0 z-0">
             <Image
               src="/img/bg-hero.jpg"
@@ -96,7 +94,7 @@ export default function HomePage() {
               className="object-cover opacity-20"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6]/90 via-[#0477BF]/85 to-[#049DD9]/80"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0095FF]/90 via-[#0477BF]/85 to-[#0095FF]/80"></div>
           </div>
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(15)].map((_, i) => (
@@ -122,6 +120,18 @@ export default function HomePage() {
                 <div className="w-2 h-2 bg-white/30 rounded-full blur-sm" />
               </motion.div>
             ))}
+          </div>
+
+          {/* Header con logo */}
+          <div className="absolute top-10 right-10 z-10">
+            <Image
+              src="/img/logo.png"
+              alt="Hello Taxi Logo"
+              width={200}
+              height={95}
+              className="object-contain drop-shadow-lg"
+              priority
+            />
           </div>
 
           {/* Ondas decorativas animadas */}
@@ -178,7 +188,7 @@ export default function HomePage() {
                   <h1 className="text-5xl md:text-7xl font-bold font-headline mb-6 leading-tight">
                     Tu Viaje,{" "}
                     <motion.span
-                      className="inline-block bg-gradient-to-r from-[#05C7F2] via-white to-[#05C7F2] bg-clip-text text-transparent"
+                      className="inline-block"
                       animate={{
                         backgroundPosition: ["0%", "100%", "0%"],
                       }}
@@ -197,7 +207,7 @@ export default function HomePage() {
                   <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-xl">
                     Experimenta la libertad de negociar tu tarifa y viaja con
                     conductores de confianza.{" "}
-                    <span className="font-semibold text-[#05C7F2]">
+                    <span className="font-semibold text-slate-900">
                       Rápido, seguro y justo.
                     </span>
                   </p>
@@ -408,23 +418,6 @@ export default function HomePage() {
               </motion.div>
             </div>
           </div>
-
-          {/* Indicador de scroll animado */}
-          <motion.div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30"
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <div className="flex flex-col items-center gap-2 text-white/60">
-              <span className="text-sm">Descubre más</span>
-              <motion.div
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <ArrowRight className="h-6 w-6 rotate-90" />
-              </motion.div>
-            </div>
-          </motion.div>
         </section>
 
         {/* How it Works Section */}
@@ -506,7 +499,7 @@ export default function HomePage() {
 
                     <div className="text-center mb-6">
                       <h3 className="text-2xl font-bold mb-2 text-[#0477BF] dark:text-[#049DD9]">
-                        Economy
+                        Económico
                       </h3>
                       <p className="text-muted-foreground mb-4 leading-relaxed">
                         La opción más{" "}
@@ -566,7 +559,7 @@ export default function HomePage() {
 
                     <div className="text-center mb-6">
                       <h3 className="text-2xl font-bold mb-2 text-[#2E4CA6] dark:text-[#0477BF]">
-                        Comfort
+                        Confort
                       </h3>
                       <p className="text-muted-foreground mb-4 leading-relaxed">
                         El equilibrio perfecto entre{" "}
@@ -745,6 +738,10 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+      
+      {/* Notificación PWA */}
+      <PWAInstallNotification showOnHome={true} />
+    
     </>
   );
 }

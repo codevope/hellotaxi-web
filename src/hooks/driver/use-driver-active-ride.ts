@@ -90,6 +90,7 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
     try {
       const rideRef = doc(db, 'rides', ride.id);
       const driverRef = doc(db, 'drivers', ride.driver.id);
+      
       if (newStatus === 'completed') {
         const batch = writeBatch(db);
         batch.update(rideRef, { status: 'completed' });
@@ -101,6 +102,16 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         setAvailability(true);
       } else {
         await updateDoc(rideRef, { status: newStatus });
+        
+        // Mensajes específicos según el estado
+        const statusMessages = {
+          'arrived': { title: '✅ Llegada Confirmada', description: 'Has marcado que llegaste al punto de recojo' },
+          'in-progress': { title: '🚗 Viaje Iniciado', description: 'El viaje ha comenzado oficialmente' }
+        };
+        
+        if (statusMessages[newStatus]) {
+          toast(statusMessages[newStatus]);
+        }
       }
     } catch (e) {
       console.error('Error updating ride status:', e);

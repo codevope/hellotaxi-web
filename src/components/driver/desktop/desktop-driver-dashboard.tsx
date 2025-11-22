@@ -188,6 +188,60 @@ function DesktopDriverSidebar({
         </div>
       </div>
 
+      {/* Configuración de Notificaciones */}
+      <div className="driver-notifications-section">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Notificaciones</h3>
+        
+        {/* Audio */}
+        <div className="driver-notification-setting">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Sonido</p>
+              <p className="text-xs text-gray-500">Alertas de audio</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={logic.audioEnabled || false}
+              onChange={async (e) => {
+                if (e.target.checked && logic.enableAudio) {
+                  await logic.enableAudio();
+                }
+              }}
+              disabled={!logic.canUseNotifications}
+              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 disabled:opacity-50"
+            />
+          </div>
+          {!logic.audioEnabled && logic.audioPermissionGranted && logic.tryReenableAudio && (
+            <button
+              onClick={logic.tryReenableAudio}
+              className="mt-2 text-xs text-amber-600 hover:text-amber-700"
+            >
+              Reactivar Sonido
+            </button>
+          )}
+        </div>
+
+        {/* Push Notifications */}
+        <div className="driver-notification-setting">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Push</p>
+              <p className="text-xs text-gray-500">Notificaciones del navegador</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={logic.hasPermission === true}
+              onChange={async (e) => {
+                if (e.target.checked && logic.requestNotificationPermission) {
+                  await logic.requestNotificationPermission();
+                }
+              }}
+              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Navegación */}
       <nav className="driver-desktop-nav">
         <a href="/driver" className="driver-nav-link active">

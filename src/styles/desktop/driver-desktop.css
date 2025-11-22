@@ -170,6 +170,33 @@
   letter-spacing: 0.5px;
 }
 
+/* Configuración de notificaciones */
+.driver-notifications-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.driver-notifications-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.driver-notification-setting {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.driver-notification-setting:last-child {
+  margin-bottom: 0;
+}
+
 /* Menu de navegación en sidebar */
 .driver-desktop-nav {
   flex: 1;

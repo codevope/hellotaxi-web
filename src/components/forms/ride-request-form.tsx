@@ -56,7 +56,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import ETADisplay from './eta-display';
 import { useETACalculator } from '@/hooks/use-eta-calculator';
 import { LocationPicker } from '@/components/maps';
 import { Label } from '@/components/ui/label';

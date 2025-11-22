@@ -135,6 +135,7 @@ export interface Ride {
   paymentMethod: PaymentMethod;
   cancellationReason?: CancellationReason;
   cancelledBy?: 'passenger' | 'driver' | 'system';
+  cancelledAt?: string; // ISO Date string - cuando se canceló el viaje
   assignmentTimestamp?: string; // ISO Date string
   peakTime?: boolean;
   couponCode?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { Card } from "@/components/ui/card";
 import RideHistory from "@/components/ride-history";

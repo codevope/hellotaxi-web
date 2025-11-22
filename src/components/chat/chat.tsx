@@ -22,6 +22,42 @@ export default function Chat({ messages, onSendMessage, isLoading = false }: Cha
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const currentUserId = user?.uid;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Inicializar el audio del mensaje
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/msg.mp3');
+    audioRef.current.preload = 'auto';
+    audioRef.current.volume = 0.5; // Volumen moderado
+    
+    // Event listeners para manejar el estado del audio
+    audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+    audioRef.current.addEventListener('error', () => setIsPlaying(false));
+    
+    return () => {
+      if (audioRef.current) {
+        setIsPlaying(false);
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
+        audioRef.current.removeEventListener('error', () => setIsPlaying(false));
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
+  const playMessageSound = async () => {
+    if (audioRef.current && !isPlaying) {
+      try {
+        setIsPlaying(true);
+        audioRef.current.currentTime = 0; // Reiniciar desde el inicio
+        await audioRef.current.play();
+      } catch (error) {
+        console.log('No se pudo reproducir el sonido del mensaje:', error);
+        setIsPlaying(false);
+      }
+    }
+  };
 
   useEffect(() => {
     // Auto-scroll to bottom on new message
@@ -33,9 +69,10 @@ export default function Chat({ messages, onSendMessage, isLoading = false }: Cha
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (inputText.trim() && !isLoading) {
       onSendMessage(inputText);
+      await playMessageSound(); // Reproducir sonido al enviar mensaje
       setInputText('');
     }
   };

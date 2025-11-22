@@ -1,6 +1,6 @@
 "use client";
 
-import { useDriverAuth } from "@/hooks/use-driver-auth";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import DriverVehicle from "@/components/driver/vehicle";
 import { Loader2 } from "lucide-react";
 

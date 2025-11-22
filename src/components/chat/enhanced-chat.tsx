@@ -46,9 +46,45 @@ export default function EnhancedChat({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { user, appUser } = useAuth();
   const currentUserId = user?.uid;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Determinar si el usuario actual es conductor
   const isDriver = !!(appUser as any)?.vehicleId || !!(appUser as any)?.paymentModel;
+
+  // Inicializar el audio del mensaje
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/msg.mp3');
+    audioRef.current.preload = 'auto';
+    audioRef.current.volume = 0.5; // Volumen moderado
+    
+    // Event listeners para manejar el estado del audio
+    audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+    audioRef.current.addEventListener('error', () => setIsPlaying(false));
+    
+    return () => {
+      if (audioRef.current) {
+        setIsPlaying(false);
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
+        audioRef.current.removeEventListener('error', () => setIsPlaying(false));
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
+  const playMessageSound = async () => {
+    if (audioRef.current && !isPlaying) {
+      try {
+        setIsPlaying(true);
+        audioRef.current.currentTime = 0; // Reiniciar desde el inicio
+        await audioRef.current.play();
+      } catch (error) {
+        console.log('No se pudo reproducir el sonido del mensaje:', error);
+        setIsPlaying(false);
+      }
+    }
+  };
   const userType = isDriver ? 'driver' : 'passenger';
 
   // Debug logs
@@ -72,7 +108,7 @@ export default function EnhancedChat({
     }
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     console.log('EnhancedChat handleSend:', { 
       hasText: !!inputText.trim(), 
       isLoading, 
@@ -81,6 +117,7 @@ export default function EnhancedChat({
     if (inputText.trim() && !isLoading) {
       console.log('Sending message:', inputText);
       onSendMessage(inputText);
+      await playMessageSound(); // Reproducir sonido al enviar mensaje
       setInputText('');
       onTypingStop?.();
     }

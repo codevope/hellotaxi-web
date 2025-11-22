@@ -109,23 +109,7 @@ export default function AboutPage() {
             <p className="text-center text-[#0477BF] mb-12 max-w-2xl mx-auto">
               Elige el plan que mejor se adapte a tu estilo de trabajo y maximiza tus ganancias
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <Card className="border-none shadow-lg bg-white hover:shadow-xl transition-all duration-300">
-                <CardHeader className="text-center">
-                  <div className="mx-auto bg-gradient-to-br from-[#05C7F2] to-[#049DD9] text-white rounded-full p-4 w-fit mb-4">
-                    <CircleDollarSign className="h-10 w-10" />
-                  </div>
-                  <CardTitle className="text-[#2E4CA6] text-xl">Comisión por Viaje</CardTitle>
-                  <CardDescription className="text-[#0477BF]">Ideal para conductores ocasionales</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-[#0477BF]">
-                    Paga una pequeña comisión solo por los viajes que realizas.
-                    Perfecto si conduces a tiempo parcial o quieres probar la
-                    plataforma sin compromisos.
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 max-w-2xl mx-auto">
               <Card className="border-none shadow-lg bg-white hover:shadow-xl transition-all duration-300">
                 <CardHeader className="text-center">
                   <div className="mx-auto bg-gradient-to-br from-[#0477BF] to-[#2E4CA6] text-white rounded-full p-4 w-fit mb-4">

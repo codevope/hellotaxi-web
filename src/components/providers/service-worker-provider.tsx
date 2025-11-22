@@ -191,7 +191,7 @@ export default function ServiceWorkerProvider() {
     // Banner para Android/Chrome
     if (isInstallable && deferredPrompt) {
       return (
-        <Card className={`fixed ${isMobilePath ? 'bottom-4' : 'top-4'} left-4 right-4 z-50 border-green-500 bg-white shadow-xl animate-in ${isMobilePath ? 'slide-in-from-bottom' : 'slide-in-from-top'}`}>
+        <Card className={`fixed ${isMobilePath ? 'bottom-4' : 'bottom-4'} left-4 right-4 z-50 border-green-500 bg-white shadow-xl animate-in ${isMobilePath ? 'slide-in-from-bottom' : 'slide-in-from-top'}`}>
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
@@ -221,7 +221,7 @@ export default function ServiceWorkerProvider() {
                   onClick={dismissInstallBanner}
                   size="sm"
                   variant="ghost"
-                  className="text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-100 "
                 >
                   <X className="h-4 w-4" />
                 </Button>

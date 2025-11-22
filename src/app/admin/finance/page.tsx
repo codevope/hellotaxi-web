@@ -199,24 +199,7 @@ export default function AdminFinancePage() {
             </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ingresos por Comisión</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">...</div>
-                        </div>
-                    ) : (
-                        <div className="text-2xl font-bold">S/{(summary?.commissionBasedEarnings || 0).toFixed(2)}</div>
-                    )}
-                    <p className="text-xs text-muted-foreground">Solo del modelo de comisión</p>
-                </CardContent>
-            </Card>
+        <div className="grid gap-6 grid-cols-2">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Ingresos por Membresía</CardTitle>
