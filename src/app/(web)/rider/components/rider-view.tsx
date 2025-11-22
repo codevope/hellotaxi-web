@@ -648,16 +648,6 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
               
               <TabsContent value="config" className="p-3 sm:p-4 lg:p-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <div className="space-y-6">
-                  {/* Mensaje informativo */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">
-                      🔔 Recibe notificaciones de tu viaje
-                    </h3>
-                    <p className="text-xs text-blue-700">
-                      Activa las notificaciones para escuchar cuando tu conductor acepte el viaje, 
-                      llegue al punto de recojo, inicie el viaje y más.
-                    </p>
-                  </div>
 
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -666,7 +656,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                     </h3>
                     
                     {/* Paso 1: Control de permisos de notificación */}
-                    <div className="border rounded-lg p-4 space-y-3">
+                    <div className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -674,13 +664,13 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                             <h4 className="text-sm font-medium">Permisos de notificación</h4>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Permite que la app te envíe notificaciones del navegador
+                            Permite que la app te envíe notificaciones
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           {notifications.hasPermission ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
+                              <span className="text-xs text-green-600 font-medium">✓ Activo</span>
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             </div>
                           ) : (
@@ -689,7 +679,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                               className="bg-blue-600 hover:bg-blue-700 text-white"
                               size="sm"
                             >
-                              ✓ Activar Permisos
+                              ✓ Activar
                             </Button>
                           )}
                         </div>
@@ -702,16 +692,16 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">Paso 2</span>
-                            <h4 className="text-sm font-medium">Sonido de notificaciones</h4>
+                            <h4 className="text-sm font-medium">Sonido de notificación</h4>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Reproduce sonido cuando cambie el estado de tu viaje
+                            Habilitación de sonidos para alertas
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           {notifications.audioEnabled ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
+                              <span className="text-xs text-green-600 font-medium">✓ Activo</span>
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             </div>
                           ) : (
@@ -721,7 +711,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                               className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300"
                               size="sm"
                             >
-                              🔊 Activar Sonido
+                              🔊 Activar
                             </Button>
                           )}
                         </div>
@@ -733,20 +723,6 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                       )}
                     </div>
                     
-                    {/* Botón de prueba más prominente */}
-                    {notifications.audioEnabled && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center space-y-2">
-                        <p className="text-sm text-green-800 font-medium">¡Todo listo! 🎉</p>
-                        <p className="text-xs text-green-700">Ahora recibirás notificaciones sonoras de tu viaje</p>
-                        <Button 
-                          variant="outline"
-                          onClick={notifications.testDriverStatusNotification}
-                          className="mt-2 border-green-300 text-green-700 hover:bg-green-100"
-                        >
-                          🔊 Probar Sonido de Notificación
-                        </Button>
-                      </div>
-                    )}
                   </div>
                   
                   {/* Información del usuario */}
