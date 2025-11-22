@@ -555,10 +555,15 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                   <Settings className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
                   <span className="hidden sm:inline">Config</span>
                   <span className="sm:hidden">Conf</span>
+                  {!notifications.hasPermission || !notifications.audioEnabled ? (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+                  ) : (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full"></span>
+                  )}
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="book" className="p-3 sm:p-4 lg:p-6">
+              <TabsContent value="book" className="p-3 sm:p-4 lg:p-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {status === "searching" && (
                   <SearchingRideStatus
                     activeRide={activeRide}
@@ -606,13 +611,13 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                 )}
               </TabsContent>
               
-              <TabsContent value="history" className="p-3 sm:p-4 lg:p-6">
+              <TabsContent value="history" className="p-3 sm:p-4 lg:p-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <RideHistory />
               </TabsContent>
               
-              <TabsContent value="chat" className="p-0">
+              <TabsContent value="chat" className="p-0 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {assignedDriver ? (
-                  <div className="h-[600px] flex flex-col overflow-hidden">
+                  <div className="h-[400px] sm:h-[500px] lg:h-[600px] flex flex-col overflow-hidden">
                     <div className="p-4 border-b bg-gray-50 flex-shrink-0">
                       <h3 className="text-lg font-semibold flex items-center gap-2">
                         <MessageCircle className="h-5 w-5" />
@@ -641,71 +646,104 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                 )}
               </TabsContent>
               
-              <TabsContent value="config" className="p-3 sm:p-4 lg:p-6">
+              <TabsContent value="config" className="p-3 sm:p-4 lg:p-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <div className="space-y-6">
+                  {/* Mensaje informativo */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-blue-900 mb-2">
+                      🔔 Recibe notificaciones de tu viaje
+                    </h3>
+                    <p className="text-xs text-blue-700">
+                      Activa las notificaciones para escuchar cuando tu conductor acepte el viaje, 
+                      llegue al punto de recojo, inicie el viaje y más.
+                    </p>
+                  </div>
+
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <Volume2 className="h-5 w-5" />
-                      Notificaciones y Sonido
+                      Configuración de Notificaciones
                     </h3>
                     
-                    {/* Control de permisos de notificación */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-medium">Notificaciones push</h4>
-                        <p className="text-xs text-muted-foreground">
-                          Recibir notificaciones del navegador
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {notifications.hasPermission ? (
-                          <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
-                        ) : (
-                          <Button 
-                            size="sm"
-                            onClick={notifications.requestNotificationPermission}
-                            className="text-xs"
-                          >
-                            Habilitar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Control de sonido */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-medium">Sonido de notificaciones</h4>
-                        <p className="text-xs text-muted-foreground">
-                          Reproducir sonido cuando cambié el estado del viaje
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {notifications.audioEnabled ? (
-                          <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
-                        ) : (
-                          <Button 
-                            size="sm"
-                            onClick={notifications.enableAudio}
-                            disabled={!notifications.canUseNotifications}
-                            className="text-xs"
-                          >
-                            Habilitar
-                          </Button>
-                        )}
+                    {/* Paso 1: Control de permisos de notificación */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Paso 1</span>
+                            <h4 className="text-sm font-medium">Permisos de notificación</h4>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Permite que la app te envíe notificaciones del navegador
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {notifications.hasPermission ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            </div>
+                          ) : (
+                            <Button 
+                              onClick={notifications.requestNotificationPermission}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              size="sm"
+                            >
+                              ✓ Activar Permisos
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Botón de prueba */}
+                    {/* Paso 2: Control de sonido */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">Paso 2</span>
+                            <h4 className="text-sm font-medium">Sonido de notificaciones</h4>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Reproduce sonido cuando cambie el estado de tu viaje
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {notifications.audioEnabled ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-green-600 font-medium">✓ Habilitado</span>
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            </div>
+                          ) : (
+                            <Button 
+                              onClick={notifications.enableAudio}
+                              disabled={!notifications.hasPermission}
+                              className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300"
+                              size="sm"
+                            >
+                              🔊 Activar Sonido
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {!notifications.hasPermission && !notifications.audioEnabled && (
+                        <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                          💡 Primero debes activar los permisos de notificación
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Botón de prueba más prominente */}
                     {notifications.audioEnabled && (
-                      <div className="flex justify-center">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center space-y-2">
+                        <p className="text-sm text-green-800 font-medium">¡Todo listo! 🎉</p>
+                        <p className="text-xs text-green-700">Ahora recibirás notificaciones sonoras de tu viaje</p>
                         <Button 
                           variant="outline"
-                          size="sm"
                           onClick={notifications.testDriverStatusNotification}
-                          className="text-xs"
+                          className="mt-2 border-green-300 text-green-700 hover:bg-green-100"
                         >
-                          🔊 Probar Sonido
+                          🔊 Probar Sonido de Notificación
                         </Button>
                       </div>
                     )}

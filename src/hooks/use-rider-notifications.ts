@@ -92,6 +92,46 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     }
   }, [canUseNotifications, toast]);
 
+  // Efecto para solicitar permisos automáticamente cuando se carga la app
+  useEffect(() => {
+    const requestInitialPermissions = async () => {
+      if (!riderId || !isLoaded || !canUseNotifications) return;
+      
+      // Solo solicitar si no se han solicitado antes
+      const hasAskedBefore = localStorage.getItem('hellotaxi-rider-permissions-asked');
+      
+      if (!hasPermission && !hasAskedBefore) {
+        console.log('🔔 [Rider] Solicitando permisos automáticamente...');
+        
+        // Mostrar toast informativo primero
+        toast({
+          title: "🔔 Activa las notificaciones",
+          description: "Para recibir actualizaciones de tu viaje en tiempo real",
+          duration: 8000,
+        });
+        
+        // Esperar un momento antes de solicitar permisos
+        setTimeout(async () => {
+          const granted = await requestNotificationPermission();
+          localStorage.setItem('hellotaxi-rider-permissions-asked', 'true');
+          
+          if (granted) {
+            // Sugerir activar el audio también
+            setTimeout(() => {
+              toast({
+                title: "🔊 ¿Activar sonido?",
+                description: "Ve a Config > Activar Sonido para escuchar cuando cambie el estado de tu viaje",
+                duration: 10000,
+              });
+            }, 2000);
+          }
+        }, 3000);
+      }
+    };
+
+    requestInitialPermissions();
+  }, [riderId, isLoaded, canUseNotifications, hasPermission, requestNotificationPermission, toast]);
+
   // Manejar cambios de estado del conductor
   const handleDriverStatusChange = useCallback(async (
     previousStatus: string,
@@ -109,6 +149,10 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     let shouldPlaySound = true;
 
     switch (newStatus) {
+      case 'accepted':
+        title = '✅ ¡Viaje aceptado!';
+        message = 'Un conductor ha aceptado tu solicitud y se dirige hacia ti';
+        break;
       case 'arrived':
         title = '🚗 ¡Tu conductor ha llegado!';
         message = 'El conductor está esperándote en el punto de recojo';
@@ -180,7 +224,7 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
     console.log('👂 [Rider] Configurando listener de viajes para rider:', riderId);
 
-    // Query para viajes activos del rider (incluir completed para detectar finalización)
+    // Query para viajes activos del rider (incluir todos los estados relevantes)
     const ridesQuery = query(
       collection(db, 'rides'),
       where('passenger', '==', doc(db, 'users', riderId)),
@@ -214,13 +258,13 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
           // Solo notificar si es un cambio real de estado (no la primera vez que vemos el viaje)
           if (previousStatus && previousStatus !== currentStatus && 
-              ['arrived', 'in-progress', 'completed'].includes(currentStatus)) {
+              ['accepted', 'arrived', 'in-progress', 'completed'].includes(currentStatus)) {
             console.log('🎯 [Rider] ¡Cambio de estado real detectado!');
             await handleDriverStatusChange(previousStatus, currentStatus, rideData);
-          } else if (!previousStatus && ['arrived', 'in-progress'].includes(currentStatus)) {
+          } else if (!previousStatus && ['accepted', 'arrived', 'in-progress'].includes(currentStatus)) {
             // Si es la primera vez que vemos el viaje y ya está en un estado avanzado
             console.log('🎯 [Rider] Nuevo viaje en estado avanzado detectado');
-            await handleDriverStatusChange('accepted', currentStatus, rideData);
+            await handleDriverStatusChange('pending', currentStatus, rideData);
           }
 
           // Actualizar el tracking de estado
@@ -241,10 +285,11 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
   const testDriverStatusNotification = useCallback(() => {
     console.log('🧪 [Rider] Ejecutando prueba de notificación...');
     
-    handleDriverStatusChange('accepted', 'arrived', {
+    handleDriverStatusChange('pending', 'accepted', {
       id: 'test-ride-123',
-      pickup: 'Av. Prueba 123',
-      dropoff: 'Destino Test 456'
+      pickup: 'Av. Prueba 123, Miraflores',
+      dropoff: 'Centro Comercial Test, San Isidro',
+      driver: 'Juan Pérez'
     });
   }, [handleDriverStatusChange]);
 
