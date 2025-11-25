@@ -185,6 +185,24 @@ export default function EnhancedChat({
     }
   };
 
+  // Función para iniciar llamada telefónica
+  const handleCall = () => {
+    // Obtener el teléfono de forma segura
+    const phoneNumber = otherUser?.phone;
+    if (!phoneNumber) {
+      console.warn('No hay número de teléfono disponible para el usuario');
+      return;
+    }
+    
+    // Limpiar el número de teléfono de espacios y caracteres especiales
+    const cleanedPhone = phoneNumber.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+    
+    // Usar el protocolo tel: para iniciar una llamada
+    window.location.href = `tel:${cleanedPhone}`;
+    
+    console.log('Iniciando llamada a:', cleanedPhone);
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header del chat */}
@@ -206,9 +224,17 @@ export default function EnhancedChat({
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-gray-600">
-            <Phone className="h-4 w-4" />
-          </Button>
+          {otherUser?.phone && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors"
+              onClick={handleCall}
+              title={`Llamar a ${otherUser.name}`}
+            >
+              <Phone className="h-5 w-5" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="text-gray-600">
             <MoreVertical className="h-4 w-4" />
           </Button>

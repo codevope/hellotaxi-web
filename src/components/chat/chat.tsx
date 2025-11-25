@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send } from 'lucide-react';
+import { Send, Phone } from 'lucide-react';
 import type { ChatMessage } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -15,9 +15,17 @@ interface ChatProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isLoading?: boolean;
+  otherUserPhone?: string; // Número de teléfono del otro usuario para llamadas
+  otherUserName?: string; // Nombre del otro usuario
 }
 
-export default function Chat({ messages, onSendMessage, isLoading = false }: ChatProps) {
+export default function Chat({ 
+  messages, 
+  onSendMessage, 
+  isLoading = false, 
+  otherUserPhone,
+  otherUserName 
+}: ChatProps) {
   const [inputText, setInputText] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -83,8 +91,46 @@ export default function Chat({ messages, onSendMessage, isLoading = false }: Cha
     }
   };
 
+  // Función para iniciar llamada telefónica
+  const handleCall = () => {
+    if (!otherUserPhone) {
+      console.warn('No hay número de teléfono disponible para el usuario');
+      return;
+    }
+    
+    // Limpiar el número de teléfono de espacios y caracteres especiales
+    const cleanedPhone = otherUserPhone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+    
+    // Usar el protocolo tel: para iniciar una llamada
+    window.location.href = `tel:${cleanedPhone}`;
+    
+    console.log('Iniciando llamada a:', cleanedPhone);
+  };
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header del chat con botón de llamada */}
+      {otherUserPhone && (
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+            <span className="text-sm font-medium text-gray-700">
+              {otherUserName || 'Chat'}
+            </span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors"
+            onClick={handleCall}
+            title={`Llamar a ${otherUserName || 'usuario'}`}
+          >
+            <Phone className="h-4 w-4 mr-1" />
+            <span className="text-xs">Llamar</span>
+          </Button>
+        </div>
+      )}
+      
       <ScrollArea className="flex-1 p-1" ref={scrollAreaRef}>
         <div className="space-y-4 p-3">
           {messages.map((msg, index) => {

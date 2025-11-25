@@ -31,7 +31,7 @@ export function PriceDisplay({
     default: "text-gray-900",
     gradient: "bg-gradient-to-r from-[#2E4CA6] to-[#0477BF] bg-clip-text text-transparent",
     highlight: "text-[#0477BF]",
-    muted: "text-gray-600",
+    muted: "text-gray-100",
   };
 
   const formatPrice = (value: number) => {
@@ -41,7 +41,7 @@ export function PriceDisplay({
   return (
     <div className="flex flex-col items-center">
       {label && (
-        <span className={`${labelSizeClasses[size]} text-gray-500 mb-1`}>
+        <span className={`${labelSizeClasses[size]} text-gray-300 mb-1`}>
           {label}
         </span>
       )}

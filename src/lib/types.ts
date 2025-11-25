@@ -57,6 +57,7 @@ export interface Driver {
   totalRides?: number;
   location?: Location;
   vehicle: DocumentReference;
+  phone?: string; // Teléfono del conductor
   // Preferencias de notificación
   notificationPreferences?: {
     browserNotifications: boolean;
