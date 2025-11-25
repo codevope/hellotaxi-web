@@ -43,11 +43,7 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       const isSecure = window.location.protocol === 'https:' || 
                       window.location.hostname === 'localhost' ||
                       window.location.hostname === '127.0.0.1';
-      
-      console.log('🔍 [Rider] Verificando capacidades del navegador...');
-      console.log('🔍 [Rider] Notification API:', hasNotificationAPI);
-      console.log('🔍 [Rider] Contexto seguro:', isSecure);
-      
+
       setCanUseNotifications(hasNotificationAPI);
       setIsSecureContext(isSecure);
       
@@ -66,33 +62,28 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
   // Solicitar permisos de notificación
   const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
     if (!canUseNotifications) {
-      console.warn('⚠️ [Rider] API de notificaciones no disponible');
       return false;
     }
 
     try {
-      console.log('📝 [Rider] Solicitando permisos de notificación...');
       const permission = await Notification.requestPermission();
-      console.log('📝 [Rider] Resultado permisos:', permission);
-      
       const granted = permission === 'granted';
       setHasPermission(granted);
       
       if (granted) {
         toast({
-          title: "✅ Permisos otorgados",
+          title: "Permisos otorgados",
           description: "Recibirás notificaciones del estado del viaje",
         });
       }
       
       return granted;
     } catch (error) {
-      console.error('❌ [Rider] Error solicitando permisos:', error);
       return false;
     }
   }, [canUseNotifications, toast]);
 
-  // Efecto para solicitar permisos automáticamente cuando se carga la app
+  // Efecto para solicitar permisos y habilitar audio automáticamente cuando se carga la app
   useEffect(() => {
     const requestInitialPermissions = async () => {
       if (!riderId || !isLoaded || !canUseNotifications) return;
@@ -116,21 +107,35 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
           localStorage.setItem('hellotaxi-rider-permissions-asked', 'true');
           
           if (granted) {
-            // Sugerir activar el audio también
-            setTimeout(() => {
+            // Habilitar audio automáticamente
+            console.log('🔊 [Rider] Habilitando audio automáticamente...');
+            const audioResult = await enableAudio();
+            
+            if (audioResult) {
               toast({
-                title: "🔊 ¿Activar sonido?",
-                description: "Ve a Config > Activar Sonido para escuchar cuando cambie el estado de tu viaje",
-                duration: 10000,
+                title: "✅ Todo listo",
+                description: "Notificaciones y sonido activados. Recibirás alertas cuando el conductor cambie el estado de tu viaje",
+                duration: 5000,
               });
-            }, 2000);
+            } else {
+              // Si falla la activación automática de audio (requiere interacción)
+              toast({
+                title: "🔊 Audio pendiente",
+                description: "El sonido se activará automáticamente cuando sea necesario",
+                duration: 5000,
+              });
+            }
           }
         }, 3000);
+      } else if (hasPermission && !audioEnabled) {
+        // Si ya tiene permisos pero el audio no está habilitado, intentar habilitarlo
+        console.log('🔊 [Rider] Permisos concedidos pero audio no habilitado, intentando habilitar...');
+        await enableAudio();
       }
     };
 
     requestInitialPermissions();
-  }, [riderId, isLoaded, canUseNotifications, hasPermission, requestNotificationPermission, toast]);
+  }, [riderId, isLoaded, canUseNotifications, hasPermission, audioEnabled, requestNotificationPermission, enableAudio, toast]);
 
   // Manejar cambios de estado del conductor
   const handleDriverStatusChange = useCallback(async (
@@ -147,23 +152,33 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     let title = '';
     let message = '';
     let shouldPlaySound = true;
+    let soundFile = 'notification'; // sonido por defecto
 
     switch (newStatus) {
       case 'accepted':
-        title = '✅ ¡Viaje aceptado!';
+        title = '¡Viaje aceptado!';
         message = 'Un conductor ha aceptado tu solicitud y se dirige hacia ti';
+        soundFile = 'taxi';
         break;
       case 'arrived':
-        title = '🚗 ¡Tu conductor ha llegado!';
+        title = '¡Tu conductor ha llegado!';
         message = 'El conductor está esperándote en el punto de recojo';
+        soundFile = 'notification';
         break;
       case 'in-progress':
-        title = '🚀 ¡Viaje iniciado!';
+        title = '¡Viaje iniciado!';
         message = 'Tu viaje ha comenzado, disfruta el trayecto';
+        soundFile = 'arrived';
         break;
       case 'completed':
-        title = '🎉 ¡Viaje completado!';
+        // No reproducir sonido si ya fue calificado (evita duplicado al enviar rating)
+        if (rideData.isRatedByPassenger) {
+          console.log('🔇 [Rider] Viaje ya calificado, no reproducir sonido');
+          shouldPlaySound = false;
+        }
+        title = '¡Viaje completado!';
         message = 'Has llegado a tu destino. ¡Gracias por elegir HelloTaxi!';
+        soundFile = 'notification';
         break;
       default:
         shouldPlaySound = false;
@@ -171,12 +186,14 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
         return;
     }
 
-    // Mostrar toast
-    toast({
-      title,
-      description: message,
-      duration: 5000,
-    });
+    // Mostrar toast solo si no ha sido calificado
+    if (!rideData.isRatedByPassenger || newStatus !== 'completed') {
+      toast({
+        title,
+        description: message,
+        duration: 2000,
+      });
+    }
 
     // Mostrar notificación nativa si hay permisos
     if (hasPermission && canUseNotifications) {
@@ -203,11 +220,14 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       }
     }
 
-    // Reproducir sonido
+    // Reproducir sonido específico según el evento
     if (shouldPlaySound && audioEnabled) {
       try {
-        console.log('🔊 [Rider] Reproduciendo sonido de notificación...');
-        const soundResult = await playNotificationSound({ volume: 0.8 });
+        console.log(`🔊 [Rider] Reproduciendo sonido: ${soundFile}.mp3 para estado: ${newStatus}`);
+        const soundResult = await playNotificationSound({ 
+          volume: 0.8,
+          soundFile: soundFile // Pasar el archivo de sonido específico
+        });
         console.log('🔊 [Rider] Resultado reproducción sonido:', soundResult);
       } catch (error) {
         console.error('❌ [Rider] Error reproduciendo sonido:', error);

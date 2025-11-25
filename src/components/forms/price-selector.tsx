@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  normalizePrice, 
+  incrementPrice, 
+  decrementPrice, 
+  calculatePercentageChange 
+} from '@/lib/price-utils';
 
 interface PriceSelectorProps {
   originalPrice: number;
@@ -11,7 +17,7 @@ interface PriceSelectorProps {
   disabled?: boolean;
   maxIncrease?: number; // Porcentaje máximo de aumento (ej: 15 para 15%)
   maxDecrease?: number; // Porcentaje máximo de disminución (ej: 15 para 15%)
-  step?: number; // Paso de incremento/decremento en soles
+  step?: number; // Paso de incremento/decremento en soles (siempre será 0.50)
 }
 
 export function PriceSelector({
@@ -20,34 +26,37 @@ export function PriceSelector({
   disabled = false,
   maxIncrease = 15,
   maxDecrease = 15,
-  step = 0.50,
+  step = 0.50, // Siempre será 0.50
 }: PriceSelectorProps) {
-  const [currentPrice, setCurrentPrice] = useState(originalPrice);
+  // Normalizar el precio original
+  const normalizedOriginal = normalizePrice(originalPrice);
+  const [currentPrice, setCurrentPrice] = useState(normalizedOriginal);
 
-  // Calcular límites
-  const minPrice = Math.max(0.50, originalPrice * (1 - maxDecrease / 100));
-  const maxPrice = originalPrice * (1 + maxIncrease / 100);
+  // Calcular límites normalizados
+  const minPrice = Math.max(0.50, normalizePrice(originalPrice * (1 - maxDecrease / 100)));
+  const maxPrice = normalizePrice(originalPrice * (1 + maxIncrease / 100));
 
   // Actualizar precio cuando cambie el original
   useEffect(() => {
-    setCurrentPrice(originalPrice);
+    const normalized = normalizePrice(originalPrice);
+    setCurrentPrice(normalized);
   }, [originalPrice]);
 
-  const decreasePrice = () => {
-    const newPrice = Math.max(minPrice, currentPrice - step);
+  const handleDecreasePrice = () => {
+    const newPrice = decrementPrice(currentPrice, minPrice);
     setCurrentPrice(newPrice);
     onPriceChange(newPrice);
   };
 
-  const increasePrice = () => {
-    const newPrice = Math.min(maxPrice, currentPrice + step);
+  const handleIncreasePrice = () => {
+    const newPrice = incrementPrice(currentPrice, maxPrice);
     setCurrentPrice(newPrice);
     onPriceChange(newPrice);
   };
 
   const isAtMin = currentPrice <= minPrice;
   const isAtMax = currentPrice >= maxPrice;
-  const percentageChange = ((currentPrice - originalPrice) / originalPrice) * 100;
+  const percentageChange = calculatePercentageChange(normalizedOriginal, currentPrice);
 
   return (
     <div className="space-y-2">
@@ -57,7 +66,7 @@ export function PriceSelector({
           type="button"
           variant="outline"
           size="icon"
-          onClick={decreasePrice}
+          onClick={handleDecreasePrice}
           disabled={disabled || isAtMin}
           className={cn(
             "h-8 w-8 rounded-full transition-all",
@@ -71,7 +80,7 @@ export function PriceSelector({
 
         <div className="text-center min-w-[100px]">
           <p className="text-2xl font-bold text-[#2E4CA6]">
-            S/ {currentPrice.toFixed(2)}
+            S/ {currentPrice.toFixed(1)}
           </p>
           {percentageChange !== 0 && (
             <p className={cn(
@@ -87,7 +96,7 @@ export function PriceSelector({
           type="button"
           variant="outline"
           size="icon"
-          onClick={increasePrice}
+          onClick={handleIncreasePrice}
           disabled={disabled || isAtMax}
           className={cn(
             "h-8 w-8 rounded-full transition-all",
@@ -102,17 +111,17 @@ export function PriceSelector({
 
       {/* Información adicional */}
       <div className="text-center space-y-1">
-        {currentPrice !== originalPrice && (
+        {currentPrice !== normalizedOriginal && (
           <div className="text-xs text-gray-600">
-            <span className="line-through">Precio sugerido: S/ {originalPrice.toFixed(2)}</span>
+            <span className="line-through">Precio sugerido: S/ {normalizedOriginal.toFixed(1)}</span>
           </div>
         )}
         
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Mín: S/ {minPrice.toFixed(2)}</span>
-          <span>Máx: S/ {maxPrice.toFixed(2)}</span>
+          <span>Mín: S/ {minPrice.toFixed(1)}</span>
+          <span>Máx: S/ {maxPrice.toFixed(1)}</span>
         </div>
-
+        
         {percentageChange > 10 && (
           <div className="text-xs text-amber-600 bg-amber-50 rounded-full px-2 py-1">
             Un precio más alto puede atraer conductores más rápido

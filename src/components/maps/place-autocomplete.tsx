@@ -118,7 +118,7 @@ const PlaceAutocomplete = ({
             onFocus={() => { if(inputValue) setShowSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder={placeholder}
-            className="pl-10 pr-10"
+            className="pl-10 pr-10 text-sm"
         />
         {inputValue && (
           <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7" onClick={clearInput}>

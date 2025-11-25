@@ -52,6 +52,7 @@ export default function AppHeader() {
     !isDriver && { href: "/ride", label: "Viaja" },
     !isDriver && { href: "/drive", label: "Conduce" },
     { href: "/about", label: "Quiénes Somos" },
+    { href: "/install", label: "Instalar App" },
   ].filter(Boolean) as { href: string; label: string }[];
 
   return (
@@ -216,9 +217,9 @@ export default function AppHeader() {
         </div>
       </header>
 
-      {/* Mobile Navigation Menu */}
+      {/* Mobile Navigation Menu - Floating Overlay */}
       {isMobile && isMobileMenuOpen && (
-        <div className="bg-card border-b shadow-sm md:hidden">
+        <div className="fixed top-[73px] left-0 right-0 bg-card border-b shadow-xl md:hidden z-40 max-h-[calc(100vh-73px)] overflow-y-auto">
           <nav className="flex flex-col p-4 space-y-2">
             {navLinks.map((link) => (
               <Button

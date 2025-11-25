@@ -78,6 +78,7 @@ import RatingForm from "@/components/forms/rating-form";
 import { processRating } from "@/ai/flows/process-rating";
 import { useRideStore } from "@/store/ride-store";
 import type { Vehicle, DriverWithVehicleInfo } from "@/lib/types";
+import { AudioEnabler } from "@/components/pwa/audio-enabler";
 
 // Helper function to enrich driver with vehicle information
 async function enrichDriverWithVehicle(
@@ -449,8 +450,13 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
   };
 
   return (
-    <div className="p-2 sm:p-4 lg:p-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
+    <>
+      <AudioEnabler 
+        onEnable={notifications.enableAudio}
+        isEnabled={notifications.audioEnabled}
+      />
+      <div className="p-2 sm:p-4 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         <div className="lg:col-span-2 flex flex-col min-h-[50vh] sm:min-h-[60vh] rounded-xl overflow-hidden shadow-lg relative">
           <MapView
             driverLocation={driverLocation}
@@ -544,7 +550,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                 <TabsTrigger value="history" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
                   <History className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
                   <span className="hidden sm:inline">Historial</span>
-                  <span className="sm:hidden">Hist.</span>
+                  <span className="sm:hidden">Historial</span>
                 </TabsTrigger>
                 <TabsTrigger value="chat" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
                   <MessageCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
@@ -554,12 +560,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
                 <TabsTrigger value="config" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
                   <Settings className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
                   <span className="hidden sm:inline">Config</span>
-                  <span className="sm:hidden">Conf</span>
-                  {!notifications.hasPermission || !notifications.audioEnabled ? (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
-                  ) : (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full"></span>
-                  )}
+                  <span className="sm:hidden">Config</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -776,30 +777,31 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
             </Tabs>
           </CardContent>
         </Card>
-      </div>
+        </div>
 
-      <Dialog open={isCancelReasonDialogOpen} onOpenChange={setIsCancelReasonDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Por qué estás cancelando?</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 py-4">
-            {appSettings?.cancellationReasons.map((reason) => (
-              <Button
-                key={reason.code}
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-                onClick={() => {
-                  handleCancelRide(reason);
-                  setIsCancelReasonDialogOpen(false);
-                }}
-              >
-                {reason.reason}
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={isCancelReasonDialogOpen} onOpenChange={setIsCancelReasonDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Por qué estás cancelando?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+              {appSettings?.cancellationReasons.map((reason) => (
+                <Button
+                  key={reason.code}
+                  variant="outline"
+                  className="w-full justify-start text-left h-auto py-3"
+                  onClick={() => {
+                    handleCancelRide(reason);
+                    setIsCancelReasonDialogOpen(false);
+                  }}
+                >
+                  {reason.reason}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 }

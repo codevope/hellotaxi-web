@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Download, X, Smartphone, Share, Zap } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, X, Smartphone, Share, Zap } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
+    outcome: "accepted" | "dismissed";
     platform: string;
   }>;
   prompt(): Promise<void>;
@@ -20,10 +20,13 @@ interface PWANotificationProps {
   showOnHome?: boolean;
 }
 
-export default function PWAInstallNotification({ showOnHome = false }: PWANotificationProps) {
-  console.log('PWAInstallNotification renderizado con showOnHome:', showOnHome);
-  
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+export default function PWAInstallNotification({
+  showOnHome = false,
+}: PWANotificationProps) {
+  console.log("PWAInstallNotification renderizado con showOnHome:", showOnHome);
+
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -32,77 +35,88 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
 
   // Log cuando cambie el estado del modal
   useEffect(() => {
-    console.log('showInstallModal cambió a:', showInstallModal);
+    console.log("showInstallModal cambió a:", showInstallModal);
   }, [showInstallModal]);
 
   useEffect(() => {
     // Detectar iOS y si ya está instalado
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const isInStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          (window.navigator as any).standalone === true;
-    
+    const isIOSDevice =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isInStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+
     setIsIOS(isIOSDevice);
     setIsStandalone(isInStandalone);
 
-    console.log('PWA Check inicial:', { isIOSDevice, isInStandalone, showOnHome });
+    console.log("PWA Check inicial:", {
+      isIOSDevice,
+      isInStandalone,
+      showOnHome,
+    });
 
     // No mostrar nada si ya está instalado
     if (isInStandalone) {
-      console.log('App ya está instalada, no mostrar PWA notification');
+      console.log("App ya está instalada, no mostrar PWA notification");
       return;
     }
 
     // Lógica inteligente para mostrar la notificación
     const checkShouldShowNotification = () => {
-      const lastShown = localStorage.getItem('pwa-last-shown');
-      const dismissCount = parseInt(localStorage.getItem('pwa-dismiss-count') || '0');
-      const permanentDismiss = localStorage.getItem('pwa-permanent-dismiss');
-      
+      const lastShown = localStorage.getItem("pwa-last-shown");
+      const dismissCount = parseInt(
+        localStorage.getItem("pwa-dismiss-count") || "0"
+      );
+      const permanentDismiss = localStorage.getItem("pwa-permanent-dismiss");
+
       // Si el usuario la rechazó 3 veces, no mostrar más (hasta que limpie localStorage)
-      if (permanentDismiss === 'true' && dismissCount >= 3) {
-        console.log('PWA notification permanentemente rechazada después de 3 intentos');
+      if (permanentDismiss === "true" && dismissCount >= 3) {
+        console.log(
+          "PWA notification permanentemente rechazada después de 3 intentos"
+        );
         return false;
       }
-      
+
       // Primera vez que entra
       if (!lastShown) {
-        console.log('Primera visita - mostrar PWA notification');
+        console.log("Primera visita - mostrar PWA notification");
         return true;
       }
-      
+
       // Verificar si han pasado suficientes días según el número de rechazos
-      const daysSinceLastShown = (Date.now() - parseInt(lastShown)) / (1000 * 60 * 60 * 24);
+      const daysSinceLastShown =
+        (Date.now() - parseInt(lastShown)) / (1000 * 60 * 60 * 24);
       let cooldownDays = 1; // Por defecto 1 día
-      
+
       if (dismissCount === 1) cooldownDays = 3; // Después del primer rechazo, esperar 3 días
       if (dismissCount === 2) cooldownDays = 7; // Después del segundo, esperar 1 semana
       if (dismissCount >= 3) cooldownDays = 30; // Después del tercero, esperar 1 mes
-      
-      console.log('PWA Check temporal:', { 
-        daysSinceLastShown: daysSinceLastShown.toFixed(1), 
-        cooldownDays, 
+
+      console.log("PWA Check temporal:", {
+        daysSinceLastShown: daysSinceLastShown.toFixed(1),
+        cooldownDays,
         dismissCount,
-        shouldShow: daysSinceLastShown >= cooldownDays
+        shouldShow: daysSinceLastShown >= cooldownDays,
       });
-      
+
       return daysSinceLastShown >= cooldownDays;
     };
 
     // Verificar si ya fue rechazado
     const shouldShow = checkShouldShowNotification();
-    console.log('PWA Check detallado:', { 
-      isIOSDevice, 
-      showOnHome, 
-      shouldShow, 
+    console.log("PWA Check detallado:", {
+      isIOSDevice,
+      showOnHome,
+      shouldShow,
       isInStandalone,
-      serviceWorkerSupport: 'serviceWorker' in navigator,
-      pushManagerSupport: 'PushManager' in window
+      serviceWorkerSupport: "serviceWorker" in navigator,
+      pushManagerSupport: "PushManager" in window,
     });
-    
+
     // Registrar Service Worker primero
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       // Temporalmente deshabilitado para evitar error de workbox en desarrollo
-      console.log('Service Worker registration disabled during development');
+      console.log("Service Worker registration disabled during development");
       /*
       navigator.serviceWorker
         .register('/sw.js')
@@ -114,44 +128,44 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
         });
       */
     }
-    
+
     // Manejar evento de instalación PWA
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('beforeinstallprompt triggered');
+      console.log("beforeinstallprompt triggered");
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      
+
       // Mostrar modal después de un tiempo si debe mostrarse
       if (shouldShow && showOnHome) {
-        console.log('Programando PWA modal para Chrome/Edge en 2 segundos');
+        console.log("Programando PWA modal para Chrome/Edge en 2 segundos");
         setTimeout(() => {
-          console.log('Showing PWA modal (Chrome/Edge)');
+          console.log("Showing PWA modal (Chrome/Edge)");
           setShowInstallModal(true);
           // Actualizar timestamp de última vez mostrada
-          localStorage.setItem('pwa-last-shown', Date.now().toString());
+          localStorage.setItem("pwa-last-shown", Date.now().toString());
         }, 2000);
       }
     };
 
     // Mostrar notificación automáticamente si debe mostrarse
     if (showOnHome && shouldShow) {
-      console.log('✅ PWA modal programado para mostrarse en 3 segundos');
+      console.log("✅ PWA modal programado para mostrarse en 3 segundos");
       setTimeout(() => {
-        console.log('🚀 MOSTRANDO PWA modal automáticamente');
+        console.log("🚀 MOSTRANDO PWA modal automáticamente");
         setShowInstallModal(true);
         // Actualizar timestamp de última vez mostrada
-        localStorage.setItem('pwa-last-shown', Date.now().toString());
+        localStorage.setItem("pwa-last-shown", Date.now().toString());
       }, 3000);
     } else if (showOnHome && !shouldShow) {
-      console.log('❌ PWA modal NO se muestra - aún en período de espera');
+      console.log("❌ PWA modal NO se muestra - aún en período de espera");
     }
 
     // Para dispositivos que soportan PWA pero no tienen el evento, mostrar instrucciones
     // if (showOnHome && !wasPromptDismissed) {
     //   // Detectar si es un navegador que soporta PWA
     //   const isPWACapable = 'serviceWorker' in navigator && 'PushManager' in window;
-      
+
     //   if (isPWACapable || isIOSDevice) {
     //     setTimeout(() => {
     //       console.log('Showing PWA modal (fallback for PWA-capable browsers)');
@@ -162,28 +176,31 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
 
     // Detectar si ya está instalada
     const handleAppInstalled = () => {
-      console.log('App installed');
+      console.log("App installed");
       setIsInstallable(false);
       setDeferredPrompt(null);
       setShowInstallModal(false);
-      localStorage.removeItem('pwa-install-dismissed');
-      
+      localStorage.removeItem("pwa-install-dismissed");
+
       toast({
-        title: '¡HelloTaxi instalada!',
-        description: 'La aplicación se ha instalado correctamente.',
+        title: "¡HelloTaxi instalada!",
+        description: "La aplicación se ha instalado correctamente.",
         duration: 3000,
       });
     };
 
     // Registrar listeners
-    console.log('Registrando event listeners para PWA');
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    console.log("Registrando event listeners para PWA");
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      console.log('Limpiando event listeners para PWA');
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      console.log("Limpiando event listeners para PWA");
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, [showOnHome, toast]);
 
@@ -200,9 +217,9 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
 
         await deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-          console.log('Usuario aceptó instalar la PWA');
+
+        if (outcome === "accepted") {
+          console.log("Usuario aceptó instalar la PWA");
           toast({
             title: "¡Instalación iniciada!",
             description: "HelloTaxi se está instalando en tu dispositivo.",
@@ -215,12 +232,12 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
             duration: 3000,
           });
         }
-        
+
         setDeferredPrompt(null);
         setIsInstallable(false);
         setShowInstallModal(false);
       } catch (error) {
-        console.error('Error instalando PWA:', error);
+        console.error("Error instalando PWA:", error);
         toast({
           title: "Error de instalación",
           description: "Hubo un problema al instalar la aplicación.",
@@ -231,63 +248,76 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
       // Fallback: mostrar instrucciones manuales
       toast({
         title: "Instalación manual",
-        description: "Ve al menú del navegador y busca 'Instalar aplicación' o 'Agregar a pantalla de inicio'.",
+        description:
+          "Ve al menú del navegador y busca 'Instalar aplicación' o 'Agregar a pantalla de inicio'.",
         duration: 5000,
       });
-      
+
       setShowInstallModal(false);
     }
   };
 
   const dismissModal = () => {
     setShowInstallModal(false);
-    
+
     // Incrementar contador de rechazos
-    const currentDismissCount = parseInt(localStorage.getItem('pwa-dismiss-count') || '0');
+    const currentDismissCount = parseInt(
+      localStorage.getItem("pwa-dismiss-count") || "0"
+    );
     const newDismissCount = currentDismissCount + 1;
-    localStorage.setItem('pwa-dismiss-count', newDismissCount.toString());
-    localStorage.setItem('pwa-last-shown', Date.now().toString());
-    
+    localStorage.setItem("pwa-dismiss-count", newDismissCount.toString());
+    localStorage.setItem("pwa-last-shown", Date.now().toString());
+
     // Si ya rechazó 3 veces, marcar como rechazo permanente
     if (newDismissCount >= 3) {
-      localStorage.setItem('pwa-permanent-dismiss', 'true');
+      localStorage.setItem("pwa-permanent-dismiss", "true");
       toast({
         title: "Notificación ocultada permanentemente",
-        description: "No volveremos a mostrar esta notificación. Puedes instalar desde el menú del navegador.",
+        description:
+          "No volveremos a mostrar esta notificación. Puedes instalar desde el menú del navegador.",
         duration: 5000,
       });
     } else {
-      const nextShowDays = newDismissCount === 1 ? 3 : newDismissCount === 2 ? 7 : 30;
+      const nextShowDays =
+        newDismissCount === 1 ? 3 : newDismissCount === 2 ? 7 : 30;
       toast({
         title: "Notificación ocultada",
-        description: `La volveremos a mostrar en ${nextShowDays} día${nextShowDays > 1 ? 's' : ''}. Puedes instalar desde el menú del navegador.`,
+        description: `La volveremos a mostrar en ${nextShowDays} día${
+          nextShowDays > 1 ? "s" : ""
+        }. Puedes instalar desde el menú del navegador.`,
         duration: 4000,
       });
     }
-    
-    console.log('PWA modal rechazado:', { 
-      dismissCount: newDismissCount, 
-      permanentDismiss: newDismissCount >= 3 
+
+    console.log("PWA modal rechazado:", {
+      dismissCount: newDismissCount,
+      permanentDismiss: newDismissCount >= 3,
     });
   };
 
   // No renderizar si no está en pantalla de inicio o si ya está instalado
   if (!showOnHome || isStandalone) {
-    console.log('No renderizando PWA notification:', { showOnHome, isStandalone });
+    console.log("No renderizando PWA notification:", {
+      showOnHome,
+      isStandalone,
+    });
     return null;
   }
 
   // PARA TESTING - TEMPORAL
-  console.log('PWA notification render check:', { 
-    showOnHome, 
-    isStandalone, 
+  console.log("PWA notification render check:", {
+    showOnHome,
+    isStandalone,
     showInstallModal,
-    lastShown: localStorage.getItem('pwa-last-shown'),
-    dismissCount: localStorage.getItem('pwa-dismiss-count'),
-    permanentDismiss: localStorage.getItem('pwa-permanent-dismiss')
+    lastShown: localStorage.getItem("pwa-last-shown"),
+    dismissCount: localStorage.getItem("pwa-dismiss-count"),
+    permanentDismiss: localStorage.getItem("pwa-permanent-dismiss"),
   });
 
-  console.log('Renderizando PWA notification, showInstallModal:', showInstallModal);
+  console.log(
+    "Renderizando PWA notification, showInstallModal:",
+    showInstallModal
+  );
 
   return (
     <AnimatePresence>
@@ -304,124 +334,122 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
 
           {/* Modal de instalación */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            initial={{ opacity: 0, scale: 0.85, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            transition={{ 
-              type: "spring", 
-              damping: 20, 
-              stiffness: 300,
-              duration: 0.5 
-            }}
+            exit={{ opacity: 0, scale: 0.85, y: 24 }}
+            transition={{ type: "spring", damping: 22, stiffness: 300 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <Card className="w-full max-w-md bg-white shadow-2xl border-0 overflow-hidden">
-              <CardContent className="p-0">
-                {/* Header con gradiente */}
-                <div className="bg-gradient-to-r from-[#0095FF] via-[#0477BF] to-[#0095FF] p-6 text-white relative overflow-hidden">
-                  <div className="absolute inset-0">
-                    <div className="absolute top-2 left-4 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
-                    <div className="absolute bottom-2 right-4 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
+            <Card className="w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl border-0 overflow-hidden">
+              <CardContent className="p-0 relative">
+                {/* Cabecera con logo y título */}
+                <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-[#E6F6FF] to-[#F0F9FF] dark:from-transparent dark:to-transparent">
+                  <div className="flex-shrink-0">
+                    <img
+                      src="/img/logo2.png"
+                      alt="HelloTaxi logo"
+                      className="h-14 w-auto block dark:hidden"
+                    />
+                    <img
+                      src="/img/logo3.png"
+                      alt="HelloTaxi logo alt"
+                      className="h-14 w-auto hidden dark:block"
+                    />
                   </div>
-                  
-                  <div className="relative z-10 text-center">
-                    <motion.div
-                      animate={{ 
-                        scale: [1, 1.1, 1],
-                        rotate: [0, 5, -5, 0] 
-                      }}
-                      transition={{ 
-                        duration: 2, 
-                        repeat: Infinity,
-                        repeatType: "reverse" 
-                      }}
-                      className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm"
-                    >
-                      <Smartphone className="w-8 h-8 text-white" />
-                    </motion.div>
-                    
-                    <h3 className="text-xl font-bold mb-2">¡Instala HelloTaxi!</h3>
-                    <p className="text-white/90 text-sm">
-                      Acceso rápido desde tu pantalla de inicio
+
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      Accede rápido y ahorra tiempo desde tu pantalla de inicio
                     </p>
+                  </div>
+
+                  <div className="ml-auto flex items-center gap-3">
+                    <img
+                      src="/img/logo.png"
+                      alt="logo dark"
+                      className="h-10 w-auto hidden dark:block rounded-md bg-slate-800 p-1"
+                    />
                   </div>
                 </div>
 
-                {/* Contenido */}
+                {/* Contenido principal */}
                 <div className="p-6 space-y-6">
-                  {/* Beneficios */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900 text-center mb-4">
-                      Ventajas de la App:
-                    </h4>
-                    
+                  <div className="grid grid-cols-1 gap-3">
                     {[
-                      { icon: Zap, text: "Acceso instantáneo", color: "text-blue-600" },
-                      { icon: Download, text: "Sin descargas pesadas", color: "text-green-600" },
-                      { icon: Smartphone, text: "Experiencia nativa", color: "text-purple-600" },
-                    ].map((benefit, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 + idx * 0.1 }}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                      {
+                        icon: Zap,
+                        title: "Rápido",
+                        desc: "Carga instantánea, siempre listo",
+                      },
+                      {
+                        icon: Download,
+                        title: "Ligero",
+                        desc: "Sin descargas pesadas",
+                      },
+                      {
+                        icon: Smartphone,
+                        title: "Nativo",
+                        desc: "Se siente como app nativa",
+                      },
+                    ].map((b, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg"
                       >
-                        <div className={`p-2 rounded-full bg-white shadow-sm ${benefit.color}`}>
-                          <benefit.icon className="w-4 h-4" />
+                        <div className="p-2 rounded-full bg-white shadow-sm dark:bg-slate-700">
+                          <b.icon className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {benefit.text}
-                        </span>
-                      </motion.div>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900 dark:text-white">
+                            {b.title}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">
+                            {b.desc}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
 
-                  {/* Botones de acción */}
+                  {/* Botones: instalación destacada */}
                   <div className="space-y-3">
-                    {/* Para iOS */}
                     {isIOS ? (
                       <>
-                        <div className="text-center space-y-3">
-                          <p className="text-sm text-gray-600 mb-4">
-                            Para instalar en tu iPhone:
+                        <div className="text-center">
+                          <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                            Instrucciones para iPhone: usa el menú compartir en
+                            Safari y selecciona "Agregar a pantalla de inicio".
                           </p>
-                          
-                          <div className="space-y-2 text-xs text-gray-600">
-                            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                              <Share className="w-4 h-4 text-blue-600" />
-                              <span>1. Toca el botón "Compartir" en Safari</span>
-                            </div>
-                            <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
-                              <Download className="w-4 h-4 text-green-600" />
-                              <span>2. Selecciona "Agregar a pantalla de inicio"</span>
-                            </div>
-                          </div>
+                          <Button
+                            onClick={dismissModal}
+                            className="w-full py-3 font-semibold rounded-2xl bg-gradient-to-r from-sky-600 to-blue-600 text-white"
+                          >
+                            Entendido
+                          </Button>
                         </div>
+                      </>
+                    ) : (
+                      <>
+                        <motion.button
+                          onClick={installPWA}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full flex items-center justify-center gap-4 py-4 px-5 text-lg font-bold rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052CC] text-white shadow-xl"
+                        >
+                          <Share className="w-5 h-5" />
+
+                          <span>
+                            {deferredPrompt
+                              ? "Instalar Hello TAXI"
+                              : "Ver instrucciones de instalación"}
+                          </span>
+                        </motion.button>
 
                         <Button
                           onClick={dismissModal}
-                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3"
-                        >
-                          Entendido
-                        </Button>
-                      </>
-                    ) : (
-                      /* Para Android/Chrome */
-                      <>
-                        <Button
-                          onClick={installPWA}
-                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 text-base"
-                        >
-                          <Download className="w-5 h-5 mr-2" />
-                          {deferredPrompt ? 'Instalar App' : 'Instrucciones de Instalación'}
-                        </Button>
-                        
-                        <Button
-                          onClick={dismissModal}
                           variant="outline"
-                          className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                          className="w-full py-3 rounded-2xl border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                         >
                           Ahora no
                         </Button>
@@ -430,12 +458,12 @@ export default function PWAInstallNotification({ showOnHome = false }: PWANotifi
                   </div>
                 </div>
 
-                {/* Botón de cerrar */}
+                {/* Cerrar */}
                 <Button
                   onClick={dismissModal}
                   size="sm"
-                  variant="ghost"
-                  className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 p-2"
+                  variant="link"
+                  className="absolute top-2 right-6 text-slate-700 dark:text-slate-300 p-2"
                 >
                   <X className="w-4 h-4" />
                 </Button>

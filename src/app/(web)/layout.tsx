@@ -2,7 +2,7 @@
 
 import AppHeader from '@/components/layout/app-header';
 import AppFooter from '@/components/layout/app-footer';
-import { useMobileOptimized } from "@/hooks/use-mobile-optimized";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { usePathname } from "next/navigation";
 
 export default function WebLayout({
@@ -10,7 +10,7 @@ export default function WebLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isMobile } = useMobileOptimized();
+  const isMobile = useIsMobile();
   const pathname = usePathname();
   
   // Rutas que NO necesitan header/footer (como login que tiene su propio diseño completo)

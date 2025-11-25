@@ -85,7 +85,7 @@ export default function HomePage() {
     <>
       <main className="flex-1">
         {/* Resto del contenido existente */}
-        <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-br from-[#0095FF] via-[#0095FF] to-[#0095FF]">
+        <section className="relative min-h-[95vh] py-8 md:py-2 flex items-center overflow-hidden bg-gradient-to-br from-[#0095FF] via-[#0095FF] to-[#0095FF]">
           <div className="absolute inset-0 z-0">
             <Image
               src="/img/bg-hero.jpg"
@@ -122,8 +122,8 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Header con logo */}
-          <div className="absolute top-10 right-10 z-10">
+          {/* Header con logo - oculto en móvil */}
+          <div className="absolute top-10 right-10 z-10 hidden lg:block">
             <Image
               src="/img/logo.png"
               alt="Hello Taxi Logo"
@@ -161,9 +161,9 @@ export default function HomePage() {
           />
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <motion.div
-                className="text-white space-y-8"
+                className="text-white space-y-6 sm:space-y-8 text-center lg:text-left"
                 initial={{ opacity: 0, x: -100 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
@@ -185,7 +185,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <h1 className="text-5xl md:text-7xl font-bold font-headline mb-6 leading-tight">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-headline mb-4 sm:mb-6 leading-tight">
                     Tu Viaje,{" "}
                     <motion.span
                       className="inline-block"
@@ -204,7 +204,7 @@ export default function HomePage() {
                     <br />
                     Tu Ciudad
                   </h1>
-                  <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-xl">
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 leading-relaxed max-w-3xl mx-auto lg:mx-0">
                     Experimenta la libertad de negociar tu tarifa y viaja con
                     conductores de confianza.{" "}
                     <span className="font-semibold text-slate-900">
@@ -215,7 +215,7 @@ export default function HomePage() {
 
                 {/* Características destacadas */}
                 <motion.div
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3 lg:gap-4"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
@@ -228,24 +228,24 @@ export default function HomePage() {
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
-                      className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl p-4"
+                      className="flex flex-col lg:flex-row items-center gap-2 lg:gap-3 bg-white/10 backdrop-blur-md rounded-xl p-2 sm:p-3 lg:p-4"
                       whileHover={{
                         scale: 1.05,
                         backgroundColor: "rgba(255,255,255,0.2)",
                       }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="bg-[#05C7F2] rounded-lg p-2">
-                        <item.icon className="h-5 w-5 text-white" />
+                      <div className="bg-[#05C7F2] rounded-lg p-1.5 sm:p-2">
+                        <item.icon className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-white" />
                       </div>
-                      <span className="font-semibold">{item.text}</span>
+                      <span className="font-semibold text-[10px] sm:text-xs lg:text-sm text-center lg:text-left">{item.text}</span>
                     </motion.div>
                   ))}
                 </motion.div>
 
                 {/* Botones de CTA */}
                 <motion.div
-                  className="flex flex-col sm:flex-row gap-4 pt-4"
+                  className="flex flex-col sm:flex-row gap-3 lg:gap-4 pt-2 sm:pt-4 justify-center lg:justify-start"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1 }}
@@ -253,16 +253,17 @@ export default function HomePage() {
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    className="w-full sm:w-auto"
                   >
                     <Button
                       asChild
                       size="lg"
-                      className="font-bold text-lg px-8 py-7 bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white shadow-2xl group"
+                      className="font-bold text-sm sm:text-base lg:text-lg px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-7 bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white shadow-2xl group w-full"
                     >
                       <Link href="/ride">
-                        <Car className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-                        Solicitar Viaje Ahora
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
+                        <Car className="mr-2 h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 group-hover:animate-bounce" />
+                        <span className="text-xs sm:text-sm lg:text-base">Solicitar Viaje Ahora</span>
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 group-hover:translate-x-2 transition-transform" />
                       </Link>
                     </Button>
                   </motion.div>
@@ -270,16 +271,17 @@ export default function HomePage() {
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    className="w-full sm:w-auto"
                   >
                     <Button
                       asChild
                       size="lg"
                       variant="outline"
-                      className="font-bold text-lg px-8 py-7 bg-transparent text-white border-2 border-white/30 hover:bg-white/10 hover:border-white backdrop-blur-sm"
+                      className="font-bold text-sm sm:text-base lg:text-lg px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-7 bg-transparent text-white border-2 border-white/30 hover:bg-white/10 hover:border-white backdrop-blur-sm w-full"
                     >
                       <Link href="/driver">
-                        <Users className="mr-2 h-5 w-5" />
-                        Ser Conductor
+                        <Users className="mr-2 h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                        <span className="text-xs sm:text-sm lg:text-base">Ser Conductor</span>
                       </Link>
                     </Button>
                   </motion.div>
@@ -288,7 +290,7 @@ export default function HomePage() {
 
               {/* LADO DERECHO - SHOWCASE DE AUTOS ANIMADO */}
               <motion.div
-                className="relative h-[600px] hidden lg:block"
+                className="relative h-[200px] sm:h-[280px] lg:h-[600px]"
                 initial={{ opacity: 0, x: 100 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
@@ -305,7 +307,7 @@ export default function HomePage() {
                       ease: "linear",
                     }}
                   >
-                    <div className="w-[500px] h-[500px] rounded-full border-2 border-white/10 border-dashed" />
+                    <div className="w-[220px] h-[220px] sm:w-[320px] sm:h-[320px] lg:w-[500px] lg:h-[500px] rounded-full border-2 border-white/10 border-dashed" />
                   </motion.div>
 
                   {/* Círculo decorativo mediano */}
@@ -318,7 +320,7 @@ export default function HomePage() {
                       ease: "linear",
                     }}
                   >
-                    <div className="w-[380px] h-[380px] rounded-full border-2 border-white/5" />
+                    <div className="w-[160px] h-[160px] sm:w-[240px] sm:h-[240px] lg:w-[380px] lg:h-[380px] rounded-full border-2 border-white/5" />
                   </motion.div>
 
                   {/* Auto principal con animación */}
@@ -331,10 +333,10 @@ export default function HomePage() {
                     transition={{ type: "spring", stiffness: 100, damping: 20 }}
                   >
                     <motion.div
-                      className="relative w-[450px] h-[300px]"
+                      className="relative w-[180px] h-[120px] sm:w-[280px] sm:h-[190px] lg:w-[450px] lg:h-[300px]"
                       animate={{
-                        y: [0, -25, 0],
-                        rotateZ: [0, 3, 0, -3, 0],
+                        y: [0, -12, 0],
+                        rotateZ: [0, 2, 0, -2, 0],
                       }}
                       transition={{
                         duration: 4,
@@ -366,14 +368,14 @@ export default function HomePage() {
                   </motion.div>
 
                   {/* Indicadores de navegación */}
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-3 z-40">
+                  <div className="absolute -bottom-4 sm:-bottom-6 lg:bottom-0 left-1/2 transform -translate-x-1/2 flex gap-2 lg:gap-3 z-40">
                     {cars.map((_, idx) => (
                       <motion.button
                         key={idx}
-                        className={`h-2 rounded-full transition-all duration-300 ${
+                        className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                           idx === currentCarIndex
-                            ? "w-8 bg-white"
-                            : "w-2 bg-white/40"
+                            ? "w-6 sm:w-8 bg-white"
+                            : "w-1.5 sm:w-2 bg-white/40"
                         }`}
                         onClick={() => setCurrentCarIndex(idx)}
                         whileHover={{ scale: 1.2 }}
@@ -382,7 +384,7 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                  {/* Iconos flotantes alrededor */}
+                  {/* Iconos flotantes alrededor - ocultos en móvil */}
                   {[
                     { Icon: MapPin, angle: 45, distance: 250 },
                     { Icon: Navigation, angle: 135, distance: 220 },
@@ -394,7 +396,7 @@ export default function HomePage() {
                     return (
                       <motion.div
                         key={idx}
-                        className="absolute top-1/2 left-1/2 bg-white/20 backdrop-blur-md rounded-full p-4"
+                        className="hidden lg:block absolute top-1/2 left-1/2 bg-white/20 backdrop-blur-md rounded-full p-4"
                         style={{
                           x: x,
                           y: y,

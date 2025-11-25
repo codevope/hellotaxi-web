@@ -85,7 +85,7 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
               toast({
                 title: '🚖 Nueva solicitud de viaje',
                 description: `Recogida: ${newRequest.pickup}`,
-                duration: 10000,
+                duration: 2000,
                 className: 'border-l-4 border-l-[#2E4CA6] bg-gradient-to-r from-blue-50 to-white',
               });
             } else {

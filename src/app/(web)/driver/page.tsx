@@ -93,6 +93,7 @@ import { useDriverChat } from "@/hooks/driver/use-driver-chat";
 import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications-safe";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SSLWarningBanner } from "@/components/ssl-warning-banner";
+import { AudioEnabler } from "@/components/pwa/audio-enabler";
 
 type EnrichedRide = Omit<Ride, "passenger" | "driver"> & {
   passenger: User;
@@ -441,6 +442,10 @@ function DriverPageContent() {
   return (
     <>
       <SSLWarningBanner />
+      <AudioEnabler 
+        onEnable={enableAudio}
+        isEnabled={audioEnabled}
+      />
       <div className="flex flex-col min-h-screen bg-background">
         <main className="flex-1 p-2 sm:p-4 lg:p-8 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 min-h-[calc(100vh-200px)]">

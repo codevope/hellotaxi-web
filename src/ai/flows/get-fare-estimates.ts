@@ -20,6 +20,7 @@ import {
 import type { FareBreakdown, Coupon } from '@/lib/types';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { normalizePrice, roundToDecimal } from '@/lib/price-utils';
 
 
 /**
@@ -111,21 +112,25 @@ const estimateRideFareDeterministicFlow = ai.defineFlow(
     }
 
 
+    // Normalizar el total final al sistema de precios de HelloTaxi
+    // Redondea a décimas y ajusta a múltiplos de 0.50
+    const normalizedTotal = normalizePrice(total);
+
     const breakdown: FareBreakdown = {
-      baseFare,
-      distanceCost,
-      durationCost,
+      baseFare: roundToDecimal(baseFare),
+      distanceCost: roundToDecimal(distanceCost),
+      durationCost: roundToDecimal(durationCost),
       serviceMultiplier,
-      serviceCost,
-      peakSurcharge,
-      specialDaySurcharge,
-      couponDiscount,
-      subtotal,
-      total,
+      serviceCost: roundToDecimal(serviceCost),
+      peakSurcharge: roundToDecimal(peakSurcharge),
+      specialDaySurcharge: roundToDecimal(specialDaySurcharge),
+      couponDiscount: roundToDecimal(couponDiscount),
+      subtotal: roundToDecimal(subtotal),
+      total: normalizedTotal,
     };
 
     return {
-      estimatedFare: Number(total.toFixed(2)),
+      estimatedFare: normalizedTotal,
       breakdown,
     };
   }
@@ -187,9 +192,12 @@ const estimateRideFareLLMFlow = ai.defineFlow(
   async (input) => {
     const { output } = await llmPrompt(input);
     
+    // Normalizar el precio estimado por el LLM
+    const normalizedFare = normalizePrice(output!.estimatedFare);
+    
     return {
-      estimatedFare: output!.estimatedFare,
-      breakdown: createBasicBreakdown(output!.estimatedFare),
+      estimatedFare: normalizedFare,
+      breakdown: createBasicBreakdown(normalizedFare),
     };
   }
 );

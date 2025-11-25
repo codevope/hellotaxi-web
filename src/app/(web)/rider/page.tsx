@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
@@ -15,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import StartNow from "@/components/ride/start-now";
 
 // Importar componente desktop responsivo
 import RiderView from "./components/rider-view";
@@ -44,7 +42,24 @@ export default function RiderPage() {
   }
 
   if (!user) {
-    return <StartNow />;
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center md:py-24">
+        <Card className="max-w-md p-8">
+          <CardHeader>
+            <CardTitle>Acceso Requerido</CardTitle>
+            <CardDescription> Debes iniciar sesión para pedir un viaje.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>  
+              <Link href="/login">
+                <LogIn className="mr-2" />
+                Iniciar Sesión
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Check if user has complete profile (Google + Password + Phone)

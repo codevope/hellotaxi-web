@@ -110,7 +110,7 @@ export default function FareNegotiation({
     <div className="space-y-4">
       <Alert>
         <CircleDollarSign className="h-4 w-4" />
-        <AlertTitle>Tarifa Sugerida: S/{baseFareForNegotiation?.toFixed(2)}</AlertTitle>
+        <AlertTitle>Tarifa Sugerida: S/{baseFareForNegotiation?.toFixed(1)}</AlertTitle>
         <AlertDescription>
           Desliza para proponer una tarifa menor.
         </AlertDescription>
@@ -121,13 +121,13 @@ export default function FareNegotiation({
             <Tag className="h-4 w-4 text-green-600" />
             <AlertTitle>Cupón Aplicado</AlertTitle>
             <AlertDescription>
-                Se restará un descuento de S/{couponDiscount.toFixed(2)} de tu tarifa final acordada.
+                Se restará un descuento de S/{couponDiscount.toFixed(1)} de tu tarifa final acordada.
             </AlertDescription>
         </Alert>
       )}
 
       <div className="space-y-4">
-        <label htmlFor="fare-slider" className="font-medium">Tu Propuesta: <span className="text-primary font-bold text-lg">S/{proposedFare.toFixed(2)}</span></label>
+        <label htmlFor="fare-slider" className="font-medium">Tu Propuesta: <span className="text-primary font-bold text-lg">S/{proposedFare.toFixed(1)}</span></label>
         <Slider
           id="fare-slider"
           min={minFare}
@@ -138,8 +138,8 @@ export default function FareNegotiation({
           disabled={status === 'processing' || status === 'counter-offer'}
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>S/{minFare.toFixed(2)}</span>
-          <span>S/{maxFare.toFixed(2)}</span>
+          <span>S/{minFare.toFixed(1)}</span>
+          <span>S/{maxFare.toFixed(1)}</span>
         </div>
       </div>
 
@@ -175,7 +175,7 @@ export default function FareNegotiation({
 
       {status === 'counter-offer' && driverResponse?.counterFare && (
         <div className="p-4 border rounded-lg bg-secondary/50 space-y-3">
-            <p className="text-center font-semibold">Contraoferta del Conductor: S/{driverResponse.counterFare.toFixed(2)}</p>
+            <p className="text-center font-semibold">Contraoferta del Conductor: S/{driverResponse.counterFare.toFixed(1)}</p>
             <div className="flex gap-2">
                 <Button onClick={handleAcceptCounterOffer} className="w-full">Aceptar Contraoferta</Button>
                 <Button onClick={onCancel} variant="outline" className="w-full">Cancelar</Button>

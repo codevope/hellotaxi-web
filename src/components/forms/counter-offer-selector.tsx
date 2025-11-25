@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  normalizePrice, 
+  incrementPrice, 
+  decrementPrice, 
+  calculatePercentageChange,
+  formatPrice 
+} from '@/lib/price-utils';
 
 interface CounterOfferSelectorProps {
   originalFare: number; // Precio que propuso el pasajero
@@ -11,7 +18,7 @@ interface CounterOfferSelectorProps {
   disabled?: boolean;
   maxIncrease?: number; // Porcentaje máximo de aumento (ej: 25 para 25%)
   maxDecrease?: number; // Porcentaje máximo de disminución (ej: 10 para 10%)
-  step?: number; // Paso de incremento/decremento en soles
+  step?: number; // Paso de incremento/decremento en soles (siempre será 0.50)
 }
 
 export function CounterOfferSelector({
@@ -20,34 +27,37 @@ export function CounterOfferSelector({
   disabled = false,
   maxIncrease = 25,
   maxDecrease = 10,
-  step = 0.50,
+  step = 0.50, // Siempre será 0.50 pero lo mantenemos por compatibilidad
 }: CounterOfferSelectorProps) {
-  const [currentPrice, setCurrentPrice] = useState(originalFare);
+  // Normalizar el precio original al sistema de HelloTaxi
+  const normalizedOriginal = normalizePrice(originalFare);
+  const [currentPrice, setCurrentPrice] = useState(normalizedOriginal);
 
   // Calcular límites - más flexibles para conductores
-  const minPrice = Math.max(1.0, originalFare * (1 - maxDecrease / 100));
-  const maxPrice = originalFare * (1 + maxIncrease / 100);
+  const minPrice = Math.max(1.0, normalizePrice(originalFare * (1 - maxDecrease / 100)));
+  const maxPrice = normalizePrice(originalFare * (1 + maxIncrease / 100));
 
   // Actualizar precio cuando cambie el original
   useEffect(() => {
-    setCurrentPrice(originalFare);
+    const normalized = normalizePrice(originalFare);
+    setCurrentPrice(normalized);
   }, [originalFare]);
 
-  const decreasePrice = () => {
-    const newPrice = Math.max(minPrice, currentPrice - step);
+  const handleDecreasePrice = () => {
+    const newPrice = decrementPrice(currentPrice, minPrice);
     setCurrentPrice(newPrice);
     onPriceChange(newPrice);
   };
 
-  const increasePrice = () => {
-    const newPrice = Math.min(maxPrice, currentPrice + step);
+  const handleIncreasePrice = () => {
+    const newPrice = incrementPrice(currentPrice, maxPrice);
     setCurrentPrice(newPrice);
     onPriceChange(newPrice);
   };
 
   const isAtMin = currentPrice <= minPrice;
   const isAtMax = currentPrice >= maxPrice;
-  const percentageChange = ((currentPrice - originalFare) / originalFare) * 100;
+  const percentageChange = calculatePercentageChange(normalizedOriginal, currentPrice);
 
   return (
     <div className="space-y-3">
@@ -57,7 +67,7 @@ export function CounterOfferSelector({
           type="button"
           variant="outline"
           size="icon"
-          onClick={decreasePrice}
+          onClick={handleDecreasePrice}
           disabled={disabled || isAtMin}
           className={cn(
             "h-10 w-10 rounded-full transition-all",
@@ -71,7 +81,7 @@ export function CounterOfferSelector({
 
         <div className="text-center min-w-[120px]">
           <p className="text-3xl font-bold text-[#2E4CA6]">
-            S/ {currentPrice.toFixed(2)}
+            S/ {currentPrice.toFixed(1)}
           </p>
           {percentageChange !== 0 && (
             <p className={cn(
@@ -87,7 +97,7 @@ export function CounterOfferSelector({
           type="button"
           variant="outline"
           size="icon"
-          onClick={increasePrice}
+          onClick={handleIncreasePrice}
           disabled={disabled || isAtMax}
           className={cn(
             "h-10 w-10 rounded-full transition-all",
@@ -102,16 +112,17 @@ export function CounterOfferSelector({
 
       {/* Información de referencia */}
       <div className="text-center space-y-2">
-        {currentPrice !== originalFare && (
+        {currentPrice !== normalizedOriginal && (
           <div className="text-sm text-gray-600">
-            <span className="line-through">Precio propuesto: S/ {originalFare.toFixed(2)}</span>
+            <span className="line-through">Precio propuesto: S/ {normalizedOriginal.toFixed(1)}</span>
           </div>
         )}
         
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Mín: S/ {minPrice.toFixed(2)}</span>
-          <span>Máx: S/ {maxPrice.toFixed(2)}</span>
+          <span>Mín: S/ {minPrice.toFixed(1)}</span>
+          <span>Máx: S/ {maxPrice.toFixed(1)}</span>
         </div>
+        
 
         {/* Consejos específicos para conductores */}
         {percentageChange > 15 && (

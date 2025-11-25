@@ -73,53 +73,76 @@ export function AssignedDriverCard({
 
       {/* Driver Card - Diseño Premium */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
-        <div className="bg-gradient-to-r from-[#F2F2F2] to-white p-5">
-          <div className="flex items-start gap-4">
-            {/* Avatar con borde gradiente */}
-            <div className="relative">
-              <Avatar className="relative h-16 w-16 border-4 border-white shadow-md">
+        <div className="bg-gradient-to-r from-[#F2F2F2] to-white p-4 sm:p-6">
+          {/* Sección superior: Avatar, Nombre/Rating y Precio */}
+          <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-5">
+            {/* Avatar con borde gradiente - Izquierda */}
+            <div className="relative flex-shrink-0">
+              <Avatar className="relative h-14 w-14 sm:h-16 sm:w-16 border-4 border-white shadow-md">
                 <AvatarImage
                   src={assignedDriver.avatarUrl}
                   alt={assignedDriver.name}
                 />
-                <AvatarFallback className="bg-gradient-to-br from-[#0477BF] to-[#049DD9] text-xl font-bold text-white">
+                <AvatarFallback className="bg-gradient-to-br from-[#0477BF] to-[#049DD9] text-lg sm:text-xl font-bold text-white">
                   {assignedDriver.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
             </div>
 
-            {/* Info del conductor */}
-            <div className="flex-1">
-              <p className="text-lg font-bold text-[#2E4CA6]">
+            {/* Centro: Nombre y Rating */}
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-lg font-bold text-[#2E4CA6]">
                 {assignedDriver.name}
               </p>
               <div className="mt-1 flex items-center gap-1.5">
-                <div className="rounded-full px-2 py-0.5">
-                  <DriverRating
-                    rating={assignedDriver.rating}
-                    size="lg"
-                    showLabel={false}
-                  />
-                </div>
-              </div>
-              <div className="mt-2 space-y-1">
-                <p className="font-bold text-gray-600">
-                  {assignedDriver.vehicleBrand}  {assignedDriver.vehicleModel} • {assignedDriver.vehicleYear} • {assignedDriver.vehicleColor}
-                </p>
-                <p className="text-xl font-mono font-semibold text-[#0477BF]">
-                  • {assignedDriver.licensePlate}
-                </p>
+                <DriverRating
+                  rating={assignedDriver.rating}
+                  size="lg"
+                  showLabel={false}
+                />
               </div>
             </div>
 
-            {/* Precio */}
-            <div className="flex flex-col items-end">
+            {/* Derecha: Precio */}
+            <div className="flex-shrink-0">
               <PriceDisplay
                 amount={activeRide.fare}
                 label="Tarifa"
-                size="xl"
+                size="lg"
                 variant="highlight"
               />
+            </div>
+          </div>
+
+          {/* Sección inferior: Datos del vehículo */}
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Vehículo</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  {assignedDriver.vehicleBrand} {assignedDriver.vehicleModel}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Año</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  {assignedDriver.vehicleYear}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Color</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  {assignedDriver.vehicleColor}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Placa</p>
+                <p className="text-sm sm:text-base font-mono font-bold text-[#0477BF]">
+                  {assignedDriver.licensePlate}
+                </p>
+              </div>
             </div>
           </div>
         </div>
