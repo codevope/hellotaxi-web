@@ -9,6 +9,7 @@
  * - Estadísticas expandidas
  */
 
+import { useState } from "react";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import {
@@ -22,6 +23,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   User,
   Mail,
@@ -43,10 +47,61 @@ export default function DesktopProfilePage() {
   const { user, appUser, signOut } = useAuth();
   const { isDriver } = useDriverAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  
+  const [phone, setPhone] = useState(appUser?.phone || "");
+  const [address, setAddress] = useState(appUser?.address || "");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user?.uid || !appUser) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar al usuario",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Determinar si es driver o user
+      const collection = isDriver ? "drivers" : "users";
+      const userRef = doc(db, collection, user.uid);
+
+      await updateDoc(userRef, {
+        phone: phone.trim(),
+        address: address.trim(),
+      });
+
+      toast({
+        title: "Perfil actualizado",
+        description: "Tu teléfono y dirección se guardaron correctamente",
+      });
+    } catch (error) {
+      console.error("Error guardando perfil:", error);
+      toast({
+        title: "Error al guardar",
+        description: "No se pudo actualizar tu perfil. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setPhone(appUser?.phone || "");
+    setAddress(appUser?.address || "");
+    toast({
+      title: "Cambios descartados",
+      description: "Se restauraron los valores originales",
+    });
   };
 
   return (
@@ -104,7 +159,7 @@ export default function DesktopProfilePage() {
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
                     <div className="text-2xl font-bold text-blue-600">
-                      {appUser.ridesCount || 0}
+                      {(appUser as any).ridesCount || appUser.totalRides || 0}
                     </div>
                     <div className="text-sm text-gray-600">Viajes Totales</div>
                   </div>
@@ -119,12 +174,12 @@ export default function DesktopProfilePage() {
                     <div className="text-sm text-gray-600">Calificación</div>
                   </div>
                 </div>
-                {appUser.createdAt && (
+                {(appUser as any).createdAt && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
                     <span>
                       Miembro desde{" "}
-                      {format(appUser.createdAt.toDate(), "MMMM yyyy", {
+                      {format((appUser as any).createdAt.toDate(), "MMMM yyyy", {
                         locale: es,
                       })}
                     </span>
@@ -169,7 +224,9 @@ export default function DesktopProfilePage() {
                   <Input
                     id="phone"
                     type="tel"
-                    defaultValue={appUser?.phone || ""}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+51 987 654 321"
                     className="mt-1"
                   />
                 </div>
@@ -177,14 +234,27 @@ export default function DesktopProfilePage() {
                   <Label htmlFor="address">Dirección</Label>
                   <Input
                     id="address"
-                    defaultValue={appUser?.address || ""}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Ej: Av. Principal 123, Miraflores"
                     className="mt-1"
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline">Cancelar</Button>
-                <Button>Guardar Cambios</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Guardando..." : "Guardar Cambios"}
+                </Button>
               </div>
             </CardContent>
           </Card>

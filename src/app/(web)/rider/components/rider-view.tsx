@@ -84,25 +84,39 @@ import { AudioEnabler } from "@/components/pwa/audio-enabler";
 async function enrichDriverWithVehicle(
   driver: Driver
 ): Promise<DriverWithVehicleInfo> {
+  console.log('🚗 Enriching driver with vehicle info:', {
+    driverId: driver.id,
+    driverName: driver.name,
+    hasPhone: !!driver.phone,
+    phone: driver.phone
+  });
+  
   try {
     const vehicleSnap = await getDoc(driver.vehicle);
     if (vehicleSnap.exists()) {
       const vehicleData = vehicleSnap.data() as Vehicle;
-      return {
-        ...driver,
+      const enrichedDriver = {
+        ...driver, // Esto incluye phone si existe
         vehicleBrand: vehicleData.brand,
         vehicleModel: vehicleData.model,
         licensePlate: vehicleData.licensePlate,
         vehicleColor: vehicleData.color,
         vehicleYear: vehicleData.year,
       };
+      
+      console.log('✅ Driver enriched successfully:', {
+        hasPhone: !!enrichedDriver.phone,
+        phone: enrichedDriver.phone
+      });
+      
+      return enrichedDriver;
     }
   } catch (error) {
     console.error("Error loading vehicle data:", error);
   }
 
   return {
-    ...driver,
+    ...driver, // Mantener todos los campos incluyendo phone
     vehicleBrand: "N/A",
     vehicleModel: "N/A",
     licensePlate: "N/A",

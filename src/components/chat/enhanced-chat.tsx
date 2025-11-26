@@ -203,6 +203,16 @@ export default function EnhancedChat({
     console.log('Iniciando llamada a:', cleanedPhone);
   };
 
+  // Log para debugging
+  useEffect(() => {
+    console.log('EnhancedChat - otherUser phone:', {
+      hasOtherUser: !!otherUser,
+      otherUserName: otherUser?.name,
+      otherUserPhone: otherUser?.phone,
+      shouldShowCallButton: !!otherUser?.phone
+    });
+  }, [otherUser]);
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header del chat */}
@@ -224,16 +234,19 @@ export default function EnhancedChat({
         </div>
         
         <div className="flex items-center gap-2">
-          {otherUser?.phone && (
+          {otherUser?.phone ? (
             <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors"
+              variant="default"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white shadow-lg"
               onClick={handleCall}
               title={`Llamar a ${otherUser.name}`}
             >
-              <Phone className="h-5 w-5" />
+              <Phone className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Llamar</span>
             </Button>
+          ) : (
+            <div className="text-xs text-gray-400 italic">Sin teléfono</div>
           )}
           <Button variant="ghost" size="icon" className="text-gray-600">
             <MoreVertical className="h-4 w-4" />
