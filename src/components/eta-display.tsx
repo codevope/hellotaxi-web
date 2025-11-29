@@ -89,7 +89,7 @@ const ETADisplay: React.FC<ETADisplayProps> = ({
             </div>
             <div>
                 <p className="text-sm opacity-80">Tarifa Sugerida</p>
-                <p className="text-lg font-bold">S/ {(estimatedFare || 0).toFixed(1)}</p>
+                <p className="text-lg font-bold">S/ {(estimatedFare || 0).toFixed(2)}</p>
             </div>
         </div>
 
@@ -98,7 +98,7 @@ const ETADisplay: React.FC<ETADisplayProps> = ({
             <Separator className="my-4 bg-white/20" />
             <div className="flex items-center justify-center gap-2 text-sm text-green-300 font-semibold">
               <Tag className="h-4 w-4" />
-              <span>Se aplicó un descuento de S/{couponDiscount.toFixed(1)} con tu cupón.</span>
+              <span>Se aplicó un descuento de S/{couponDiscount.toFixed(2)} con tu cupón.</span>
             </div>
           </>
         )}

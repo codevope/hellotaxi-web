@@ -19,6 +19,9 @@ import {
   Siren,
   Volume2,
   UserIcon,
+  History,
+  FileText,
+  Wrench,
 } from "lucide-react";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import { Switch } from "@/components/ui/switch";
@@ -86,7 +89,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDriverRideStore } from "@/store/driver-ride-store";
-import DriverVehicle from "@/components/driver/vehicle";
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { DriverStatePanel } from "@/components/driver/driver-state-panel";
 import { useDriverChat } from "@/hooks/driver/use-driver-chat";
@@ -339,6 +341,28 @@ function DriverPageContent() {
   const handleAvailabilityChange = async (available: boolean) => {
     if (!driver) return;
 
+    // Verificar si los documentos están aprobados antes de permitir disponibilidad
+    if (available && driver.documentsStatus !== 'approved') {
+      toast({
+        variant: "destructive",
+        title: "Documentos pendientes",
+        description: "Debes tener todos tus documentos aprobados antes de estar disponible.",
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Verificar si tiene un vehículo asignado
+    if (available && !driver.vehicle) {
+      toast({
+        variant: "destructive",
+        title: "Vehículo no asignado",
+        description: "Debes tener un vehículo asignado antes de estar disponible. Ve a la pestaña de vehículo.",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsUpdatingStatus(true);
     const newStatus = available ? "available" : "unavailable";
     const driverRef = doc(db, "drivers", driver.id);
@@ -411,6 +435,14 @@ function DriverPageContent() {
         rating,
         comment,
       });
+      
+      // Guardar la calificación en el documento del viaje
+      const rideRef = doc(db, "rides", completedRideForRating.id);
+      await updateDoc(rideRef, {
+        passengerRating: rating,
+        passengerComment: comment || ''
+      });
+      
       toast({
         title: "Pasajero Calificado",
         description: `Has calificado al pasajero con ${rating} estrellas.`,
@@ -628,18 +660,28 @@ function DriverPageContent() {
                   onValueChange={setActiveTab}
                   className="w-full h-full"
                 >
-                  <div className="bg-secondary/50 px-1 py-1">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="config" className="text-sm">
-                        <UserCog className="mr-2 h-4 w-4" />
-                        Config
-                      </TabsTrigger>
-                      <TabsTrigger value="chat" className="text-sm">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Chat
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+                  <TabsList className="grid h-12 sm:h-14 w-full grid-cols-4 rounded-none bg-gradient-to-r from-[#2E4CA6] to-[#0477BF] p-2 sm:p-3">
+                    <TabsTrigger value="config" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
+                      <UserCog className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Config</span>
+                      <span className="sm:hidden">Config</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
+                      <MessageCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Chat</span>
+                      <span className="sm:hidden">Chat</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="documentos" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
+                      <FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Docs</span>
+                      <span className="sm:hidden">Docs</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="vehiculo" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
+                      <Car className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Vehículo</span>
+                      <span className="sm:hidden">Vehí.</span>
+                    </TabsTrigger>
+                  </TabsList>
 
                   <TabsContent value="config" className="mt-0 p-0">
                     <div className="p-4 sm:p-6 h-[calc(100vh-300px)] overflow-y-auto space-y-4">
@@ -659,9 +701,20 @@ function DriverPageContent() {
                             <Switch
                               checked={driver?.status === 'available'}
                               onCheckedChange={handleAvailabilityChange}
-                              disabled={isUpdatingStatus}
+                              disabled={isUpdatingStatus || driver?.documentsStatus !== 'approved' || !driver?.vehicle}
                             />
                           </div>
+                          {(driver?.documentsStatus !== 'approved' || !driver?.vehicle) && (
+                            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <p className="text-xs text-yellow-800">
+                                {driver?.documentsStatus !== 'approved' 
+                                  ? 'Debes subir y aprobar tus documentos para estar disponible.' 
+                                  : 'Debes tener un vehículo asignado para estar disponible.'}
+                                {driver?.documentsStatus !== 'approved' && ' Ve a la pestaña de documentos.'}
+                                {!driver?.vehicle && ' Ve a la pestaña de vehículo.'}
+                              </p>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
 
@@ -841,6 +894,151 @@ function DriverPageContent() {
                           </p>
                         </div>
                       )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="documentos" className="mt-0 p-0">
+                    <div className="h-[calc(100vh-300px)] overflow-y-auto">
+                      <div className="p-4 sm:p-6">
+                        <DriverDocuments driver={driver} onUpdate={(updatedDriver) => setDriver(updatedDriver)} />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="vehiculo" className="mt-0 p-0">
+                    <div className="h-[calc(100vh-300px)] overflow-y-auto">
+                      <div className="p-4 sm:p-6">
+                      
+                      {driver?.vehicle ? (
+                        <div className="space-y-4">
+                          {/* Información Básica */}
+                          <Card className="shadow-sm">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="flex items-center gap-2">
+                                <Car className="h-4 w-4 text-blue-600" />
+                                Información del Vehículo
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <span className="text-xs text-muted-foreground">Marca</span>
+                                  <p className="text-sm font-semibold">{driver.vehicle.brand ? driver.vehicle.brand : 'No Asignada'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-xs text-muted-foreground">Modelo</span>
+                                  <p className="text-sm font-semibold">{driver.vehicle.model ? driver.vehicle.model : 'No Asignado'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-xs text-muted-foreground">Año</span>
+                                  <p className="text-sm font-semibold">{driver.vehicle.year ? driver.vehicle.year : 'No Asignado'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-xs text-muted-foreground">Color</span>
+                                  <p className="text-sm font-semibold">{driver.vehicle.color ? driver.vehicle.color : 'No Asignado'}</p>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Placa</span>
+                                  <span className="text-sm font-bold font-mono bg-blue-100 text-blue-900 px-3 py-1.5 rounded">
+                                    {driver.vehicle.licensePlate ? driver.vehicle.licensePlate : 'No Asignada'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <span className="text-xs text-muted-foreground">Tipo de Servicio</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {driver.vehicle.serviceType === 'economy' ? 'Económico' : 
+                                   driver.vehicle.serviceType === 'comfort' ? 'Confort' : 
+                                   driver.vehicle.serviceType === 'exclusive' ? 'Exclusivo' : driver.vehicle.serviceType == null ? 'No Asignado' : driver.vehicle.serviceType}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <span className="text-xs text-muted-foreground">Estado</span>
+                                <Badge variant={driver.vehicle.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                                  {driver.vehicle.status === 'active' ? 'Activo' : 
+                                   driver.vehicle.status === 'in_review' ? 'En revisión' : 
+                                   driver.vehicle.status === 'inactive' ? 'Inactivo' : driver.vehicle.status == null ? 'No Asignado' : driver.vehicle.status}
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Documentos del vehículo */}
+                          <Card className="shadow-sm">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-green-600" />
+                                Documentos del Vehículo
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              {driver.vehicle.insuranceExpiry ? (
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b">
+                                  <span className="text-xs text-muted-foreground">Seguro</span>
+                                  <span className="text-xs sm:text-sm font-medium">
+                                    {format(new Date(driver.vehicle.insuranceExpiry), "d MMM yyyy", { locale: es })}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                                  Seguro no registrado
+                                </div>
+                              )}
+                              {driver.vehicle.technicalReviewExpiry ? (
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b">
+                                  <span className="text-xs text-muted-foreground">Revisión Técnica</span>
+                                  <span className="text-xs sm:text-sm font-medium">
+                                    {format(new Date(driver.vehicle.technicalReviewExpiry), "d MMM yyyy", { locale: es })}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                                  Revisión Técnica no registrada
+                                </div>
+                              )}
+                              {driver.vehicle.propertyCardRegistrationDate ? (
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2">
+                                  <span className="text-xs text-muted-foreground">Tarjeta de Propiedad</span>
+                                  <span className="text-xs sm:text-sm font-medium">
+                                    {format(new Date(driver.vehicle.propertyCardRegistrationDate), "d MMM yyyy", { locale: es })}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                                  Tarjeta de Propiedad no registrada
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+
+                          <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p>Para actualizar la información del vehículo, contacta al administrador</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <Card className="border-dashed border-2 border-gray-300">
+                          <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                              <Car className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
+                            </div>
+                            <h3 className="text-base sm:text-lg font-semibold mb-2 text-gray-900">
+                              Sin vehículo asignado
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground text-center mb-4 max-w-sm">
+                              Necesitas un vehículo asignado para comenzar a recibir viajes
+                            </p>
+                            <div className="w-full max-w-sm">
+                              <div className="text-xs sm:text-sm bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                                <p className="font-medium text-yellow-900">Acción requerida</p>
+                                <p className="text-yellow-800 mt-1">Contacta al administrador para que te asigne un vehículo</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>

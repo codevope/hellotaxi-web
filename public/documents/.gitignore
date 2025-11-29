@@ -1,0 +1,6 @@
+# Ignorar todos los documentos subidos
+*
+
+# Excepto el .gitkeep y este archivo
+!.gitkeep
+!.gitignore

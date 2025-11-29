@@ -158,17 +158,6 @@ export default function AdminSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive("/admin/documentation")}
-            >
-              <Link href="/admin/documentation">
-                <FileText />
-                <span>Documentación</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive("/admin/settings")}>
               <Link href="/admin/settings">
                 <Settings />

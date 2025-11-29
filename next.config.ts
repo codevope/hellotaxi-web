@@ -1,20 +1,5 @@
 import type { NextConfig } from "next";
 
-// Tipos para next-pwa
-interface PWAAsset {
-  name: string;
-  [key: string]: any;
-}
-
-interface PWACompilation {
-  [key: string]: any;
-}
-
-interface PWARequest {
-  url: string;
-  [key: string]: any;
-}
-
 const withPWA = require("next-pwa")({
   dest: "public",
   disable: process.env.NODE_ENV === "development",

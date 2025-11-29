@@ -63,7 +63,7 @@ export function CounterOfferCard({
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
-            <span>Aceptar S/ {counterOfferValue.toFixed(1)}</span>
+            <span>Aceptar S/ {counterOfferValue.toFixed(2)}</span>
           </div>
         </Button>
         

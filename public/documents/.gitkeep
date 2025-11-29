@@ -1,0 +1,2 @@
+# Este directorio almacena los documentos subidos por los conductores
+# Estructura: /documents/{driverId}/{documentName}/{filename}

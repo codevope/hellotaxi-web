@@ -1,32 +1,14 @@
 
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MoreVertical, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import type { Vehicle, Driver } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-
-type EnrichedVehicle = Vehicle & { driver?: Driver };
+import { DataTable } from '@/components/ui/data-table';
+import { vehiclesColumns, type EnrichedVehicle } from './vehicles-columns';
 
 async function getVehicles(): Promise<EnrichedVehicle[]> {
   const vehiclesCol = collection(db, 'vehicles');
@@ -68,6 +50,22 @@ export default function VehiclesTable() {
     loadVehicles();
   }, []);
 
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Todos los Vehículos</CardTitle>
+          <CardDescription>Un registro de todos los vehículos en la plataforma y sus conductores asignados.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -75,61 +73,14 @@ export default function VehiclesTable() {
         <CardDescription>Un registro de todos los vehículos en la plataforma y sus conductores asignados.</CardDescription>
       </CardHeader>
       <CardContent>
-        {loading ? (
-            <div className="flex justify-center items-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vehículo</TableHead>
-              <TableHead>Placa</TableHead>
-              <TableHead>Tipo de Servicio</TableHead>
-              <TableHead>Conductor Asignado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {vehicles.map((vehicle) => (
-              <TableRow key={vehicle.id}>
-                <TableCell>
-                    <div className="font-medium">{vehicle.brand} {vehicle.model}</div>
-                    <div className="text-sm text-muted-foreground">{vehicle.year} - {vehicle.color}</div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{vehicle.licensePlate}</Badge>
-                </TableCell>
-                <TableCell>
-                    <Badge variant="outline" className="capitalize">{vehicle.serviceType}</Badge>
-                </TableCell>
-                <TableCell>
-                  {vehicle.driver ? (
-                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={vehicle.driver.avatarUrl} alt={vehicle.driver.name} />
-                        <AvatarFallback>{vehicle.driver.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{vehicle.driver.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">No asignado</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {vehicle.driver && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/admin/drivers/${vehicle.driver.id}`}>
-                        Ver Conductor
-                      </Link>
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        )}
+        <DataTable
+          columns={vehiclesColumns}
+          data={vehicles}
+          searchKey="brand"
+          searchPlaceholder="Buscar por marca, modelo o conductor..."
+          pageSize={10}
+          entityName="vehículo"
+        />
       </CardContent>
     </Card>
   );

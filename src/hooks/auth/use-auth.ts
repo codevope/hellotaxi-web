@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -81,18 +81,8 @@ export function useAuth() {
   }
   const { user: firebaseUser, appUser, setAppUser } = context;
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const profile = await createOrUpdateUserProfile(user);
-        setAppUser(profile);
-      } else {
-        setAppUser(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [setAppUser]);
+  // NOTA: El AuthProvider ya maneja onAuthStateChanged, 
+  // no necesitamos duplicar la lógica aquí
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
@@ -238,42 +228,38 @@ export function useAuth() {
     const batch = writeBatch(db);
 
     if (newRole === 'driver') {
-      const driverDoc = await getDoc(driverRef);
-      batch.update(userRef, { role: 'driver' });
+      // Migrar de pasajero a conductor
+      const [userDoc, driverDoc] = await Promise.all([
+        getDoc(userRef),
+        getDoc(driverRef)
+      ]);
       
       if (!driverDoc.exists()) {
-        const vehicleRef = doc(collection(db, 'vehicles'));
+        // Obtener datos del pasajero para migrarlos
+        const userData = userDoc.exists() ? userDoc.data() : null;
         
-        const newVehicle: Vehicle = {
-            id: vehicleRef.id,
-            brand: 'Por Asignar',
-            model: 'Por Asignar',
-            licensePlate: `AAA-${firebaseUser.uid.substring(0, 3).toUpperCase()}`,
-            serviceType: 'economy',
-            year: new Date().getFullYear(),
-            color: 'Blanco',
-            driverId: firebaseUser.uid,
-            insuranceExpiry: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
-            technicalReviewExpiry: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
-            propertyCardRegistrationDate: new Date().toISOString(),
-            status: 'in_review',
-        };
-        batch.set(vehicleRef, newVehicle);
+        // NO crear vehículo automáticamente - el administrador lo asignará
+        // El conductor no puede estar disponible hasta que tenga un vehículo asignado
 
+        // Crear perfil de conductor con datos migrados del pasajero
         batch.set(driverRef, {
           id: firebaseUser.uid,
-          name: firebaseUser.displayName,
-          avatarUrl: firebaseUser.photoURL || '/img/avatar.png',
-          rating: 0,
-          status: 'unavailable',
-          documentsStatus: 'pending', 
-          kycVerified: false,
-          dniExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 8)).toISOString(),
-          licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-          backgroundCheckExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-          paymentModel: 'membership',
-          membershipStatus: 'active',
-          membershipExpiryDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
+          name: userData?.name || firebaseUser.displayName || 'Usuario',
+          email: userData?.email || firebaseUser.email || '',
+          phone: userData?.phone || '',
+          address: userData?.address || '',
+          avatarUrl: userData?.avatarUrl || firebaseUser.photoURL || '/img/avatar.png',
+          rating: userData?.rating || 5.0,
+          role: 'driver',
+          status: 'unavailable', // Inicialmente no disponible hasta que suba documentos y tenga vehículo
+          documentsStatus: 'pending',
+          licenseExpiry: '', // Vacío hasta que suba el documento
+          dniExpiry: '', // Vacío hasta que suba el documento
+          backgroundCheckExpiry: '', // Vacío hasta que suba el documento
+          paymentModel: 'commission', // Por defecto comisión, el admin asignará membresía si aplica
+          commissionPercentage: 15, // Comisión por defecto 15%
+          membershipStatus: null,
+          membershipExpiryDate: null,
           documentStatus: {
             dni: 'pending',
             license: 'pending',
@@ -282,23 +268,51 @@ export function useAuth() {
             technicalReview: 'pending',
             backgroundCheck: 'pending'
           },
-          vehicle: vehicleRef,
+          documentUrls: {
+            dni: '',
+            license: '',
+            propertyCard: '',
+            insurance: '',
+            technicalReview: '',
+            backgroundCheck: ''
+          },
+          vehicle: null, // Sin vehículo hasta que el admin lo asigne
         });
+        
+        // IMPORTANTE: Eliminar de users para evitar duplicación
+        if (userDoc.exists()) {
+          batch.delete(userRef);
+          console.log('✅ Migrando de pasajero a conductor - Eliminando de users');
+        }
       } else {
+        // Ya existe como conductor, solo actualizar estado
         batch.update(driverRef, { status: 'unavailable' });
       }
     } else if (newRole === 'passenger') {
-      batch.update(userRef, { role: 'passenger' });
+      // Migrar de conductor a pasajero (desactivar conductor, mantener en drivers)
       const driverDoc = await getDoc(driverRef);
       if (driverDoc.exists()) {
-        batch.update(driverRef, { status: 'unavailable' });
+        batch.update(driverRef, { 
+          status: 'unavailable',
+          role: 'passenger'
+        });
       }
     }
 
     await batch.commit();
 
+    // Actualizar appUser local
     if(appUser){
         setAppUser({...appUser, role: newRole});
+    }
+    
+    // Recargar perfil desde la BD
+    const updatedProfile = await (newRole === 'driver' 
+      ? getDoc(driverRef) 
+      : getDoc(userRef));
+    
+    if (updatedProfile.exists()) {
+      setAppUser({ id: updatedProfile.id, ...updatedProfile.data() } as User);
     }
   };
 

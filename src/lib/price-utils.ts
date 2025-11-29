@@ -3,86 +3,86 @@
  */
 
 /**
- * Redondea un precio a una décima (un decimal)
+ * Redondea un precio a centésimas (dos decimales)
  * Ejemplos:
- * - 3.24 → 3.20
- * - 3.91 → 3.90
- * - 3.95 → 3.90
- * - 5.68 → 5.60
+ * - 3.246 → 3.24
+ * - 3.918 → 3.91
+ * - 3.955 → 3.95
+ * - 5.689 → 5.68
  * 
  * @param price - El precio a redondear
- * @returns El precio redondeado a una décima
+ * @returns El precio redondeado a centésimas
  */
 export function roundToDecimal(price: number): number {
-  // Redondear a décimas hacia abajo
-  return Math.floor(price * 10) / 10;
+  // Redondear a centésimas hacia abajo
+  return Math.floor(price * 100) / 100;
 }
 
 /**
- * Ajusta un precio al múltiplo de 0.50 más cercano hacia abajo
+ * Ajusta un precio al múltiplo de 0.10 más cercano hacia abajo
  * Ejemplos:
- * - 3.24 → 3.00
- * - 3.91 → 3.50
- * - 5.68 → 5.50
- * - 7.25 → 7.00
+ * - 3.24 → 3.20
+ * - 3.91 → 3.90
+ * - 5.68 → 5.60
+ * - 7.25 → 7.20
  * 
  * @param price - El precio a ajustar
- * @returns El precio ajustado al múltiplo de 0.50
+ * @returns El precio ajustado al múltiplo de 0.10
  */
-export function roundToHalfSole(price: number): number {
-  return Math.floor(price * 2) / 2;
+export function roundToTenCents(price: number): number {
+  return Math.floor(price * 10) / 10;
 }
 
 /**
  * Formatea un precio para mostrar con el símbolo de moneda
  * 
  * @param price - El precio a formatear
- * @param decimals - Número de decimales (default: 1 para una décima)
- * @returns String formateado "S/ XX.X"
+ * @param decimals - Número de decimales (default: 2 para centésimas)
+ * @returns String formateado "S/ XX.XX"
  */
-export function formatPrice(price: number, decimals: number = 1): string {
+export function formatPrice(price: number, decimals: number = 2): string {
   return `S/ ${price.toFixed(decimals)}`;
 }
 
 /**
- * Incrementa un precio en múltiplos de 0.50
+ * Incrementa un precio en múltiplos de 0.10
  * 
  * @param currentPrice - Precio actual
  * @param maxPrice - Precio máximo permitido
- * @returns El nuevo precio incrementado en 0.50 (sin exceder el máximo)
+ * @returns El nuevo precio incrementado en 0.10 (sin exceder el máximo)
  */
 export function incrementPrice(currentPrice: number, maxPrice: number): number {
-  const newPrice = currentPrice + 0.50;
+  const newPrice = currentPrice + 0.10;
   return Math.min(roundToDecimal(newPrice), maxPrice);
 }
 
 /**
- * Decrementa un precio en múltiplos de 0.50
+ * Decrementa un precio en múltiplos de 0.10
  * 
  * @param currentPrice - Precio actual
  * @param minPrice - Precio mínimo permitido
- * @returns El nuevo precio decrementado en 0.50 (sin bajar del mínimo)
+ * @returns El nuevo precio decrementado en 0.10 (sin bajar del mínimo)
  */
 export function decrementPrice(currentPrice: number, minPrice: number): number {
-  const newPrice = currentPrice - 0.50;
+  const newPrice = currentPrice - 0.10;
   return Math.max(roundToDecimal(newPrice), minPrice);
 }
 
 /**
  * Normaliza un precio al sistema de HelloTaxi
- * - Redondea a una décima
- * - Asegura que sea múltiplo de 0.50 para facilitar incrementos/decrementos
+ * - Redondea a centésimas (dos decimales)
+ * - Asegura que sea múltiplo de 0.10 para facilitar incrementos/decrementos
  * 
  * @param price - El precio a normalizar
  * @returns El precio normalizado
  */
 export function normalizePrice(price: number): number {
-  // Primero redondeamos a décimas
+  // Primero redondeamos a centésimas
   const rounded = roundToDecimal(price);
   
-  // Luego ajustamos al múltiplo de 0.50 más cercano hacia abajo
-  // Esto facilita los incrementos/decrementos de 0.50
-  return roundToHalfSole(rounded);
+  // Luego ajustamos al múltiplo de 0.10 más cercano hacia abajo
+  // Esto facilita los incrementos/decrementos de 0.10
+  return roundToTenCents(rounded);
 }
 
 /**

@@ -34,9 +34,14 @@ const defaultSettings: Omit<Settings, 'specialFareRules'> = {
     locationUpdateInterval: 15, // en segundos
     mapCenterLat: -6.7713, // Chiclayo, Perú
     mapCenterLng: -79.8442, // Chiclayo, Perú
+    // Precios de membresía por tipo de servicio
     membershipFeeEconomy: 40,
     membershipFeeComfort: 50,
     membershipFeeExclusive: 60,
+    // Porcentajes de comisión por tipo de servicio
+    commissionPercentageEconomy: 15,
+    commissionPercentageComfort: 12,
+    commissionPercentageExclusive: 10,
     serviceTypes: defaultServiceTypes,
     cancellationReasons: defaultCancellationReasons,
     peakTimeRules: defaultPeakTimeRules,

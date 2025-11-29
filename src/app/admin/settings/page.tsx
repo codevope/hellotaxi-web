@@ -1,5 +1,7 @@
 import SettingsForm from '@/components/admin/settings-form';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings, CreditCard } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   return (
@@ -12,7 +14,16 @@ export default function AdminSettingsPage() {
           </h1>
         </div>
       </div>
-      <SettingsForm />
+      
+      <Tabs defaultValue="general" className="w-full">        
+        <TabsContent value="general" className="mt-6">
+          <SettingsForm />
+        </TabsContent>
+        
+        <TabsContent value="membership-payments" className="mt-6">
+       
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

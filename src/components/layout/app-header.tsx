@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, LogOut, User, LayoutDashboard, Menu, X, FileText, History, Settings } from "lucide-react";
+import { LogOut, User, LayoutDashboard, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/auth/use-auth';
 import {
@@ -27,25 +27,8 @@ export default function AppHeader() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAdmin = appUser?.isAdmin || false;
-
-  // Función para manejar clic en panel de admin
-  const handleAdminPanelClick = (e: React.MouseEvent) => {
-    if (isMobile) {
-      e.preventDefault();
-      setIsMobileMenuOpen(false);
-      toast({
-        title: "📱 Panel de Admin no disponible en móvil",
-        description: "El panel de administración solo está disponible en modo escritorio. Por favor, accede desde una computadora.",
-        duration: 5000,
-      });
-      return false;
-    }
-    setIsMobileMenuOpen(false);
-    return true;
-  };
 
   const navLinks = [
     // Conditionally render "Viaja" link
@@ -79,20 +62,15 @@ export default function AppHeader() {
               <Link href={link.href}>{link.label}</Link>
             </Button>
           ))}
-          {isAdmin && (
+          {isAdmin && !isMobile && (
             <Button
               variant="ghost"
-              asChild={!isMobile}
+              asChild
               className={cn(
                 pathname.startsWith("/admin") && "font-bold bg-secondary"
               )}
-              onClick={isMobile ? handleAdminPanelClick : undefined}
             >
-              {isMobile ? (
-                <>Panel de Admin</>
-              ) : (
-                <Link href="/admin">Panel de Admin</Link>
-              )}
+              <Link href="/admin">Panel de Admin</Link>
             </Button>
           )}
           {isDriver && (
@@ -104,6 +82,17 @@ export default function AppHeader() {
               )}
             >
               <Link href="/driver">Panel de Conductor</Link>
+            </Button>
+          )}
+          {!isDriver && user && (
+            <Button
+              variant="ghost"
+              asChild
+              className={cn(
+                pathname.startsWith("/rider") && "font-bold bg-secondary"
+              )}
+            >
+              <Link href="/rider">Panel de Pasajero</Link>
             </Button>
           )}
         </nav>
@@ -142,6 +131,63 @@ export default function AppHeader() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {isMobile && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/about">
+                        <span>Quiénes Somos</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/install">
+                        <span>Instalar App</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    {!isDriver && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/ride">
+                            <span>Viaja</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/drive">
+                            <span>Conduce</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {isAdmin && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toast({
+                            title: "Panel de Admin no disponible en móvil",
+                            description: "El panel de administración solo está disponible en modo escritorio.",
+                            duration: 5000,
+                          });
+                        }}
+                      >
+                        <span>Panel de Admin</span>
+                      </DropdownMenuItem>
+                    )}
+                    {isDriver && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/driver">
+                          <span>Panel de Conductor</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {!isDriver && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/rider">
+                          <span>Panel de Pasajero</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/profile">
                     <User className="mr-2 h-4 w-4" />
@@ -152,33 +198,9 @@ export default function AppHeader() {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/driver/historial">
+                      <Link href="/driver/history">
                         <History className="mr-2 h-4 w-4" />
                         <span>Historial</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/configuracion">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Configuración</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/documents">
-                        <FileText className="mr-2 h-4 w-4" />
-                        <span>Documentos</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/vehicle">
-                        <Car className="mr-2 h-4 w-4" />
-                        <span>Mi Vehículo</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/driver/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Perfil Conductor</span>
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -198,90 +220,8 @@ export default function AppHeader() {
               Iniciar Sesión
             </Button>
           )}
-
-          {/* Mobile Menu Button */}
-          {isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2"
-            >
-              {isMobileMenuOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </Button>
-          )}
         </div>
       </header>
-
-      {/* Mobile Navigation Menu - Floating Overlay */}
-      {isMobile && isMobileMenuOpen && (
-        <div className="fixed top-[73px] left-0 right-0 bg-card border-b shadow-xl md:hidden z-40 max-h-[calc(100vh-73px)] overflow-y-auto">
-          <nav className="flex flex-col p-4 space-y-2">
-            {navLinks.map((link) => (
-              <Button
-                variant="ghost"
-                asChild
-                key={link.href}
-                className={cn(
-                  "justify-start",
-                  pathname === link.href && "font-bold bg-secondary"
-                )}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Link href={link.href}>{link.label}</Link>
-              </Button>
-            ))}
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                className={cn(
-                  "justify-start",
-                  pathname.startsWith("/admin") && "font-bold bg-secondary"
-                )}
-                onClick={handleAdminPanelClick}
-              >
-                Panel de Admin
-              </Button>
-            )}
-            {isDriver && (
-              <Button
-                variant="ghost"
-                asChild
-                className={cn(
-                  "justify-start",
-                  pathname.startsWith("/driver") && "font-bold bg-secondary"
-                )}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Link href="/driver">Panel de Conductor</Link>
-              </Button>
-            )}
-            
-            {/* Logout button for mobile menu */}
-            {user && (
-              <>
-                <div className="border-t pt-2 mt-2">
-                  <Button
-                    variant="ghost"
-                    className="justify-start w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      signOut();
-                    }}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar Sesión
-                  </Button>
-                </div>
-              </>
-            )}
-          </nav>
-        </div>
-      )}
     </>
   );
 }

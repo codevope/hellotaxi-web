@@ -127,6 +127,7 @@ export default function RidesTable() {
             data={rides}
             searchKey="passenger"
             searchPlaceholder="Buscar por nombre de pasajero..."
+            entityName="viaje"
           />
         )}
       </CardContent>

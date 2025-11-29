@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import './globals.css';
-import '../styles/maps.css';
-import '../styles/mobile-optimized.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import '../styles/maps.css';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'HelloTaxi - Servicio de Taxi',

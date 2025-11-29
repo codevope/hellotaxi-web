@@ -9,7 +9,7 @@
  * - Estadísticas expandidas
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import {
@@ -21,10 +21,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   User,
@@ -44,14 +44,24 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
 
 export default function DesktopProfilePage() {
-  const { user, appUser, signOut } = useAuth();
+  const { user, appUser, signOut, setAppUser } = useAuth();
   const { isDriver } = useDriverAuth();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [phone, setPhone] = useState(appUser?.phone || "");
-  const [address, setAddress] = useState(appUser?.address || "");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sincronizar estados cuando appUser cambie
+  useEffect(() => {
+    if (appUser) {
+      setName(appUser.name || user?.displayName || "");
+      setPhone(appUser.phone || "");
+      setAddress(appUser.address || "");
+    }
+  }, [appUser, user?.displayName]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,10 +69,10 @@ export default function DesktopProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    if (!user?.uid || !appUser) {
+    if (!appUser?.id) {
       toast({
         title: "Error",
-        description: "No se pudo identificar al usuario",
+        description: "No se pudo identificar al usuario. Por favor, recarga la página.",
         variant: "destructive",
       });
       return;
@@ -72,22 +82,45 @@ export default function DesktopProfilePage() {
     try {
       // Determinar si es driver o user
       const collection = isDriver ? "drivers" : "users";
-      const userRef = doc(db, collection, user.uid);
+      const userRef = doc(db, collection, appUser.id);
 
-      await updateDoc(userRef, {
+      const updateData = {
+        name: name.trim(),
         phone: phone.trim(),
         address: address.trim(),
-      });
+      };
+
+      await updateDoc(userRef, updateData);
+
+      // Actualizar appUser con los nuevos datos
+      if (setAppUser) {
+        const updatedAppUser = {
+          ...appUser,
+          name: updateData.name,
+          phone: updateData.phone,
+          address: updateData.address,
+        };
+        setAppUser(updatedAppUser);
+      }
 
       toast({
         title: "Perfil actualizado",
-        description: "Tu teléfono y dirección se guardaron correctamente",
+        description: "Tu nombre, teléfono y dirección se guardaron correctamente",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error guardando perfil:", error);
+      
+      let errorMessage = "No se pudo actualizar tu perfil. Intenta de nuevo.";
+      
+      if (error?.code === 'permission-denied') {
+        errorMessage = "No tienes permisos para actualizar este perfil.";
+      } else if (error?.code === 'not-found') {
+        errorMessage = "El perfil no existe en la base de datos.";
+      }
+      
       toast({
         title: "Error al guardar",
-        description: "No se pudo actualizar tu perfil. Intenta de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -96,6 +129,7 @@ export default function DesktopProfilePage() {
   };
 
   const handleCancel = () => {
+    setName(appUser?.name || user?.displayName || "");
     setPhone(appUser?.phone || "");
     setAddress(appUser?.address || "");
     toast({
@@ -105,43 +139,45 @@ export default function DesktopProfilePage() {
   };
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Mi Perfil</h1>
-          <p className="text-gray-600 mt-1">Gestiona tu información personal</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Mi Perfil</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Gestiona tu información personal</p>
         </div>
-        <Button variant="outline" onClick={handleSignOut}>
+        <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">
           <LogOut className="w-4 h-4 mr-2" />
           Cerrar Sesión
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Columna Izquierda - Avatar y Stats */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-32 h-32">
-                  <AvatarImage
-                    src={user?.photoURL || ""}
-                    alt={user?.displayName || ""}
-                  />
-                  <AvatarFallback className="bg-blue-100 text-blue-800 text-4xl">
-                    {user?.displayName?.charAt(0) || "U"}
+                <Avatar className="w-24 h-24 sm:w-32 sm:h-32">
+                  {(appUser?.avatarUrl || user?.photoURL) ? (
+                    <AvatarImage
+                      src={appUser?.avatarUrl || user?.photoURL || ""}
+                      alt={appUser?.name || user?.displayName || "Usuario"}
+                    />
+                  ) : null}
+                  <AvatarFallback className="bg-blue-100 text-blue-800 text-3xl sm:text-4xl">
+                    {appUser?.name?.charAt(0) || user?.displayName?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold">
-                    {user?.displayName || "Usuario"}
+                  <h2 className="text-xl sm:text-2xl font-bold">
+                    {appUser?.name || user?.displayName || "Usuario"}
                   </h2>
-                  <p className="text-gray-600">{user?.email}</p>
+                  <p className="text-sm sm:text-base text-gray-600 break-all">{appUser?.email || user?.email}</p>
                 </div>
                 {isDriver && (
-                  <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full font-medium">
-                    <Car className="w-5 h-5" />
+                  <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 sm:px-4 py-2 rounded-full font-medium text-sm">
+                    <Car className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Conductor Verificado</span>
                   </div>
                 )}
@@ -153,29 +189,29 @@ export default function DesktopProfilePage() {
           {appUser && (
             <Card>
               <CardHeader>
-                <CardTitle>Estadísticas</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Estadísticas</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-xl sm:text-2xl font-bold text-blue-600">
                       {(appUser as any).ridesCount || appUser.totalRides || 0}
                     </div>
-                    <div className="text-sm text-gray-600">Viajes Totales</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Viajes Totales</div>
                   </div>
-                  <Car className="w-8 h-8 text-blue-600" />
+                  <Car className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
                   <div>
-                    <div className="text-2xl font-bold text-amber-600 flex items-center gap-1">
-                      <Star className="w-6 h-6 fill-current" />
+                    <div className="text-xl sm:text-2xl font-bold text-amber-600 flex items-center gap-1">
+                      <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                       {appUser.rating?.toFixed(1) || "5.0"}
                     </div>
-                    <div className="text-sm text-gray-600">Calificación</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Calificación</div>
                   </div>
                 </div>
                 {(appUser as any).createdAt && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
                     <span>
                       Miembro desde{" "}
@@ -191,26 +227,28 @@ export default function DesktopProfilePage() {
         </div>
 
         {/* Columna Derecha - Información Personal */}
-        <div className="col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Información Personal</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Información Personal</CardTitle>
+              <CardDescription className="text-sm">
                 Actualiza tu información de perfil
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Nombre Completo</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2 md:col-span-1">
+                  <Label htmlFor="name" className="text-sm">Nombre Completo</Label>
                   <Input
                     id="name"
-                    defaultValue={user?.displayName || ""}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Tu nombre completo"
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
+                <div className="sm:col-span-2 md:col-span-1">
+                  <Label htmlFor="email" className="text-sm">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -219,8 +257,8 @@ export default function DesktopProfilePage() {
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="phone">Teléfono</Label>
+                <div className="sm:col-span-2 md:col-span-1">
+                  <Label htmlFor="phone" className="text-sm">Teléfono</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -230,8 +268,8 @@ export default function DesktopProfilePage() {
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="address">Dirección</Label>
+                <div className="sm:col-span-2 md:col-span-1">
+                  <Label htmlFor="address" className="text-sm">Dirección</Label>
                   <Input
                     id="address"
                     value={address}
@@ -241,17 +279,19 @@ export default function DesktopProfilePage() {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
                 <Button 
                   variant="outline" 
                   onClick={handleCancel}
                   disabled={isSaving}
+                  className="w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   onClick={handleSaveProfile}
                   disabled={isSaving}
+                  className="w-full sm:w-auto"
                 >
                   {isSaving ? "Guardando..." : "Guardar Cambios"}
                 </Button>
@@ -268,8 +308,8 @@ export default function DesktopProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/desktop/driver">
-                  <Button className="w-full" size="lg">
+                <Link href="/driver">
+                  <Button className="w-full">
                     <Car className="w-5 h-5 mr-2" />
                     Ir al Panel de Conductor
                   </Button>

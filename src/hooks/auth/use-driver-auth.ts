@@ -33,7 +33,13 @@ export function useDriverAuth() {
                 if (vehicleSnap.exists()) {
                     const vehicleData = {id: vehicleSnap.id, ...vehicleSnap.data()} as Vehicle;
                     setDriver({ ...driverData, vehicle: vehicleData });
+                } else {
+                    // Vehículo referenciado pero no existe
+                    setDriver({ ...driverData, vehicle: null } as EnrichedDriver);
                 }
+            } else {
+                // Sin vehículo asignado (null)
+                setDriver({ ...driverData, vehicle: null } as EnrichedDriver);
             }
           }
           setLoading(false);

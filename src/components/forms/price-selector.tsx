@@ -80,14 +80,14 @@ export function PriceSelector({
 
         <div className="text-center min-w-[100px]">
           <p className="text-2xl font-bold text-[#2E4CA6]">
-            S/ {currentPrice.toFixed(1)}
+            S/ {currentPrice.toFixed(2)}
           </p>
           {percentageChange !== 0 && (
             <p className={cn(
               "text-xs font-medium",
               percentageChange > 0 ? "text-green-600" : "text-red-600"
             )}>
-              {percentageChange > 0 ? "+" : ""}{percentageChange.toFixed(1)}%
+              {percentageChange > 0 ? "+" : ""}{percentageChange.toFixed(2)}%
             </p>
           )}
         </div>
@@ -113,13 +113,13 @@ export function PriceSelector({
       <div className="text-center space-y-1">
         {currentPrice !== normalizedOriginal && (
           <div className="text-xs text-gray-600">
-            <span className="line-through">Precio sugerido: S/ {normalizedOriginal.toFixed(1)}</span>
+            <span className="line-through">Precio sugerido: S/ {normalizedOriginal.toFixed(2)}</span>
           </div>
         )}
         
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Mín: S/ {minPrice.toFixed(1)}</span>
-          <span>Máx: S/ {maxPrice.toFixed(1)}</span>
+          <span>Mín: S/ {minPrice.toFixed(2)}</span>
+          <span>Máx: S/ {maxPrice.toFixed(2)}</span>
         </div>
         
         {percentageChange > 10 && (

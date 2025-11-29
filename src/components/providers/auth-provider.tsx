@@ -5,7 +5,7 @@ import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
 import type { User as AppUser } from "@/lib/types";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -30,10 +30,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userDocRef);
+        // Intentar buscar primero en users
+        let userDocRef = doc(db, 'users', firebaseUser.uid);
+        let userSnap = await getDoc(userDocRef);
+        
+        // Si no existe en users, buscar en drivers
+        if (!userSnap.exists()) {
+          userDocRef = doc(db, 'drivers', firebaseUser.uid);
+          userSnap = await getDoc(userDocRef);
+        }
+        
         if (userSnap.exists()) {
-          setAppUser({ id: userSnap.id, ...userSnap.data() } as AppUser);
+          const userData = { id: userSnap.id, ...userSnap.data() } as AppUser;
+          console.log("👤 Usuario cargado desde:", userSnap.ref.path, userData);
+          setAppUser(userData);
+        } else {
+          // Usuario autenticado pero sin perfil - crear perfil inicial
+          console.log("📝 Creando perfil inicial para:", firebaseUser.email);
+          
+          const name = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario';
+          const newUserData: AppUser = {
+            id: firebaseUser.uid,
+            name: name,
+            email: firebaseUser.email || '',
+            avatarUrl: firebaseUser.photoURL || '/img/avatar.png',
+            role: 'passenger',
+            signupDate: new Date().toISOString(),
+            totalRides: 0,
+            rating: 5.0,
+            phone: firebaseUser.phoneNumber || '',
+            address: '',
+            isAdmin: false,
+            status: 'incomplete',
+          };
+          
+          // Crear documento en users
+          const newUserRef = doc(db, 'users', firebaseUser.uid);
+          await setDoc(newUserRef, newUserData);
+          
+          console.log("✅ Perfil creado exitosamente");
+          setAppUser(newUserData);
         }
       } else {
         setAppUser(null);

@@ -173,7 +173,7 @@ export default function RideHistory() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-primary">
-                    S/{ride.fare.toFixed(1)}
+                    S/{ride.fare.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">Tarifa Final</p>
                 </div>

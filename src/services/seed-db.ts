@@ -3,7 +3,10 @@
 
 import { collection, doc, writeBatch, DocumentReference, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { drivers, users, rides, claims, sosAlerts, notifications, settings, serviceTypes, coupons, specialFareRules, cancellationReasons, peakTimeRules, vehicles, vehicleModels } from '@/lib/seed-data';
+import * as testData from '@/lib/seed-data';
+import * as blankData from '@/lib/seed-data-blank';
+
+type SeedDataType = 'test' | 'blank';
 
 const collectionsToReset = [
     'rides',
@@ -22,8 +25,9 @@ const collectionsToReset = [
 
 /**
  * Deletes all documents from the specified collections.
+ * Exported to allow clearing database without re-seeding.
  */
-async function clearCollections() {
+export async function clearCollections() {
     console.log('Clearing transactional collections...');
 
     for (const collectionName of collectionsToReset) {
@@ -50,10 +54,30 @@ async function clearCollections() {
  * Seeds the Firestore database with initial data.
  * This function is idempotent, meaning it can be run multiple times without creating duplicate data.
  * It uses a write batch to perform all writes as a single atomic operation.
+ * @param dataType - Type of data to seed: 'test' for test data or 'blank' for production-ready blank data
  */
-export async function seedDatabase() {
+export async function seedDatabase(dataType: SeedDataType = 'test') {
   const batch = writeBatch(db);
-  console.log('Starting to seed database...');
+  console.log(`Starting to seed database with ${dataType} data...`);
+
+  // Select the appropriate data source
+  const data = dataType === 'test' ? testData : blankData;
+  const {
+    drivers,
+    users,
+    rides,
+    claims,
+    sosAlerts,
+    notifications,
+    settings,
+    serviceTypes,
+    coupons,
+    specialFareRules,
+    cancellationReasons,
+    peakTimeRules,
+    vehicles,
+    vehicleModels
+  } = data;
 
   // --- PHASE 1: Seed independent collections and get their references ---
   const userRefsByEmail = new Map<string, DocumentReference>();
@@ -120,6 +144,7 @@ export async function seedDatabase() {
 
 
   // --- PHASE 2: Seed dependent collections using the created references ---
+  const rideRefs: DocumentReference[] = [];
   for (const rideData of rides) {
     const { driverName, passengerEmail, ...rest } = rideData;
     const driverRef = driverRefsByName.get(driverName);
@@ -136,33 +161,42 @@ export async function seedDatabase() {
         passenger: passengerRef,
         vehicle: vehicleRef
       });
+      rideRefs.push(rideRef);
     }
   }
   console.log(`${rides.length} rides prepared for batch.`);
 
   for (const claimData of claims) {
-    const { claimantEmail, ...rest } = claimData;
+    const { claimantEmail, rideIndex, ...rest } = claimData;
     const claimantRef = userRefsByEmail.get(claimantEmail);
+    const rideRef = rideRefs[rideIndex];
 
-    if (claimantRef) {
+    if (claimantRef && rideRef) {
         const claimRef = doc(collection(db, 'claims'));
-        batch.set(claimRef, { ...rest, id: claimRef.id, claimant: claimantRef });
+        batch.set(claimRef, { 
+          ...rest, 
+          id: claimRef.id, 
+          claimant: claimantRef,
+          rideId: rideRef.id 
+        });
     }
   }
   console.log(`${claims.length} claims prepared for batch.`);
   
   for (const alertData of sosAlerts) {
-    const { driverName, passengerEmail, ...rest } = alertData;
+    const { driverName, passengerEmail, rideIndex, ...rest } = alertData;
     const driverRef = driverRefsByName.get(driverName);
     const passengerRef = userRefsByEmail.get(passengerEmail);
+    const rideRef = rideRefs[rideIndex];
 
-    if (driverRef && passengerRef) {
+    if (driverRef && passengerRef && rideRef) {
         const alertRef = doc(collection(db, 'sosAlerts'));
         batch.set(alertRef, {
             ...rest,
             id: alertRef.id,
             driver: driverRef,
             passenger: passengerRef,
+            rideId: rideRef.id,
         });
     }
   }
@@ -178,8 +212,9 @@ export async function seedDatabase() {
 /**
  * Clears transactional collections and then seeds the database with fresh data.
  * Keeps the 'appSettings' collection intact.
+ * @param dataType - Type of data to seed: 'test' for test data or 'blank' for production-ready blank data
  */
-export async function resetAndSeedDatabase() {
+export async function resetAndSeedDatabase(dataType: SeedDataType = 'test') {
     await clearCollections();
-    await seedDatabase();
+    await seedDatabase(dataType);
 }

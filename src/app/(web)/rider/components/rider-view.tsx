@@ -443,7 +443,11 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
       });
 
       const rideRef = doc(db, "rides", currentRide.id);
-      await updateDoc(rideRef, { isRatedByPassenger: true });
+      await updateDoc(rideRef, { 
+        isRatedByPassenger: true,
+        driverRating: rating,
+        driverComment: comment || ''
+      });
 
       toast({
         title: "¡Gracias por tu calificación!",
@@ -558,7 +562,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
               <TabsList className="grid h-12 sm:h-14 w-full grid-cols-4 rounded-none bg-gradient-to-r from-[#2E4CA6] to-[#0477BF] p-2 sm:p-4">
                 <TabsTrigger value="book" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">
                   <Car className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
-                  <span className="hidden sm:inline">Pedir Viaje</span>
+                  <span className="hidden sm:inline">Viaje</span>
                   <span className="sm:hidden">Viaje</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="relative h-full rounded-lg text-xs sm:text-sm font-semibold text-white/70 transition-all data-[state=active]:bg-white data-[state=active]:text-[#2E4CA6] data-[state=active]:shadow-lg">

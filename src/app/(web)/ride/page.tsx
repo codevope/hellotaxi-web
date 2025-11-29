@@ -36,16 +36,21 @@ const RidePage = () => {
   const { isDriver } = useDriverAuth();
   const router = useRouter();
 
-  // Redirigir usuarios autenticados a la vista apropiada
-  useEffect(() => {
-    if (!loading && appUser) {
-      if (isDriver || appUser.role === 'driver') {
-        router.push('/driver');
-      } else {
-        router.push('/rider');
-      }
+  // Función para manejar el click en botones de acción
+  const handleRideAction = () => {
+    if (loading) return;
+    
+    if (!appUser) {
+      // Si no está logueado, ir a login
+      router.push('/login');
+    } else if (isDriver || appUser.role === 'driver') {
+      // Si es conductor, ir al panel de conductor
+      router.push('/driver');
+    } else {
+      // Si es pasajero, ir al panel de pasajero
+      router.push('/rider');
     }
-  }, [appUser, isDriver, loading, router]);
+  };
 
   // Animación de partículas flotantes
   const floatingIcons = [
@@ -173,15 +178,14 @@ const RidePage = () => {
             whileTap={{ scale: 0.95 }}
           >
             <Button
-              asChild
+              onClick={handleRideAction}
+              disabled={loading}
               size="lg"
               className="px-10 py-6 text-lg font-semibold shadow-2xl bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white transition-all duration-300 group"
             >
-              <Link href="/rider">
-                <MapPin className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-                Comenzar Ahora
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-              </Link>
+              <MapPin className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+              {loading ? 'Cargando...' : 'Comenzar Ahora'}
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
             </Button>
           </motion.div>
 
@@ -439,15 +443,14 @@ const RidePage = () => {
                         whileTap={{ scale: 0.95 }}
                       >
                         <Button
-                          asChild
+                          onClick={handleRideAction}
+                          disabled={loading}
                           size="lg"
                           className="w-full bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white font-bold text-lg py-6 shadow-2xl group"
                         >
-                          <Link href="/rider">
-                            <Car className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-                            Solicitar {vehicles[selectedCar].name}
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                          </Link>
+                          <Car className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                          {loading ? 'Cargando...' : `Solicitar ${vehicles[selectedCar].name}`}
+                          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
                         </Button>
                       </motion.div>
                     </motion.div>

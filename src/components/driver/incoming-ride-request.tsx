@@ -223,7 +223,7 @@ export function IncomingRideRequest({
                       disabled={false}
                       maxIncrease={25}
                       maxDecrease={10}
-                      step={0.50}
+                      step={0.10}
                     />
                   </div>
                   

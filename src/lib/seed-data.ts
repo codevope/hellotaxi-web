@@ -111,7 +111,6 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     licensePlate: 'ABC-123', // This will be used to link the vehicle
     status: 'available',
     documentsStatus: 'approved',
-    kycVerified: true,
     licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
     dniExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 8)).toISOString(),
     backgroundCheckExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 5)).toISOString(),
@@ -135,8 +134,7 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     licensePlate: 'DEF-456',
     status: 'unavailable',
     documentsStatus: 'approved',
-    kycVerified: true,
-    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 3)).toISOString(),
+    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
     dniExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 5)).toISOString(),
     backgroundCheckExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 4)).toISOString(),
     paymentModel: 'membership',
@@ -159,8 +157,7 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     licensePlate: 'GHI-789',
     status: 'available',
     documentsStatus: 'pending',
-    kycVerified: false,
-    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString(),
     dniExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 7)).toISOString(),
     backgroundCheckExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
     paymentModel: 'membership',
@@ -182,9 +179,8 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     rating: 5.0,
     licensePlate: 'JKL-012',
     status: 'available',
-    documentsStatus: 'rejected',
-    kycVerified: false,
-    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString(),
+    documentsStatus: 'approved',
+    licenseExpiry: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
     dniExpiry: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString(), // Expired
     backgroundCheckExpiry: new Date(new Date().setFullYear(new Date().getFullYear() - 2)).toISOString(), // Expired
     paymentModel: 'commission',
@@ -314,9 +310,9 @@ export const rides: (Omit<Ride, 'id' | 'driver' | 'passenger' | 'vehicle'> & { d
 // ================================================================= //
 //                             CLAIMS                                //
 // ================================================================= //
-export const claims: (Omit<Claim, 'id' | 'claimant'> & { rideId: string, claimantEmail: string })[] = [
+export const claims: (Omit<Claim, 'id' | 'claimant' | 'rideId'> & { rideIndex: number, claimantEmail: string })[] = [
     {
-        rideId: 'ride-2', 
+        rideIndex: 1, // Referencia al segundo ride (índice 1 en el array de rides)
         claimantEmail: 'miguel.c@example.com',
         date: '2025-10-25T19:00:00Z',
         reason: 'Objeto Olvidado',
@@ -324,7 +320,7 @@ export const claims: (Omit<Claim, 'id' | 'claimant'> & { rideId: string, claiman
         status: 'open',
     },
     {
-        rideId: 'ride-1', 
+        rideIndex: 0, // Referencia al primer ride (índice 0 en el array de rides)
         claimantEmail: 'lucia.f@example.com',
         date: '2025-10-26T15:00:00Z',
         reason: 'Problema con la Tarifa',
@@ -337,9 +333,9 @@ export const claims: (Omit<Claim, 'id' | 'claimant'> & { rideId: string, claiman
 // ================================================================= //
 //                           SOS ALERTS                              //
 // ================================================================= //
-export const sosAlerts: (Omit<SOSAlert, 'id' | 'driver' | 'passenger'> & { rideId: string, driverName: string, passengerEmail: string })[] = [
+export const sosAlerts: (Omit<SOSAlert, 'id' | 'driver' | 'passenger' | 'rideId'> & { rideIndex: number, driverName: string, passengerEmail: string })[] = [
     {
-        rideId: 'ride-3', 
+        rideIndex: 2, // Referencia al tercer ride (índice 2 en el array de rides)
         passengerEmail: 'lucia.f@example.com',
         driverName: 'Juan Perez',
         date: '2025-10-24T20:15:00Z',
@@ -447,4 +443,7 @@ export const settings: Omit<Settings, 'id' | 'serviceTypes' | 'cancellationReaso
     membershipFeeEconomy: 40,
     membershipFeeComfort: 50,
     membershipFeeExclusive: 60,
+    commissionPercentageEconomy: 15,
+    commissionPercentageComfort: 15,
+    commissionPercentageExclusive: 15,
 };

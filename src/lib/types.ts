@@ -5,8 +5,29 @@ import type { DocumentReference } from 'firebase/firestore';
 export type ServiceType = 'economy' | 'comfort' | 'exclusive';
 export type PaymentModel = 'commission' | 'membership';
 export type MembershipStatus = 'active' | 'pending' | 'expired';
+export type MembershipDuration = 'monthly' | 'annual';
+export type PaymentStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'yape' | 'plin';
 export type UserRole = 'passenger' | 'driver';
+
+export interface MembershipPricing {
+  economy: number;
+  comfort: number;
+  exclusive: number;
+}
+
+export interface MembershipPayment {
+  id: string;
+  driverId: string;
+  amount: number;
+  serviceType: ServiceType;
+  dueDate: string; // ISO Date string
+  paidDate?: string; // ISO Date string
+  status: PaymentStatus;
+  periodStart: string; // ISO Date string
+  periodEnd: string; // ISO Date string
+  createdAt: string; // ISO Date string
+}
 
 export type DocumentName = 'license' | 'insurance' | 'technicalReview' | 'backgroundCheck' | 'dni' | 'propertyCard';
 export type DocumentStatus = 'pending' | 'approved' | 'rejected';
@@ -46,14 +67,23 @@ export interface Driver {
   rating: number;
   status: 'available' | 'unavailable' | 'on-ride';
   documentsStatus: 'approved' | 'pending' | 'rejected';
-  kycVerified: boolean;
   licenseExpiry: string; // ISO Date string
   backgroundCheckExpiry: string; // ISO Date string
   dniExpiry: string; // ISO Date string
   paymentModel: PaymentModel;
   membershipStatus: MembershipStatus;
   membershipExpiryDate?: string; // ISO Date string
+  // Campos de comisión
+  commissionPercentage?: number; // Porcentaje de comisión (ej: 15 para 15%)
+  // Campos de membresía
+  membershipPricing?: MembershipPricing; // Precios por tipo de servicio
+  membershipDuration?: MembershipDuration; // Duración: mensual o anual
+  membershipStartDate?: string; // ISO Date string - fecha de inicio de membresía
+  membershipPausedDate?: string; // ISO Date string - fecha cuando se pausa la membresía
+  lastPaymentDate?: string; // ISO Date string - última fecha de pago de membresía
+  nextPaymentDue?: string; // ISO Date string - próxima fecha de vencimiento de pago
   documentStatus?: Record<DocumentName, DocumentStatus>;
+  documentUrls?: Record<DocumentName, string>; // URLs de documentos subidos
   totalRides?: number;
   location?: Location;
   vehicle: DocumentReference;
@@ -71,9 +101,9 @@ export interface Driver {
   };
 }
 
-// EnrichedDriver has the full vehicle object instead of just a reference
+// EnrichedDriver has the full vehicle object instead of just a reference (or null if not assigned)
 export interface EnrichedDriver extends Omit<Driver, 'vehicle'> {
-  vehicle: Vehicle;
+  vehicle: Vehicle | null;
 }
 
 // DriverWithVehicleInfo extends Driver with vehicle information for UI display
@@ -144,6 +174,11 @@ export interface Ride {
   rejectedBy?: DocumentReference[];
   isRatedByPassenger?: boolean;
   offeredTo?: DocumentReference | null;
+  // Calificaciones del viaje específico
+  driverRating?: number; // Calificación que el pasajero le dio al conductor en este viaje
+  driverComment?: string; // Comentario del pasajero sobre el conductor
+  passengerRating?: number; // Calificación que el conductor le dio al pasajero en este viaje
+  passengerComment?: string; // Comentario del conductor sobre el pasajero
 }
 
 export interface Review {
@@ -250,9 +285,14 @@ export interface Settings {
     locationUpdateInterval: number;
     mapCenterLat: number;
     mapCenterLng: number;
+    // Precios de membresía por tipo de servicio
     membershipFeeEconomy: number;
     membershipFeeComfort: number;
     membershipFeeExclusive: number;
+    // Porcentajes de comisión por tipo de servicio
+    commissionPercentageEconomy: number;
+    commissionPercentageComfort: number;
+    commissionPercentageExclusive: number;
     serviceTypes: ServiceTypeConfig[];
     cancellationReasons: CancellationReason[];
     specialFareRules: SpecialFareRule[];
