@@ -84,6 +84,21 @@ const serviceTypeIcons: Record<ServiceType, React.ReactNode> = {
   exclusive: <Rocket className="h-8 w-8 text-[#049DD9]" />,
 };
 
+const serviceTypeDetails: Record<ServiceType, { passengers: string; features: string[] }> = {
+  economy: {
+    passengers: '4 pasajeros',
+    features: ['Económico', 'Rápido', 'Ideal para cortas distancias']
+  },
+  comfort: {
+    passengers: '4 pasajeros',
+    features: ['Confortable', 'Elegante', 'Perfecto para ciudad']
+  },
+  exclusive: {
+    passengers: '6 pasajeros',
+    features: ['Amplio espacio', 'Aire acondicionado', 'Lujoso']
+  }
+};
+
 interface RideRequestFormProps {
   onRideCreated: (ride: Ride) => void;
 }
@@ -456,24 +471,64 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                   <FormItem className="space-y-1">
                      <FormControl>
                       <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-3 gap-4">
-                        {appSettings.serviceTypes.map((service) => (
-                          <FormItem key={service.id}>
-                            <RadioGroupItem value={service.id} id={`service-${service.id}`} className="peer sr-only" />
-                            <FormLabel
-                              htmlFor={`service-${service.id}`}
-                              className={cn(
-                                "flex flex-col items-center rounded-lg border shadow-sm cursor-pointer transition text-xs p-2",
-                                field.value === service.id
-                                  ? "border-[#0477BF] bg-[#05C7F2]/10"
-                                  : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
-                                isFormLocked && "cursor-not-allowed opacity-50"
-                              )}
-                            >
-                              <div className="scale-[0.8]">{serviceTypeIcons[service.id]}</div>
-                              <span className="font-medium text-[#2E4CA6] text-xs mt-1">{service.name}</span>
-                            </FormLabel>
-                          </FormItem>
-                        ))}
+                        {appSettings.serviceTypes.map((service) => {
+                          const isSelected = field.value === service.id;
+                          const details = serviceTypeDetails[service.id];
+                          
+                          return (
+                            <FormItem key={service.id}>
+                              <RadioGroupItem value={service.id} id={`service-${service.id}`} className="peer sr-only" />
+                              <FormLabel
+                                htmlFor={`service-${service.id}`}
+                                className={cn(
+                                  "block relative rounded-lg border shadow-sm cursor-pointer transition-all duration-500 overflow-hidden h-24",
+                                  isSelected
+                                    ? "border-[#0477BF] bg-[#05C7F2]/10"
+                                    : "border-gray-200 bg-[#F2F2F2] hover:border-[#049DD9] hover:bg-white",
+                                  isFormLocked && "cursor-not-allowed opacity-50"
+                                )}
+                                style={{
+                                  perspective: '1000px',
+                                  transformStyle: 'preserve-3d'
+                                }}
+                              >
+                                <div
+                                  className={cn(
+                                    "absolute inset-0 transition-all duration-500",
+                                    isSelected ? "opacity-0 invisible rotate-y-180" : "opacity-100 visible"
+                                  )}
+                                  style={{
+                                    transform: isSelected ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                    backfaceVisibility: 'hidden'
+                                  }}
+                                >
+                                  <div className="flex flex-col items-center justify-center h-full p-2">
+                                    <div className="scale-[0.8]">{serviceTypeIcons[service.id]}</div>
+                                    <span className="font-medium text-[#2E4CA6] text-xs mt-1">{service.name}</span>
+                                  </div>
+                                </div>
+                                
+                                <div
+                                  className={cn(
+                                    "absolute inset-0 transition-all duration-500 bg-gradient-to-br from-[#2E4CA6] to-[#0477BF] text-white",
+                                    isSelected ? "opacity-100 visible" : "opacity-0 invisible rotate-y-180"
+                                  )}
+                                  style={{
+                                    transform: isSelected ? 'rotateY(0deg)' : 'rotateY(-180deg)',
+                                    backfaceVisibility: 'hidden'
+                                  }}
+                                >
+                                  <div className="flex flex-col justify-center h-full p-2 space-y-0.5">
+                                    <p className="text-[9px] font-bold text-center text-yellow-300">{details.passengers}</p>
+                                    {details.features.map((feature, idx) => (
+                                      <p key={idx} className="text-[8px] text-center leading-tight">{feature}</p>
+                                    ))}
+                                  </div>
+                                </div>
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        })}
                       </RadioGroup>
                     </FormControl>
                   </FormItem>

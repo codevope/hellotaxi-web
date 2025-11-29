@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleIcon } from '@/components/google-icon';
 import Link from 'next/link';
 
 function DriverRegistrationContent() {

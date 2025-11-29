@@ -276,7 +276,7 @@ export default function InstallPage() {
             <motion.div variants={fadeInUp}>
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 mb-8">
                 <h3 className="text-2xl font-bold text-white mb-8 text-center">
-                  {isIOS ? "📱 iPhone / iPad" : "🤖 Android"}
+                  {isIOS ? "iPhone / iPad" : "🤖 Android"}
                 </h3>
 
                 <div className="grid md:grid-cols-3 gap-8">

@@ -83,15 +83,15 @@ export const sosAlertsColumns = (
           <div className="font-medium">Pasajero: {alert.passenger.name}</div>
           {alert.passenger.phone && (
             <div className="text-sm text-muted-foreground">
-              📱 Pasajero: {alert.passenger.phone}
+              {alert.passenger.phone}
             </div>
           )}
-          <div className="text-sm text-muted-foreground">
+          <div className="font-medium">
             Conductor: {alert.driver.name}
           </div>
           {alert.driver.phone && (
             <div className="text-sm text-muted-foreground">
-              📱 Conductor: {alert.driver.phone}
+            {alert.driver.phone}
             </div>
           )}
           <div className="text-sm text-muted-foreground">

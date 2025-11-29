@@ -142,7 +142,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
       
       // Solicitar permisos automáticamente si no los tiene
       if (!notifications.hasPermission && notifications.canUseNotifications) {
-        console.log('📱 [Rider Desktop] Solicitando permisos de notificación automáticamente...');
+        console.log('[Rider Desktop] Solicitando permisos de notificación automáticamente...');
         notifications.requestNotificationPermission();
       }
       

@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useEffect, Children, isValidElement } from 'react';
-import { useGeolocation } from '@/hooks/geolocation/use-geolocation-improved';
+import { useGeolocation } from '@/hooks/geolocation/use-geolocation';
 import type { Ride, Location, Driver } from '@/lib/types';
 import {
   GoogleMapsProvider,

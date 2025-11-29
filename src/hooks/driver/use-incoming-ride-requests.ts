@@ -127,12 +127,12 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
                 console.error('❌ MOBILE: Error playing notification sound:', error);
               }
             } else {
-              console.log('⚠️ MOBILE: playNotificationSound no disponible');
+              console.log('MOBILE: playNotificationSound no disponible');
             }
             
             // Mostrar toast inmediatamente para dispositivos móviles
             if (toast) {
-              console.log('📱 MOBILE: Mostrando toast...');
+              console.log('MOBILE: Mostrando toast...');
               toast({
                 title: '🚖 Nueva solicitud de viaje',
                 description: `Recogida: ${newRequest.pickup}`,

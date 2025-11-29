@@ -3,7 +3,6 @@ import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatc
 import { db } from '@/lib/firebase';
 import { useDriverRideStore } from '@/store/driver-ride-store';
 import type { Ride, User, EnrichedDriver, Location } from '@/lib/types';
-import { useRouteSimulator } from '@/hooks/use-route-simulator';
 import { useToast } from '@/hooks/use-toast';
 
 export interface EnrichedRide extends Omit<Ride, 'passenger' | 'driver'> {
@@ -20,7 +19,7 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
   const { activeRide, setActiveRide } = useDriverRideStore();
   const [completedRideForRating, setCompletedRideForRating] = useState<EnrichedRide | null>(null);
   const [isCompletingRide, setIsCompletingRide] = useState(false);
-  const { startSimulation, stopSimulation, simulatedLocation } = useRouteSimulator();
+  const [driverLocation, setDriverLocation] = useState<Location | null>(null);
   const { toast } = useToast();
   const locationUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -48,6 +47,7 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
           try {
             const driverRef = doc(db, 'drivers', driver.id);
             await updateDoc(driverRef, { location: newLocation });
+            setDriverLocation(newLocation); // Actualizar estado local
             console.log('📍 [DRIVER] Ubicación actualizada:', newLocation);
           } catch (error) {
             console.error('❌ [DRIVER] Error actualizando ubicación:', error);
@@ -99,7 +99,6 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
                 });
               }
             }
-            stopSimulation();
             setActiveRide(null);
           }
           return;
@@ -113,28 +112,17 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
             const { driver: _driverRef, passenger: _passengerRef, ...rest } = rideData as any;
             const enriched: EnrichedRide = { ...rest, driver, passenger: passengerData };
             setActiveRide(enriched);
-
-            const pickup = { lat: -12.05, lng: -77.05, address: rideData.pickup };
-            const dropoff = { lat: -12.1, lng: -77.0, address: rideData.dropoff };
-
-            if (rideData.status === 'accepted' || rideData.status === 'arrived') {
-              const driverInitialPos = driver.location || { lat: -12.045, lng: -77.03 };
-              startSimulation(driverInitialPos, pickup);
-            } else if (rideData.status === 'in-progress') {
-              startSimulation(pickup, dropoff);
-            }
           }
         }
       } else {
         if (useDriverRideStore.getState().activeRide !== null) {
-          stopSimulation();
           setActiveRide(null);
         }
       }
     });
 
     return () => unsubscribe();
-  }, [driver, setActiveRide, startSimulation, stopSimulation]);
+  }, [driver, setActiveRide]);
 
   const updateRideStatus = useCallback(async (ride: EnrichedRide, newStatus: 'arrived' | 'in-progress' | 'completed') => {
     setIsCompletingRide(true);
@@ -149,7 +137,6 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         batch.update(doc(db, 'users', ride.passenger.id), { totalRides: increment(1) });
         await batch.commit();
         toast({ title: '¡Viaje Finalizado!', description: 'Ahora califica al pasajero.' });
-        stopSimulation();
         setAvailability(true);
       } else {
         await updateDoc(rideRef, { status: newStatus });
@@ -170,7 +157,7 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
     } finally {
       setIsCompletingRide(false);
     }
-  }, [toast, stopSimulation, setAvailability]);
+  }, [toast, setAvailability]);
 
   return {
     activeRide,
@@ -178,6 +165,6 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
     setCompletedRideForRating,
     updateRideStatus,
     isCompletingRide,
-    driverLocation: simulatedLocation,
+    driverLocation,
   };
 }

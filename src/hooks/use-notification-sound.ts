@@ -13,73 +13,22 @@ interface NotificationSoundOptions {
 export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCacheRef = useRef<Map<string, HTMLAudioElement>>(new Map()); // Cache para múltiples sonidos
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true); // Cambiar a true para evitar bloqueos
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioPermissionGranted, setAudioPermissionGranted] = useState(false);
-  const [hasTriedReactivation, setHasTriedReactivation] = useState(false); // Usar estado en lugar de ref
+  const [hasTriedReactivation, setHasTriedReactivation] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Crear el elemento de audio
-    audioRef.current = new Audio(soundPath);
-    audioRef.current.preload = 'auto';
-    
-    // Configurar eventos
-    const audio = audioRef.current;
-    
-    const handleCanPlayThrough = () => {
-      setIsLoaded(true);
-    };
-    
-    const handlePlay = () => {
-      setIsPlaying(true);
-    };
-    
-    const handleEnded = () => {
-      setIsPlaying(false);
-    };
-    
-    const handleError = (error: Event) => {
-      // Mejorar logging: el Event no siempre contiene detalles útiles,
-      // así que leer la propiedad audio.error (MediaError) si está disponible.
-      const mediaError = (audio && (audio as HTMLAudioElement).error) as MediaError | null;
-      if (mediaError) {
-        console.error('Error cargando el audio (MediaError):', mediaError);
-        toast({
-          title: 'Error de audio',
-          description: `No se pudo cargar el sonido (código ${mediaError.code}).`,
-          variant: 'destructive',
-        });
-      } else {
-        console.error('Error cargando el audio (evento):', error);
-        toast({
-          title: 'Error de audio',
-          description: 'No se pudo cargar el sonido de notificación.',
-          variant: 'destructive',
-        });
-      }
-    };
-
-    audio.addEventListener('canplaythrough', handleCanPlayThrough);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
-
+    // No crear audio por defecto, solo cuando se necesite
     // Verificar permisos de notificación
     checkNotificationPermission();
     
     // Restaurar estado del audio desde localStorage
     restoreAudioState();
-
-    return () => {
-      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-    };
-  }, [soundPath, toast]);
+  }, []);
 
   const restoreAudioState = () => {
     try {
@@ -171,31 +120,24 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
   };
 
   const tryReenableAudio = async (): Promise<boolean> => {
-    // Solo intentar si el usuario había habilitado el audio previamente y no se ha intentado ya
-    if (!audioPermissionGranted || !audioRef.current || !isLoaded || hasTriedReactivation) {
+    if (!audioPermissionGranted || hasTriedReactivation) {
       return false;
     }
 
     setHasTriedReactivation(true);
 
     try {
-      // Intentar reproducir silenciosamente para reactivar
-      const originalVolume = audioRef.current.volume;
-      audioRef.current.volume = 0.001;
-      audioRef.current.currentTime = 0;
+      const testAudio = new Audio('/sounds/notification.mp3');
+      testAudio.volume = 0.001;
       
-      await audioRef.current.play();
-      // Pequeño delay para evitar interrumpir el play()
+      await testAudio.play();
       await new Promise(resolve => setTimeout(resolve, 100));
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current.volume = originalVolume;
+      testAudio.pause();
       
       setAudioEnabled(true);
       console.log('🔄 Audio rehabilitado automáticamente');
       return true;
     } catch (error) {
-      // Manejar diferentes tipos de errores
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
           console.log('🔊 [Audio] Reactivación requiere interacción del usuario');
@@ -208,51 +150,40 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
         }
       }
       
-      console.log('⚠️ [Audio] No se pudo rehabilitar automáticamente el audio, requiere interacción');
+      console.log('⚠️ [Audio] No se pudo rehabilitar automáticamente el audio');
       setAudioEnabled(false);
       return false;
     }
   };
 
   const playSound = async (options: NotificationSoundOptions = {}) => {
-    if (!audioRef.current || !isLoaded) {
-      console.warn('Audio no está listo para reproducir');
-      return false;
-    }
-
     // Intentar habilitar automáticamente si no está habilitado
     if (!audioEnabled) {
       console.log('🔊 Audio no habilitado, intentando habilitar automáticamente...');
       const enabled = await enableAudio();
       if (!enabled) {
-        // Si falla la activación automática, es porque necesita interacción del usuario
         console.warn('🔊 Se requiere interacción del usuario para habilitar audio');
-        // No mostrar toast aquí para no ser intrusivo
         return false;
       }
     }
 
     try {
-      // Configurar opciones
-      audioRef.current.volume = options.volume ?? 0.7;
-      audioRef.current.loop = options.loop ?? false;
+      const soundFileName = options.soundFile || 'taxi';
+      const audio = new Audio(`/sounds/${soundFileName}.mp3`);
+      audio.volume = options.volume ?? 0.7;
+      audio.loop = options.loop ?? false;
       
-      // Resetear el audio al inicio
-      audioRef.current.currentTime = 0;
-      
-      // Reproducir
-      await audioRef.current.play();
+      await audio.play();
       console.log('🎵 Audio reproducido correctamente');
       return true;
     } catch (error) {
       console.error('Error reproduciendo audio:', error);
       
-      // Si es un error de interacción del usuario, mostrar toast
       if (error instanceof Error && error.name === 'NotAllowedError') {
-        setAudioEnabled(false); // Resetear estado
+        setAudioEnabled(false);
         toast({
           title: 'Sonido bloqueado',
-          description: 'Habilita nuevamente el sonido haciendo clic en "Reactivar Sonido".',
+          description: 'Habilita nuevamente el sonido.',
           duration: 8000,
           variant: 'destructive',
         });
@@ -312,11 +243,14 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
   };
 
   const stopSound = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
+    // Detener todos los sonidos en cache
+    audioCacheRef.current.forEach((audio) => {
+      if (!audio.paused) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+    setIsPlaying(false);
   };
 
   const showNotificationWithSound = async (

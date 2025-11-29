@@ -15,8 +15,8 @@ import type { User as AppUser } from '@/lib/types';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Phone, Lock, CheckCircle } from 'lucide-react';
-import { GoogleIcon } from './google-icon';
 import { Input } from './ui/input';
+import Image from 'next/image';
 
 interface IncompleteProfileProps {
   user: FirebaseUser;
@@ -203,7 +203,7 @@ export default function IncompleteProfile({ user, appUser, setAppUser }: Incompl
                 </>
               ) : (
                 <>
-                  <GoogleIcon className="mr-2 h-4 w-4" />
+                  <Image src="/img/google-logo.webp" alt="Google" width={16} height={16} className="mr-2" />
                   Vincular con Google
                 </>
               )}

@@ -46,7 +46,7 @@ const StartNow = () => {
       image: "/img/suv.png",
       capacity: "6 pasajeros",
       price: "Desde S/ 10",
-      features: ["Amplio espacio", "Aire acondicionado", "Música premium"],
+      features: ["Amplio espacio", "Aire acondicionado", "Lujoso"],
       gradient: "from-[#2E4CA6] to-[#0477BF]",
       description: "Máximo confort para grupos grandes",
     },

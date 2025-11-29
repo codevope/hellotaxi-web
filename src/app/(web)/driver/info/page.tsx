@@ -22,7 +22,7 @@ import {
   WifiOff
 } from "lucide-react";
 import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
-import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications-safe";
+import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications";
 
 export default function ConfiguracionPage() {
   const { driver, setDriver, loading } = useDriverAuth();

@@ -92,7 +92,7 @@ import { useDriverRideStore } from "@/store/driver-ride-store";
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { DriverStatePanel } from "@/components/driver/driver-state-panel";
 import { useDriverChat } from "@/hooks/driver/use-driver-chat";
-import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications-safe";
+import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SSLWarningBanner } from "@/components/ssl-warning-banner";
 import { AudioEnabler } from "@/components/pwa/audio-enabler";

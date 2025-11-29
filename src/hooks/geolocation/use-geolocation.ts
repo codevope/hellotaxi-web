@@ -1,6 +1,8 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { GeocodingService } from '@/services/geocoding-service';
 
 export interface LocationData {
   latitude: number;
@@ -20,15 +22,10 @@ export interface UseGeolocationReturn {
 
 const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
-  timeout: 30000, // 30 segundos para GPS preciso
-  maximumAge: 0, // SIEMPRE solicitar ubicación fresca
+  timeout: 15000,
+  maximumAge: 0, // Forzar una nueva lectura, no usar caché
 };
 
-const FAST_OPTIONS: PositionOptions = {
-  enableHighAccuracy: true, // También usar GPS en modo rápido
-  timeout: 10000, // 10 segundos timeout
-  maximumAge: 0, // Sin cache
-};
 
 export function useGeolocation(
   options: PositionOptions = HIGH_ACCURACY_OPTIONS
@@ -38,28 +35,25 @@ export function useGeolocation(
   const [loading, setLoading] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<PermissionState | null>(null);
 
-  // Check if geolocation is supported
   const isSupported = typeof window !== 'undefined' && 'geolocation' in navigator;
 
-  // Check permission status
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'permissions' in navigator) {
+    if (isSupported && 'permissions' in navigator) {
       navigator.permissions.query({ name: 'geolocation' }).then((permission) => {
         setPermissionStatus(permission.state);
         
-        // Listen for permission changes
-        permission.addEventListener('change', () => {
-          setPermissionStatus(permission.state);
-        });
+        const handleChange = () => setPermissionStatus(permission.state);
+        permission.addEventListener('change', handleChange);
+        return () => permission.removeEventListener('change', handleChange);
       });
     }
-  }, []);
+  }, [isSupported]);
 
-  const requestLocation = () => {
+  const requestLocation = useCallback(() => {
     if (!isSupported) {
       setError({
         code: 0,
-        message: 'Geolocation is not supported by this browser',
+        message: 'La geolocalización no es soportada por este navegador.',
       } as GeolocationPositionError);
       return;
     }
@@ -68,33 +62,36 @@ export function useGeolocation(
     setError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
-        const locationData = { 
-          latitude, 
-          longitude, 
-          accuracy, 
-          timestamp: position.timestamp 
-        };
-        console.log('📍 Ubicación obtenida:', locationData);
-        setLocation(locationData);
-        setLoading(false);
+        const timestamp = Date.now();
+        
+        try {
+          const address = await GeocodingService.reverseGeocode(latitude, longitude);
+          setLocation({ latitude, longitude, accuracy, timestamp, address });
+        } catch (geocodingError) {
+          console.error("Geocoding failed:", geocodingError);
+          // Fallback to coordinates if geocoding fails
+          setLocation({
+            latitude,
+            longitude,
+            accuracy,
+            timestamp,
+            address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+          });
+        } finally {
+            setLoading(false);
+        }
       },
       (error) => {
-        console.error('❌ Error de geolocalización:', error);
+        console.error('Geolocation Error:', error);
         setError(error);
         setLoading(false);
       },
-      options
+      HIGH_ACCURACY_OPTIONS
     );
-  };
+  }, [isSupported]);
 
-  // Auto-request location if permission is already granted
-  useEffect(() => {
-    if (permissionStatus === 'granted' && !location && !loading) {
-      requestLocation();
-    }
-  }, [permissionStatus, location, loading, requestLocation]);
 
   return {
     location,

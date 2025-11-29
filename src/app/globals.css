@@ -110,4 +110,16 @@ body {
   .animate-pulse-slow {
     animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
 }
