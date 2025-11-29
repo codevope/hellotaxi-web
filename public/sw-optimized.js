@@ -9,6 +9,7 @@ const STATIC_ASSETS = [
   '/install',
   '/manifest.json',
   '/sounds/notification.mp3',
+  '/sounds/error.mp3',
   '/sounds/arrived.mp3',
   '/sounds/msg.mp3',
   '/sounds/taxi.mp3',

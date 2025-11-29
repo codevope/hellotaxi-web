@@ -32,13 +32,18 @@ function canDriverSeeRide(driverServiceType: ServiceType, rideServiceType: Servi
 
 interface IncomingRide extends Omit<Ride, 'passenger'> { passenger: User }
 
+interface NotificationSoundOptions {
+  soundFile?: string;
+  volume?: number;
+}
+
 interface UseIncomingRideRequestsParams {
   driver?: EnrichedDriver | null;
   isAvailable: boolean;
   rejectedRideIds: string[];
   setRejectedRideIds: React.Dispatch<React.SetStateAction<string[]>>;
   toast?: any;
-  playNotificationSound?: () => Promise<boolean>;
+  playNotificationSound?: (options?: NotificationSoundOptions) => Promise<boolean>;
 }
 
 export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, setRejectedRideIds, toast, playNotificationSound }: UseIncomingRideRequestsParams) {
@@ -186,10 +191,10 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
           });
         }
 
-        // Reproducir sonido de notificación
+        // Reproducir sonido de error para cancelación
         if (playNotificationSound) {
           try {
-            playNotificationSound();
+            playNotificationSound({ soundFile: 'error' });
           } catch (error) {
             console.log('🔊 [RIDE-LISTENER] No se pudo reproducir sonido de cancelación');
           }
@@ -255,10 +260,10 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
       });
     }
 
-    // Reproducir sonido de notificación si está disponible
+    // Reproducir sonido de error para timeout
     if (playNotificationSound) {
       try {
-        await playNotificationSound();
+        await playNotificationSound({ soundFile: 'error' });
         console.log('🔊 [AUTO-REJECT] Sonido de timeout reproducido');
       } catch (error) {
         console.log('🔊 [AUTO-REJECT] No se pudo reproducir sonido:', error);

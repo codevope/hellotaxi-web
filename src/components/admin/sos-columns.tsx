@@ -79,11 +79,21 @@ export const sosAlertsColumns = (
     cell: ({ row }) => {
       const alert = row.original;
       return (
-        <div>
+        <div className="space-y-1">
           <div className="font-medium">Pasajero: {alert.passenger.name}</div>
+          {alert.passenger.phone && (
+            <div className="text-sm text-muted-foreground">
+              📱 Pasajero: {alert.passenger.phone}
+            </div>
+          )}
           <div className="text-sm text-muted-foreground">
             Conductor: {alert.driver.name}
           </div>
+          {alert.driver.phone && (
+            <div className="text-sm text-muted-foreground">
+              📱 Conductor: {alert.driver.phone}
+            </div>
+          )}
           <div className="text-sm text-muted-foreground">
             ID Viaje: {alert.rideId}
           </div>
@@ -92,10 +102,13 @@ export const sosAlertsColumns = (
     },
     filterFn: (row, id, value) => {
       const alert = row.original;
+      const searchValue = value.toLowerCase();
       return (
-        alert.passenger.name.toLowerCase().includes(value.toLowerCase()) ||
-        alert.driver.name.toLowerCase().includes(value.toLowerCase()) ||
-        alert.rideId.toLowerCase().includes(value.toLowerCase())
+        alert.passenger.name.toLowerCase().includes(searchValue) ||
+        alert.driver.name.toLowerCase().includes(searchValue) ||
+        alert.rideId.toLowerCase().includes(searchValue) ||
+        (alert.passenger.phone?.toLowerCase().includes(searchValue) ?? false) ||
+        (alert.driver.phone?.toLowerCase().includes(searchValue) ?? false)
       );
     },
   },
