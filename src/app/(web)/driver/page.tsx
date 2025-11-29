@@ -540,24 +540,24 @@ function DriverPageContent() {
                       setIsRideSheetOpen(true);
                       setHasUserClosedSheet(false); // Resetear cuando el usuario abre manualmente
                     }}
-                    className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 h-10 sm:h-12 w-auto px-3 sm:px-4 bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white/100 text-gray-900 rounded-lg text-sm sm:text-base"
+                    className="absolute bottom-3 left-3 sm:bottom-6 sm:left-6 h-14 sm:h-16 w-auto px-5 sm:px-6 bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#05C7F2] hover:from-[#1e3a7a] hover:via-[#036aa0] hover:to-[#04a8d1] text-white shadow-2xl hover:shadow-blue-500/50 rounded-xl sm:rounded-2xl text-sm sm:text-base font-semibold transition-all duration-3000 animate-pulse hover:animate-none border-2"
                   >
                     {completedRideForRating ? (
                       <>
-                        <Star className="mr-2 h-4 w-4" />
-                        <span className="font-medium">Calificar Pasajero</span>
-                        <Star className="ml-2 h-4 w-4" />
+                        <Star className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 fill-yellow-300 text-yellow-300" />
+                        <span className="font-bold tracking-wide">Calificar Pasajero</span>
+                        <Star className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6 fill-yellow-300 text-yellow-300" />
                       </>
                     ) : (
                       <>
-                        <Car className="mr-2 h-4 w-4" />
-                        <span className="font-medium">
+                        <Car className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+                        <span className="font-bold tracking-wide">
                           Viaje {activeRideHook?.status === 'accepted' ? 'Aceptado' : 
                                  activeRideHook?.status === 'arrived' ? 'En Origen' : 
                                  activeRideHook?.status === 'in-progress' ? 'En Curso' : 
                                  activeRideHook?.status}
                         </span>
-                        <MessageCircle className="ml-2 h-4 w-4" />
+                        <MessageCircle className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6" />
                       </>
                     )}
                   </Button>

@@ -12,7 +12,7 @@ interface Location {
   address?: string;
 }
 
-type MarkerType = 'user' | 'pickup' | 'dropoff' | 'driver' | 'custom';
+type MarkerType = 'user' | 'pickup' | 'dropoff' | 'driver' | 'available-driver' | 'custom';
 
 interface MapMarkerProps {
   position: Location;
@@ -29,6 +29,7 @@ const MarkerConfig = {
   pickup: { color: 'bg-green-500', borderColor: 'border-green-700', label: 'Punto de recogida' },
   dropoff: { color: 'bg-red-500', borderColor: 'border-red-700', label: 'Destino' },
   driver: { color: 'bg-gray-800', borderColor: 'border-black', label: 'Conductor' },
+  'available-driver': { color: 'bg-blue-500', borderColor: 'border-blue-700', label: 'Conductor disponible' },
   custom: { color: 'bg-gray-500', borderColor: 'border-gray-700', label: 'Ubicación' }
 };
 
@@ -43,6 +44,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
   const config = MarkerConfig[type];
   const shouldAnimate = type === 'user' || type === 'pickup' || type === 'dropoff';
 
+  // Conductor asignado (gris oscuro)
   if (type === 'driver') {
     return (
       <AdvancedMarker
@@ -51,6 +53,38 @@ const MapMarker: React.FC<MapMarkerProps> = ({
       >
         <div className="p-1 bg-gray-800 rounded-full shadow-lg border-2 border-white">
           <Car className="w-5 h-5 text-white" />
+        </div>
+      </AdvancedMarker>
+    );
+  }
+
+  // Conductores disponibles (azul con animación de pulso)
+  if (type === 'available-driver') {
+    return (
+      <AdvancedMarker
+        position={position}
+        title={title || config.label}
+      >
+        <div className="relative">
+          {/* Animación de pulso con zoom */}
+          <style jsx>{`
+            @keyframes pulse-zoom {
+              0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+              }
+              50% {
+                transform: scale(1.3);
+                opacity: 0.8;
+              }
+            }
+            .animate-pulse-zoom {
+              animation: pulse-zoom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+          `}</style>
+          <div className="p-1.5 bg-blue-500 rounded-full shadow-lg border-2 border-white animate-pulse-zoom">
+            <Car className="w-4 h-4 text-white" />
+          </div>
         </div>
       </AdvancedMarker>
     );

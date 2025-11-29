@@ -1,8 +1,34 @@
 import { useEffect, useState, useCallback } from 'react';
 import { doc, collection, query, where, onSnapshot, runTransaction, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Ride, User, EnrichedDriver } from '@/lib/types';
+import type { Ride, User, EnrichedDriver, ServiceType } from '@/lib/types';
 import { useDriverRideStore } from '@/store/driver-ride-store';
+
+/**
+ * Determina si un conductor puede ver un viaje basado en el tipo de servicio.
+ * Jerarquía:
+ * - Económico: Todos los conductores pueden ver (economy, comfort, exclusive)
+ * - Confort: Solo conductores Confort y Exclusivo pueden ver
+ * - Exclusivo: Solo conductores Exclusivo pueden ver
+ */
+function canDriverSeeRide(driverServiceType: ServiceType, rideServiceType: ServiceType): boolean {
+  // Viajes económicos: todos los conductores pueden verlos
+  if (rideServiceType === 'economy') {
+    return true;
+  }
+  
+  // Viajes confort: solo confort y exclusivo
+  if (rideServiceType === 'comfort') {
+    return driverServiceType === 'comfort' || driverServiceType === 'exclusive';
+  }
+  
+  // Viajes exclusivos: solo exclusivo
+  if (rideServiceType === 'exclusive') {
+    return driverServiceType === 'exclusive';
+  }
+  
+  return false;
+}
 
 interface IncomingRide extends Omit<Ride, 'passenger'> { passenger: User }
 
@@ -29,10 +55,17 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
       driverId: driver?.id,
       isAvailable,
       hasActiveRide: !!activeRide,
-      hasIncomingRequest: !!incomingRequest
+      hasIncomingRequest: !!incomingRequest,
+      driverServiceType: driver?.vehicle?.serviceType
     });
     
     if (!driver || !isAvailable || activeRide || incomingRequest) return;
+    
+    // Verificar que el conductor tenga vehículo con serviceType
+    if (!driver.vehicle?.serviceType) {
+      console.log('⚠️ [FILTRO] Conductor sin vehículo o serviceType definido');
+      return;
+    }
 
     const q = query(collection(db, 'rides'), where('status', '==', 'searching'));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -42,7 +75,20 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         .filter(ride => {
           const alreadyOffered = !!ride.offeredTo;
           const alreadyRejected = rejectedRideIds.includes(ride.id) || ride.rejectedBy?.some(ref => ref.id === driver.id);
-          return !alreadyOffered && !alreadyRejected;
+          
+          // 🎯 FILTRO JERÁRQUICO: Verificar si el conductor puede ver este viaje
+          const canSeeRide = canDriverSeeRide(driver.vehicle!.serviceType, ride.serviceType);
+          
+          console.log('🔍 [FILTRO] Evaluando viaje:', {
+            rideId: ride.id,
+            rideServiceType: ride.serviceType,
+            driverServiceType: driver.vehicle!.serviceType,
+            canSeeRide,
+            alreadyOffered,
+            alreadyRejected
+          });
+          
+          return !alreadyOffered && !alreadyRejected && canSeeRide;
         });
       if (potential.length === 0) return;
       const rideToOffer = potential[0];

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, Children, isValidElement } from 'react';
 import { useGeolocation } from '@/hooks/geolocation/use-geolocation-improved';
-import type { Ride, Location } from '@/lib/types';
+import type { Ride, Location, Driver } from '@/lib/types';
 import {
   GoogleMapsProvider,
   InteractiveMap,
@@ -19,6 +19,7 @@ interface MapViewProps {
   pickupLocation: Location | null;
   dropoffLocation: Location | null;
   driverLocation?: Location | null;
+  availableDrivers?: Driver[];
   className?: string;
   height?: string;
   interactive?: boolean;
@@ -31,6 +32,7 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
   pickupLocation,
   dropoffLocation,
   driverLocation,
+  availableDrivers = [],
   className = '',
   height = '100%',
   interactive = true,
@@ -162,6 +164,19 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
               title="Conductor"
             />
           )}
+
+          {/* 🚗 Mostrar conductores disponibles (solo si no hay conductor asignado) */}
+          {!driverLocation && availableDrivers.map((driver) => {
+            if (!driver.location) return null;
+            return (
+              <MapMarker
+                key={driver.id}
+                position={driver.location}
+                type="available-driver"
+                title={driver.name}
+              />
+            );
+          })}
 
           {pickupLocation && dropoffLocation && (
             <RouteDisplay

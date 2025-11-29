@@ -119,11 +119,7 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
               });
             } else {
               // Si falla la activación automática de audio (requiere interacción)
-              toast({
-                title: "🔊 Audio pendiente",
-                description: "El sonido se activará automáticamente cuando sea necesario",
-                duration: 5000,
-              });
+             console.log('🔇 [Rider] No se pudo habilitar audio automáticamente, requiere interacción del usuario');
             }
           }
         }, 3000);

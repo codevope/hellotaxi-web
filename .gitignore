@@ -46,6 +46,7 @@ firebase-debug.log
 firestore-debug.log
 
 # PWA files
+/public/documents
 /public/sw.js
 /public/workbox-*.js
 /public/fallback-*.js

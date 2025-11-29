@@ -179,6 +179,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
   const [isDriverChatOpen, setIsDriverChatOpen] = useState(false);
   const [appSettings, setAppSettings] = useState<Awaited<ReturnType<typeof getSettings>> | null>(null);
   const [isRatingSubmitting, setIsSubmittingRating] = useState(false);
+  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
 
   const { toast } = useToast();
 
@@ -205,6 +206,65 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
   useEffect(() => {
     getSettings().then(setAppSettings);
   }, []);
+
+  // 🚗 Listener para obtener todos los conductores disponibles
+  useEffect(() => {
+    const driversQuery = query(
+      collection(db, 'drivers'),
+      where('status', '==', 'available')
+    );
+
+    const unsubscribe = onSnapshot(driversQuery, (snapshot) => {
+      const drivers = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Driver));
+      setAvailableDrivers(drivers);
+      console.log('🚗 [RIDER] Conductores disponibles actualizados:', drivers.length);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 📍 Actualizar ubicación del pasajero cada 60 segundos durante viaje activo
+  useEffect(() => {
+    if (!user?.uid || !activeRide || status === "idle" || status === "rating") {
+      return;
+    }
+
+    const updatePassengerLocation = async () => {
+      if (!navigator.geolocation) return;
+      
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, { location: newLocation });
+            console.log('📍 [RIDER] Ubicación actualizada:', newLocation);
+          } catch (error) {
+            console.error('❌ [RIDER] Error actualizando ubicación:', error);
+          }
+        },
+        (error) => {
+          console.error('❌ [RIDER] Error obteniendo geolocalización:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    // Actualizar inmediatamente
+    updatePassengerLocation();
+
+    // Configurar intervalo de 60 segundos (1 minuto)
+    const locationInterval = setInterval(updatePassengerLocation, 60000);
+
+    return () => clearInterval(locationInterval);
+  }, [user?.uid, activeRide, status]);
 
   // MASTER useEffect to listen for ride document changes and update UI state
   useEffect(() => {
@@ -293,6 +353,24 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
     setStatus,
     completeRideForRating,
   ]);
+
+  // 📍 Listener para actualizar ubicación del conductor en tiempo real
+  useEffect(() => {
+    if (!assignedDriver || status !== "assigned") return;
+
+    const driverRef = doc(db, "drivers", assignedDriver.id);
+    const unsubscribe = onSnapshot(driverRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const driverData = snapshot.data();
+        if (driverData.location) {
+          setDriverLocation(driverData.location);
+          console.log('📍 [RIDER] Ubicación del conductor actualizada en mapa:', driverData.location);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [assignedDriver, status, setDriverLocation]);
 
   // Listener for chat messages
   useEffect(() => {
@@ -480,6 +558,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
             driverLocation={driverLocation}
             pickupLocation={pickupLocation}
             dropoffLocation={dropoffLocation}
+            availableDrivers={availableDrivers}
           />
 
           <Sheet open={isSupportChatOpen} onOpenChange={toggleSupportChat}>

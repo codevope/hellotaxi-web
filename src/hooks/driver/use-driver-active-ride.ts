@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useDriverRideStore } from '@/store/driver-ride-store';
-import type { Ride, User, EnrichedDriver } from '@/lib/types';
+import type { Ride, User, EnrichedDriver, Location } from '@/lib/types';
 import { useRouteSimulator } from '@/hooks/use-route-simulator';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +22,57 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
   const [isCompletingRide, setIsCompletingRide] = useState(false);
   const { startSimulation, stopSimulation, simulatedLocation } = useRouteSimulator();
   const { toast } = useToast();
+  const locationUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 📍 Actualizar ubicación del conductor en Firestore cada 60 segundos
+  useEffect(() => {
+    if (!driver || !activeRide) {
+      // Limpiar intervalo si no hay conductor o viaje activo
+      if (locationUpdateIntervalRef.current) {
+        clearInterval(locationUpdateIntervalRef.current);
+        locationUpdateIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const updateDriverLocation = async () => {
+      if (!navigator.geolocation) return;
+      
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const newLocation: Location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          
+          try {
+            const driverRef = doc(db, 'drivers', driver.id);
+            await updateDoc(driverRef, { location: newLocation });
+            console.log('📍 [DRIVER] Ubicación actualizada:', newLocation);
+          } catch (error) {
+            console.error('❌ [DRIVER] Error actualizando ubicación:', error);
+          }
+        },
+        (error) => {
+          console.error('❌ [DRIVER] Error obteniendo geolocalización:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    // Actualizar inmediatamente
+    updateDriverLocation();
+
+    // Configurar intervalo de 60 segundos (1 minuto)
+    locationUpdateIntervalRef.current = setInterval(updateDriverLocation, 60000);
+
+    return () => {
+      if (locationUpdateIntervalRef.current) {
+        clearInterval(locationUpdateIntervalRef.current);
+        locationUpdateIntervalRef.current = null;
+      }
+    };
+  }, [driver, activeRide]);
 
   // Listener principal para viajes activos
   useEffect(() => {

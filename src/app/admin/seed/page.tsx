@@ -200,17 +200,18 @@ export default function AdminSeedPage() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Poblar configuración base?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Añadirá solo la configuración esencial:
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>25 marcas de vehículos con sus modelos</li>
-                        <li>3 tipos de servicio (Económico, Confort, Exclusivo)</li>
-                        <li>12 motivos de cancelación</li>
-                        <li>3 reglas de hora punta</li>
-                        <li>Configuración de tarifas y comisiones</li>
-                      </ul>
-                      <br />
-                      Sin usuarios, conductores ni viajes de ejemplo.
+                    <AlertDialogDescription asChild>
+                      <div>
+                        <p>Añadirá solo la configuración esencial:</p>
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>25 marcas de vehículos con sus modelos</li>
+                          <li>3 tipos de servicio (Económico, Confort, Exclusivo)</li>
+                          <li>12 motivos de cancelación</li>
+                          <li>3 reglas de hora punta</li>
+                          <li>Configuración de tarifas y comisiones</li>
+                        </ul>
+                        <p className="mt-2">Sin usuarios, conductores ni viajes de ejemplo.</p>
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
