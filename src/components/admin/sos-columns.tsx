@@ -11,10 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import type { SOSAlert, Driver, User as AppUser } from "@/lib/types";
+import type { SOSAlert, User as AppUser } from "@/lib/types";
 
 export type EnrichedSOSAlert = Omit<SOSAlert, "driver" | "passenger"> & {
-  driver: Driver;
+  driver: AppUser; // Ahora driver es User con datos completos
   passenger: AppUser;
 };
 

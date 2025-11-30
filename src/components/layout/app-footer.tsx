@@ -72,20 +72,20 @@ export default function AppFooter() {
               </li>
               <li>
                 <Link
-                  href="/about#faq"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Preguntas Frecuentes
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/about#contact"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Contáctanos
                 </Link>
               </li>
+                <li>
+                  <Link
+                    href="/claims"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Reclamos
+                  </Link>
+                </li>
             </ul>
           </div>
 

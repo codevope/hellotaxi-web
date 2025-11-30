@@ -33,6 +33,8 @@ import {
   Eye,
   FileCheck,
   Clock,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import {
   Dialog,
@@ -1390,6 +1392,16 @@ export default function DriverDetailsPage() {
                   {statusConfig[driver.status].label}
                 </Badge>
               </div>
+              
+              <div className="space-y-3 mb-4 pb-4 border-b">
+                {driver.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{driver.phone}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">
@@ -1410,12 +1422,6 @@ export default function DriverDetailsPage() {
                       ? "Rechazado"
                       : "Pendiente"}
                   </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">
-                    Viajes Realizados:
-                  </span>
-                  <span className="font-medium">{driver.totalRides || 0}</span>
                 </div>
               </div>
             </CardContent>
@@ -1561,7 +1567,7 @@ export default function DriverDetailsPage() {
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Guardar Información del Vehículo
+                      Guardar Info- del Vehículo
                     </>
                   )}
                 </Button>

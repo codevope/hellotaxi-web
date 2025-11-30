@@ -39,7 +39,8 @@ import { useToast } from '@/hooks/use-toast';
 import { assistClaimResolution } from '@/ai/flows/assist-claim-resolution';
 
 type EnrichedClaim = Omit<Claim, 'claimant'> & { claimant: User };
-type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { driver: Driver; passenger: User, vehicle: Vehicle };
+type EnrichedDriver = Driver & { name: string; email: string; avatarUrl: string; phone: string };
+type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { driver: EnrichedDriver; passenger: User, vehicle: Vehicle };
 
 const statusConfig = {
   open: { label: 'Abierto', variant: 'destructive' as const },
@@ -99,7 +100,21 @@ export default function ClaimDetailsPage() {
                     const driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
                     const passengerData = { id: passengerSnap.id, ...passengerSnap.data() } as User;
                     const vehicleData = {id: vehicleSnap.id, ...vehicleSnap.data()} as Vehicle;
-                    setRide({ ...rideData, driver: driverData, passenger: passengerData, vehicle: vehicleData });
+                    
+                    // Obtener datos del usuario del conductor
+                    const driverUserSnap = await getDoc(doc(db, 'users', driverData.userId));
+                    const driverUserData = driverUserSnap.exists() ? { id: driverUserSnap.id, ...driverUserSnap.data() } as User : null;
+                    
+                    // Combinar datos de Driver con User
+                    const enrichedDriver = {
+                        ...driverData,
+                        name: driverUserData?.name || 'Conductor sin nombre',
+                        email: driverUserData?.email || '',
+                        avatarUrl: driverUserData?.avatarUrl || '',
+                        phone: driverUserData?.phone || '',
+                    };
+                    
+                    setRide({ ...rideData, driver: enrichedDriver, passenger: passengerData, vehicle: vehicleData });
                 }
             }
         }

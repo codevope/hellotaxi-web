@@ -42,7 +42,11 @@ import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 
-type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { \n  driver: Driver & { name: string; avatarUrl: string; rating: number } | null; \n  passenger: User; \n  vehicle: Vehicle | null; \n};
+type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & {
+  driver: Driver & { name: string; avatarUrl: string; rating: number } | null;
+  passenger: User;
+  vehicle: Vehicle | null;
+};
 
 const rideStatusConfig: Record<RideStatus, { label: string; variant: 'secondary' | 'default' | 'destructive' }> = {
   completed: { label: 'Completado', variant: 'secondary' as const },
@@ -369,16 +373,23 @@ export default function RideDetailsPage() {
                     <CardTitle>Pasajero</CardTitle>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col items-center text-center">
-                 <Avatar className="h-20 w-20 mb-4">
+            <CardContent className="flex flex-col items-center text-center space-y-3">
+                 <Avatar className="h-20 w-20">
                     <AvatarImage src={passenger.avatarUrl} alt={passenger.name} />
                     <AvatarFallback>{passenger.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="font-semibold">{passenger.name}</p>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span>{passenger.rating.toFixed(1)} de calificación</span>
+                <div>
+                  <p className="font-semibold">{passenger.name}</p>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground justify-center">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span>{passenger.rating.toFixed(1)} de calificación</span>
+                  </div>
                 </div>
+                <Button asChild variant="outline" size="sm" className="w-full">
+                  <a href={`/admin/users/${passenger.id}`}>
+                    Ver perfil del pasajero
+                  </a>
+                </Button>
             </CardContent>
           </Card>
 
@@ -390,30 +401,23 @@ export default function RideDetailsPage() {
                         <CardTitle>Conductor</CardTitle>
                     </div>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center text-center">
-                    <Avatar className="h-20 w-20 mb-4">
+                <CardContent className="flex flex-col items-center text-center space-y-3">
+                    <Avatar className="h-20 w-20">
                         <AvatarImage src={driver.avatarUrl} alt={driver.name} />
                         <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <p className="font-semibold">{driver.name}</p>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{driver.rating.toFixed(1)} de calificación</span>
+                    <div>
+                      <p className="font-semibold">{driver.name}</p>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground justify-center">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{driver.rating.toFixed(1)} de calificación</span>
+                      </div>
                     </div>
-                    {vehicle ? (
-                      <>
-                    {vehicle ? (
-                      <>
-                        <p className="text-sm text-muted-foreground mt-2">{vehicle.brand} {vehicle.model}</p>
-                        <p className="text-sm font-mono bg-muted px-2 py-1 rounded-md mt-1">{vehicle.licensePlate}</p>
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-2 italic">Vehículo no asignado</p>
-                    )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-2 italic">Sin vehículo asignado</p>
-                    )}
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <a href={`/admin/drivers/${driver.id}`}>
+                        Ver perfil del conductor
+                      </a>
+                    </Button>
                 </CardContent>
             </Card>
           )}

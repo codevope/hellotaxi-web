@@ -84,6 +84,18 @@ export async function generateFinancialReport(startDate?: Date, endDate?: Date):
 
             const driverData = { id: driverDoc.id, ...driverDoc.data() } as Driver;
             
+            // Obtener datos del usuario del conductor
+            let userName = 'Desconocido';
+            let userAvatarUrl = '';
+            if (driverData.userId) {
+                const userDoc = await getDoc(doc(db, 'users', driverData.userId));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    userName = userData.name || 'Desconocido';
+                    userAvatarUrl = userData.avatarUrl || '';
+                }
+            }
+            
             // Obtener datos del vehículo
             let vehicleData: Vehicle | null = null;
             if (driverData.vehicle instanceof DocumentReference) {
@@ -135,8 +147,8 @@ export async function generateFinancialReport(startDate?: Date, endDate?: Date):
 
             reportData.push({
                 driverId: driverData.id,
-                driverName: driverData.name,
-                driverAvatarUrl: driverData.avatarUrl,
+                driverName: userName,
+                driverAvatarUrl: userAvatarUrl,
                 paymentModel: driverData.paymentModel,
                 totalRides: driverTotalRides,
                 totalFares: driverTotalFares,

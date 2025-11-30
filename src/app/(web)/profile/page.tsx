@@ -310,24 +310,30 @@ export default function DesktopProfilePage() {
             </CardContent>
           </Card>
 
-          {isDriver && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Acceso Rápido</CardTitle>
-                <CardDescription>
-                  Accede a tus herramientas de conductor
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Acceso Rápido</CardTitle>
+              <CardDescription>
+                Accede a tus servicios y gestiones
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isDriver && (
                 <Link href="/driver">
                   <Button className="w-full">
                     <Car className="w-5 h-5 mr-2" />
                     Ir al Panel de Conductor
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
-          )}
+              )}
+              <Link href="/profile/claims">
+                <Button variant="outline" className="w-full">
+                  <Settings className="w-5 h-5 mr-2" />
+                  Mis Reclamos
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

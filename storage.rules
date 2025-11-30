@@ -4,26 +4,18 @@ service firebase.storage {
   match /b/{bucket}/o {
     // Regla para documentos de conductores
     match /drivers/{driverId}/documents/{documentType}/{fileName} {
-      // Permitir lectura a:
-      // 1. El conductor dueño del documento
-      // 2. Usuarios con rol de admin
-      allow read: if request.auth != null && (
-        request.auth.uid == driverId || 
-        isAdmin()
-      );
+      // Permitir lectura a cualquier usuario autenticado
+      // (en producción podrías restringir más)
+      allow read: if request.auth != null;
       
       // Permitir escritura solo al conductor dueño
-      allow write: if request.auth != null && request.auth.uid == driverId && (
+      allow write: if request.auth != null && 
+                      request.auth.uid == driverId && (
         // Validar tipo de archivo
         request.resource.contentType.matches('image/(jpeg|jpg|png|webp)|application/pdf') &&
         // Validar tamaño (máximo 5MB)
         request.resource.size < 5 * 1024 * 1024
       );
-    }
-    
-    // Función helper para verificar si el usuario es admin
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
   }
 }

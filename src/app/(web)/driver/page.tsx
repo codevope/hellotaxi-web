@@ -96,6 +96,7 @@ import { useDriverNotificationsSafe } from "@/hooks/use-driver-notifications";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SSLWarningBanner } from "@/components/ssl-warning-banner";
 import { AudioEnabler } from "@/components/pwa/audio-enabler";
+import DriverSOSAlerts from "@/components/driver/sos-alerts";
 
 type EnrichedRide = Omit<Ride, "passenger" | "driver"> & {
   passenger: User;
@@ -1030,6 +1031,9 @@ function DriverPageContent() {
                 </Tabs>
               </CardContent>
             </Card>
+            <div className="lg:col-span-1 space-y-4">
+              <DriverSOSAlerts />
+            </div>
           </div>
         </main>
       </div>

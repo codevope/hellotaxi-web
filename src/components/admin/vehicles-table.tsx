@@ -3,7 +3,7 @@
 
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import type { Vehicle, Driver } from '@/lib/types';
+import type { Vehicle, Driver, User } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
@@ -18,15 +18,23 @@ async function getVehicles(): Promise<EnrichedVehicle[]> {
   const enrichedVehicles: EnrichedVehicle[] = [];
 
   for (const vehicle of vehicleList) {
-    let driver: Driver | undefined = undefined;
+    let driverUser: User | undefined = undefined;
     if (vehicle.driverId) {
       const driverRef = doc(db, 'drivers', vehicle.driverId);
       const driverSnap = await getDoc(driverRef);
       if (driverSnap.exists()) {
-        driver = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+        const driverData = driverSnap.data() as Driver;
+        // Cargar el usuario del conductor
+        if (driverData.userId) {
+          const userRef = doc(db, 'users', driverData.userId);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            driverUser = { id: userSnap.id, ...userSnap.data() } as User;
+          }
+        }
       }
     }
-    enrichedVehicles.push({ ...vehicle, driver });
+    enrichedVehicles.push({ ...vehicle, driver: driverUser });
   }
 
   return enrichedVehicles;

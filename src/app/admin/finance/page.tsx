@@ -63,7 +63,7 @@ export default function AdminFinancePage() {
   
   const topDriversData = reportData
     .slice(0, 5)
-    .map(d => ({ name: d.driverName.split(' ')[0], earnings: d.platformEarnings }))
+    .map(d => ({ name: d.driverName?.split(' ')[0] || 'Desconocido', earnings: d.platformEarnings }))
     .reverse();
 
   // Helper para obtener nombre del mes

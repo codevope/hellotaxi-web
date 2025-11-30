@@ -97,28 +97,44 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         setUploadDialogOpen(false);
 
         try {
-            // Crear FormData para enviar el archivo
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('driverId', driver.id);
-            formData.append('documentName', selectedDoc);
+            // Validar tipo de archivo
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+            if (!allowedTypes.includes(selectedFile.type)) {
+                throw new Error('Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, WEBP) y PDF');
+            }
 
-            // Llamar al API route
-            const response = await fetch('/api/upload-document', {
-                method: 'POST',
-                body: formData,
+            // Validar tamaño (máximo 5MB)
+            const maxSize = 5 * 1024 * 1024;
+            if (selectedFile.size > maxSize) {
+                throw new Error('El archivo es demasiado grande. Tamaño máximo: 5MB');
+            }
+
+            // Subir directamente a Firebase Storage desde el cliente
+            const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+            const { storage } = await import('@/lib/firebase');
+
+            const timestamp = Date.now();
+            const extension = selectedFile.name.split('.').pop();
+            const filename = `${selectedDoc}_${timestamp}.${extension}`;
+            const storageRef = ref(storage, `drivers/${driver.id}/documents/${selectedDoc}/${filename}`);
+
+            // Subir archivo
+            await uploadBytes(storageRef, selectedFile, {
+                contentType: selectedFile.type,
+                customMetadata: {
+                    driverId: driver.id,
+                    documentType: selectedDoc,
+                    uploadedAt: new Date().toISOString(),
+                }
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Error al subir el documento');
-            }
+            // Obtener URL de descarga
+            const documentUrl = await getDownloadURL(storageRef);
 
             // Preparar updates para Firestore
             const driverRef = doc(db, 'drivers', driver.id);
             const updates: any = {
-                [`documentUrls.${selectedDoc}`]: data.url,
+                [`documentUrls.${selectedDoc}`]: documentUrl,
                 [`documentStatus.${selectedDoc}`]: 'pending',
                 documentsStatus: 'pending'
             };
@@ -148,7 +164,7 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                     insurance: driver.documentUrls?.insurance || '',
                     technicalReview: driver.documentUrls?.technicalReview || '',
                     backgroundCheck: driver.documentUrls?.backgroundCheck || '',
-                    [selectedDoc]: data.url,
+                    [selectedDoc]: documentUrl,
                 },
                 documentStatus: {
                     dni: driver.documentStatus?.dni || 'pending',

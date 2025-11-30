@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import type { Vehicle, Driver } from "@/lib/types";
+import type { Vehicle, User } from "@/lib/types";
 
-export type EnrichedVehicle = Vehicle & { driver?: Driver };
+export type EnrichedVehicle = Vehicle & { driver?: User };
 
 export const vehiclesColumns: ColumnDef<EnrichedVehicle>[] = [
   {
@@ -83,13 +83,13 @@ export const vehiclesColumns: ColumnDef<EnrichedVehicle>[] = [
     header: () => <div className="text-right">Acciones</div>,
     cell: ({ row }) => {
       const vehicle = row.original;
-      if (!vehicle.driver) {
+      if (!vehicle.driver || !vehicle.driverId) {
         return null;
       }
       return (
         <div className="text-right">
           <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/drivers/${vehicle.driver.id}`}>
+            <Link href={`/admin/drivers/${vehicle.driverId}`}>
               Ver Conductor
             </Link>
           </Button>
