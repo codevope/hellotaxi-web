@@ -44,22 +44,6 @@ services:
     networks:
       - hellotaxi-network
 
-  # Renovador automático de certificados
-  certbot-renew:
-    image: certbot/certbot
-    container_name: hellotaxi-ssl-renew
-    volumes:
-      - ./ssl:/etc/letsencrypt
-      - ./webroot:/var/www/html
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    # Renovar cada 12 horas
-    command: sh -c 'while true; do sleep 43200; certbot renew --quiet && docker exec hellotaxi-nginx nginx -s reload; done'
-    restart: unless-stopped
-    networks:
-      - hellotaxi-network
-    depends_on:
-      - nginx
-
 networks:
   hellotaxi-network:
     driver: bridge
