@@ -9,6 +9,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+    volumes:
+      - documents_data:/app/public/documents
     restart: unless-stopped
     networks:
       - hellotaxi-network
@@ -65,3 +67,4 @@ networks:
 volumes:
   ssl_data:
   webroot_data:
+  documents_data:
