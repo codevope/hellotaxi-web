@@ -156,19 +156,19 @@ export function ActiveRideCard({
             {fareBreakdown?.couponDiscount &&
             fareBreakdown.couponDiscount > 0 ? (
               <div className="space-y-3">
-                <div className="text-sm text-gray-100 line-through">
+                <div className="text-sm flex text-gray-100 line-through justify-center">
                   S/ {(fare + fareBreakdown.couponDiscount).toFixed(2)}
                 </div>
-                <div className="flex items-center justify-end gap-2 text-xs text-green-600 font-medium">
+                <div className="flex items-center justify-center text-xs gap-2 text-green-400 font-medium">
                   <Tag className="h-4 w-4" />
                   <span>
-                    {couponCode}: -S/ {fareBreakdown.couponDiscount.toFixed(2)}
+                    {couponCode}: &nbsp; - S/ {fareBreakdown.couponDiscount.toFixed(2)}
                   </span>
                 </div>
                 <PriceDisplay
                   amount={fare}
                   label="Total"
-                  size="lg"
+                  size="xl"
                   variant="muted"
                 />
               </div>
@@ -176,7 +176,7 @@ export function ActiveRideCard({
               <PriceDisplay
                 amount={fare}
                 label="Tarifa"
-                size="lg"
+                size="xl"
                 variant="muted"
               />
             )}

@@ -33,6 +33,7 @@ import type {
   Driver,
   Vehicle,
 } from "@/lib/types";
+import { useDriverProfile } from "@/hooks/auth/use-driver-profile";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -79,6 +80,7 @@ type PaymentRecord = {
 
 export default function SettingsForm() {
   const { toast } = useToast();
+  const { driverProfile } = useDriverProfile();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -141,13 +143,26 @@ export default function SettingsForm() {
               } as Vehicle;
             }
           }
+          // Obtener el nombre del usuario relacionado
+          let userName = "";
+          if (driverData.userId) {
+            const userSnap = await getDoc(doc(db, "users", driverData.userId));
+            if (userSnap.exists()) {
+              const userData = userSnap.data() as { name?: string };
+              userName = userData.name || "Sin nombre";
+            } else {
+              userName = "Sin nombre";
+            }
+          } else {
+            userName = "Sin nombre";
+          }
           if (vehicleData && driverData.membershipPricing) {
             const dueDate = new Date(driverData.nextPaymentDue);
             const now = new Date();
             const status = dueDate < now ? "overdue" : "pending";
             paymentRecords.push({
               driverId: driverData.id,
-              driverName: driverData.name,
+              driverName: userName,
               serviceType: vehicleData.serviceType,
               amount: driverData.membershipPricing[vehicleData.serviceType],
               dueDate: driverData.nextPaymentDue,
@@ -337,7 +352,6 @@ export default function SettingsForm() {
             <Ruler className="h-4 w-4" />
             <span className="hidden sm:inline">Reglas</span>
           </TabsTrigger>
-
         </TabsList>
 
         {/* Tabs Content */}
@@ -436,12 +450,26 @@ export default function SettingsForm() {
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-6 mt-0">
+            {/* Datos del conductor actual (solo si existe) */}
+            {driverProfile && (
+              <div className="flex items-center gap-3 mb-4">
+                <img
+                  src={driverProfile.avatarUrl}
+                  alt={driverProfile.name}
+                  className="h-10 w-10 rounded-full border"
+                  style={{ objectFit: "cover" }}
+                />
+                <span className="font-semibold text-lg">
+                  {driverProfile.name}
+                </span>
+              </div>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Comisiones por Tipo de Servicio</CardTitle>
                 <CardDescription>
-                  Porcentaje de comisión que cobra la plataforma a los conductores
-                  por cada viaje completado.
+                  Porcentaje de comisión que cobra la plataforma a los
+                  conductores por cada viaje completado.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid sm:grid-cols-3 gap-4">
@@ -582,7 +610,10 @@ export default function SettingsForm() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {settings.peakTimeRules.map((rule, index) => (
-                  <div key={rule.id} className="p-4 border rounded-lg space-y-3">
+                  <div
+                    key={rule.id}
+                    className="p-4 border rounded-lg space-y-3"
+                  >
                     <div className="flex justify-between items-center">
                       <Label
                         htmlFor={`peak-name-${index}`}
@@ -597,7 +628,9 @@ export default function SettingsForm() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor={`peak-start-${index}`}>Hora Inicio</Label>
+                        <Label htmlFor={`peak-start-${index}`}>
+                          Hora Inicio
+                        </Label>
                         <Input
                           id={`peak-start-${index}`}
                           type="time"
@@ -686,7 +719,6 @@ export default function SettingsForm() {
               </CardContent>
             </Card>
           </TabsContent>
-
         </div>
       </Tabs>
 

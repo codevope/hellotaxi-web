@@ -338,7 +338,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
                   </div>
                 </div>
                 <p className="text-xs text-green-600 text-center mt-1">
-                  💡 Puedes ajustar el precio arriba
+                  Puedes ajustar el precio arriba
                 </p>
               </div>
             )}

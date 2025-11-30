@@ -32,19 +32,31 @@ export default function MembershipPaymentsHistory() {
         
         for (const payment of paymentsData) {
           let driver: Driver | undefined = undefined;
-          
+          let driverUser: any = undefined;
           if (payment.driverId) {
             try {
               const driverDoc = await getDoc(doc(db, "drivers", payment.driverId));
               if (driverDoc.exists()) {
                 driver = { id: driverDoc.id, ...driverDoc.data() } as Driver;
+                // Obtener datos del usuario asociado
+                const userDoc = await getDoc(doc(db, "users", driver.userId));
+                if (userDoc.exists()) {
+                  driverUser = userDoc.data();
+                }
               }
             } catch (error) {
-              console.error("Error loading driver:", payment.driverId, error);
+              console.error("Error loading driver/user:", payment.driverId, error);
             }
           }
-          
-          enrichedPayments.push({ ...payment, driver });
+          // Combinar datos de Driver y User
+          const enrichedDriver = driver && driverUser
+            ? {
+                ...driver,
+                name: driverUser.name || "Sin nombre",
+                avatarUrl: driverUser.avatarUrl || "",
+              }
+            : undefined;
+          enrichedPayments.push({ ...payment, driver: enrichedDriver });
         }
 
         setPayments(enrichedPayments);
