@@ -37,13 +37,23 @@ async function getCancelledRides(): Promise<EnrichedCancellation[]> {
   const enrichedRides: EnrichedCancellation[] = [];
 
   for (const ride of ridesList) {
-    let driver: Driver | null = null;
+    let enrichedDriver: (Driver & { name: string; avatarUrl: string }) | null = null;
     let passenger: AppUser | null = null;
 
     if (ride.driver && ride.driver instanceof DocumentReference) {
       const driverSnap = await getDoc(ride.driver);
       if (driverSnap.exists()) {
-        driver = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+        const driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+        // Cargar datos del usuario del conductor
+        const driverUserSnap = await getDoc(doc(db, 'users', driverData.userId));
+        if (driverUserSnap.exists()) {
+          const driverUser = driverUserSnap.data() as AppUser;
+          enrichedDriver = {
+            ...driverData,
+            name: driverUser.name,
+            avatarUrl: driverUser.avatarUrl,
+          };
+        }
       }
     }
 
@@ -54,8 +64,8 @@ async function getCancelledRides(): Promise<EnrichedCancellation[]> {
       }
     }
 
-    if (driver && passenger) {
-      enrichedRides.push({ ...ride, driver, passenger });
+    if (enrichedDriver && passenger) {
+      enrichedRides.push({ ...ride, driver: enrichedDriver, passenger });
     }
   }
 

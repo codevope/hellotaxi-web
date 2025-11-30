@@ -14,7 +14,7 @@ import Link from "next/link";
 import type { Ride, Driver, User as AppUser } from "@/lib/types";
 
 export type EnrichedCancellation = Omit<Ride, "driver" | "passenger"> & {
-  driver: Driver;
+  driver: Driver & { name: string; avatarUrl: string };
   passenger: AppUser;
 };
 

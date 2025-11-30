@@ -44,14 +44,17 @@ async function createOrUpdateUserProfile(user: FirebaseUser): Promise<User> {
       name: name,
       email: user.email || '',
       avatarUrl: user.photoURL || '/img/avatar.png',
-      role: 'passenger',
+      roles: ['rider'], // Nuevo sistema: todos empiezan como rider
       signupDate: new Date().toISOString(),
-      totalRides: 0,
+      totalRidesAsPassenger: 0,
       rating: 5.0,
       phone: user.phoneNumber || '',
       address: '',
+      status: status,
+      // Campos legacy para retrocompatibilidad
+      role: 'rider',
       isAdmin: false,
-      status: status, 
+      totalRides: 0,
     };
     await setDoc(userRef, newUser);
 
@@ -168,11 +171,26 @@ export function useAuth() {
     }
 
     const userRef = doc(db, 'users', auth.currentUser.uid);
-    await updateDoc(userRef, { phone: phoneNumber });
     
-    // Refresh the user profile to update status
-    const updatedProfile = await createOrUpdateUserProfile(auth.currentUser);
-    setAppUser(updatedProfile);
+    // Check if user now meets all requirements for 'active' status
+    const providerIds = auth.currentUser.providerData.map((p) => p.providerId);
+    const hasPassword = providerIds.includes('password');
+    const hasGoogle = providerIds.includes('google.com');
+    const hasPhone = phoneNumber && phoneNumber.trim().length > 0;
+    
+    const newStatus = hasPassword && hasGoogle && hasPhone ? 'active' : 'incomplete';
+    
+    await updateDoc(userRef, { 
+      phone: phoneNumber,
+      status: newStatus
+    });
+    
+    // Refresh the user profile
+    const updatedUserDoc = await getDoc(userRef);
+    if (updatedUserDoc.exists()) {
+      const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as User;
+      setAppUser(updatedUser);
+    }
   };
 
   const linkGoogleAccount = async () => {
@@ -215,6 +233,8 @@ export function useAuth() {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      // Redirigir al login después de cerrar sesión
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out', error);
     }
@@ -222,44 +242,38 @@ export function useAuth() {
 
   const updateUserRole = async (newRole: UserRole) => {
     if (!firebaseUser) throw new Error('User not logged in');
+    if (!appUser) throw new Error('App user not loaded');
 
     const userRef = doc(db, 'users', firebaseUser.uid);
-    const driverRef = doc(db, 'drivers', firebaseUser.uid);
+    const driverProfileRef = doc(db, 'drivers', firebaseUser.uid);
     const batch = writeBatch(db);
 
-    if (newRole === 'driver') {
-      // Migrar de pasajero a conductor
-      const [userDoc, driverDoc] = await Promise.all([
-        getDoc(userRef),
-        getDoc(driverRef)
-      ]);
-      
-      if (!driverDoc.exists()) {
-        // Obtener datos del pasajero para migrarlos
-        const userData = userDoc.exists() ? userDoc.data() : null;
-        
-        // NO crear vehículo automáticamente - el administrador lo asignará
-        // El conductor no puede estar disponible hasta que tenga un vehículo asignado
+    // Obtener roles actuales
+    const currentRoles = appUser.roles || [];
+    let newRoles = [...currentRoles];
 
-        // Crear perfil de conductor con datos migrados del pasajero
-        batch.set(driverRef, {
+    if (newRole === 'driver') {
+      // Agregar rol de driver si no lo tiene
+      if (!newRoles.includes('driver')) {
+        newRoles.push('driver');
+      }
+      
+      // Verificar si ya existe perfil de conductor
+      const driverProfileDoc = await getDoc(driverProfileRef);
+      
+      if (!driverProfileDoc.exists()) {
+        // Crear nuevo perfil de conductor (SOLO datos específicos de conductor)
+        batch.set(driverProfileRef, {
           id: firebaseUser.uid,
-          name: userData?.name || firebaseUser.displayName || 'Usuario',
-          email: userData?.email || firebaseUser.email || '',
-          phone: userData?.phone || '',
-          address: userData?.address || '',
-          avatarUrl: userData?.avatarUrl || firebaseUser.photoURL || '/img/avatar.png',
-          rating: userData?.rating || 5.0,
-          role: 'driver',
-          status: 'unavailable', // Inicialmente no disponible hasta que suba documentos y tenga vehículo
+          userId: firebaseUser.uid,
+          status: 'unavailable', // No disponible hasta que suba documentos y tenga vehículo
           documentsStatus: 'pending',
-          licenseExpiry: '', // Vacío hasta que suba el documento
-          dniExpiry: '', // Vacío hasta que suba el documento
-          backgroundCheckExpiry: '', // Vacío hasta que suba el documento
-          paymentModel: 'commission', // Por defecto comisión, el admin asignará membresía si aplica
-          commissionPercentage: 15, // Comisión por defecto 15%
-          membershipStatus: null,
-          membershipExpiryDate: null,
+          licenseExpiry: '',
+          dniExpiry: '',
+          backgroundCheckExpiry: '',
+          paymentModel: 'commission',
+          commissionPercentage: 15,
+          membershipStatus: 'pending',
           documentStatus: {
             dni: 'pending',
             license: 'pending',
@@ -276,43 +290,51 @@ export function useAuth() {
             technicalReview: '',
             backgroundCheck: ''
           },
-          vehicle: null, // Sin vehículo hasta que el admin lo asigne
+          totalRidesAsDriver: 0,
+          driverRating: 5.0,
+          vehicle: null,
         });
-        
-        // IMPORTANTE: Eliminar de users para evitar duplicación
-        if (userDoc.exists()) {
-          batch.delete(userRef);
-          console.log('✅ Migrando de pasajero a conductor - Eliminando de users');
-        }
-      } else {
-        // Ya existe como conductor, solo actualizar estado
-        batch.update(driverRef, { status: 'unavailable' });
+        console.log('✅ Perfil de conductor creado');
       }
-    } else if (newRole === 'passenger') {
-      // Migrar de conductor a pasajero (desactivar conductor, mantener en drivers)
-      const driverDoc = await getDoc(driverRef);
-      if (driverDoc.exists()) {
-        batch.update(driverRef, { 
-          status: 'unavailable',
-          role: 'passenger'
-        });
+      
+      // Actualizar roles en users
+      batch.update(userRef, { 
+        roles: newRoles,
+        role: 'driver' // Legacy field
+      });
+      
+    } else if (newRole === 'rider') {
+      // Agregar rol de rider si no lo tiene
+      if (!newRoles.includes('rider')) {
+        newRoles.push('rider');
       }
+      
+      // Actualizar roles en users
+      batch.update(userRef, { 
+        roles: newRoles,
+        role: 'rider' // Legacy field
+      });
+      
+    } else if (newRole === 'admin') {
+      // Agregar rol de admin
+      if (!newRoles.includes('admin')) {
+        newRoles.push('admin');
+      }
+      
+      // Actualizar roles en users
+      batch.update(userRef, { 
+        roles: newRoles,
+        isAdmin: true // Legacy field
+      });
     }
 
     await batch.commit();
 
-    // Actualizar appUser local
-    if(appUser){
-        setAppUser({...appUser, role: newRole});
-    }
-    
-    // Recargar perfil desde la BD
-    const updatedProfile = await (newRole === 'driver' 
-      ? getDoc(driverRef) 
-      : getDoc(userRef));
-    
-    if (updatedProfile.exists()) {
-      setAppUser({ id: updatedProfile.id, ...updatedProfile.data() } as User);
+    // Recargar usuario actualizado
+    const updatedUserDoc = await getDoc(userRef);
+    if (updatedUserDoc.exists()) {
+      const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as User;
+      setAppUser(updatedUser);
     }
   };
 

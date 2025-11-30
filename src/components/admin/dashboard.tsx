@@ -53,7 +53,10 @@ const chartConfig = {
 };
 
 type EnrichedRide = Omit<Ride, "driver" | "passenger"> & {
-  driver: Driver;
+  driver: Driver & {
+    name: string;
+    avatarUrl: string;
+  };
   passenger: User;
 };
 
@@ -90,11 +93,20 @@ async function getRidesForMonth(
     const driverId = (ride.driver as DocumentReference)?.id;
     const passengerId = (ride.passenger as DocumentReference)?.id;
 
-    const driver = driverId ? driversMap.get(driverId) : undefined;
+    const driverData = driverId ? driversMap.get(driverId) : undefined;
     const passenger = passengerId ? usersMap.get(passengerId) : undefined;
 
-    if (driver && passenger) {
-      enrichedRides.push({ ...ride, driver, passenger });
+    if (driverData && passenger) {
+      // Cargar datos del usuario del conductor
+      const driverUser = usersMap.get(driverData.userId);
+      if (driverUser) {
+        const enrichedDriver = {
+          ...driverData,
+          name: driverUser.name,
+          avatarUrl: driverUser.avatarUrl,
+        };
+        enrichedRides.push({ ...ride, driver: enrichedDriver, passenger });
+      }
     }
   }
 

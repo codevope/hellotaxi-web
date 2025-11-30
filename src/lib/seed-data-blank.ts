@@ -119,7 +119,7 @@ export const vehicles: Omit<Vehicle, 'id' | 'driverId'>[] = [];
 // ================================================================= //
 //                            DRIVERS                                //
 // ================================================================= //
-export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[] = [];
+export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate: string, userName: string, userEmail: string})[] = [];
 
 
 // ================================================================= //

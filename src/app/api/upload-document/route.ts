@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import type { DocumentName } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
@@ -47,20 +45,25 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split('.').pop();
     const filename = `${documentName}_${timestamp}.${extension}`;
 
-    // Crear la ruta del directorio
-    const uploadDir = path.join(process.cwd(), 'public', 'documents', driverId, documentName);
-    
-    // Crear directorios si no existen
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
+    // Crear referencia en Firebase Storage
+    // Estructura: drivers/{driverId}/documents/{documentName}/{filename}
+    const storageRef = ref(storage, `drivers/${driverId}/documents/${documentName}/${filename}`);
 
-    // Guardar el archivo
-    const filepath = path.join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    // Configurar metadata
+    const metadata = {
+      contentType: file.type,
+      customMetadata: {
+        driverId: driverId,
+        documentType: documentName,
+        uploadedAt: new Date().toISOString(),
+      }
+    };
 
-    // Generar URL pública del documento
-    const documentUrl = `/documents/${driverId}/${documentName}/${filename}`;
+    // Subir archivo a Firebase Storage
+    await uploadBytes(storageRef, buffer, metadata);
+
+    // Obtener URL de descarga pública
+    const documentUrl = await getDownloadURL(storageRef);
 
     // Actualizar Firestore con la URL del documento
     const driverRef = doc(db, 'drivers', driverId);
@@ -73,13 +76,16 @@ export async function POST(request: NextRequest) {
       await updateDoc(driverRef, updateData);
     } catch (firestoreError) {
       console.error('Error updating Firestore:', firestoreError);
-      // Continuar aunque falle Firestore, el archivo ya está guardado
+      return NextResponse.json(
+        { error: 'Archivo subido pero no se pudo actualizar la base de datos', details: firestoreError },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       url: documentUrl,
-      message: 'Documento subido exitosamente'
+      message: 'Documento subido exitosamente a Firebase Storage'
     });
 
   } catch (error) {

@@ -8,7 +8,7 @@ export type MembershipStatus = 'active' | 'pending' | 'expired';
 export type MembershipDuration = 'monthly' | 'annual';
 export type PaymentStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'yape' | 'plin';
-export type UserRole = 'passenger' | 'driver';
+export type UserRole = 'rider' | 'driver' | 'admin';
 
 export interface MembershipPricing {
   economy: number;
@@ -60,11 +60,11 @@ export interface VehicleModel {
     models: string[];
 }
 
+// Driver - SOLO datos específicos del rol de conductor
+// Los datos personales (nombre, email, avatar, etc.) están en User
 export interface Driver {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  rating: number;
+  id: string; // Mismo ID que el User
+  userId: string; // Referencia al User para obtener datos personales
   status: 'available' | 'unavailable' | 'on-ride';
   documentsStatus: 'approved' | 'pending' | 'rejected';
   licenseExpiry: string; // ISO Date string
@@ -82,12 +82,12 @@ export interface Driver {
   membershipPausedDate?: string; // ISO Date string - fecha cuando se pausa la membresía
   lastPaymentDate?: string; // ISO Date string - última fecha de pago de membresía
   nextPaymentDue?: string; // ISO Date string - próxima fecha de vencimiento de pago
-  documentStatus?: Record<DocumentName, DocumentStatus>;
-  documentUrls?: Record<DocumentName, string>; // URLs de documentos subidos
-  totalRides?: number;
+  documentStatus: Record<DocumentName, DocumentStatus>;
+  documentUrls: Record<DocumentName, string>; // URLs de documentos subidos
+  totalRidesAsDriver: number; // Total de viajes completados como conductor
+  driverRating: number; // Calificación específica como conductor
   location?: Location;
-  vehicle: DocumentReference;
-  phone?: string; // Teléfono del conductor
+  vehicle?: DocumentReference; // Opcional hasta que se asigne
   // Preferencias de notificación
   notificationPreferences?: {
     browserNotifications: boolean;
@@ -101,13 +101,27 @@ export interface Driver {
   };
 }
 
-// EnrichedDriver has the full vehicle object instead of just a reference (or null if not assigned)
+// EnrichedDriver: Driver con vehículo expandido y datos de usuario
 export interface EnrichedDriver extends Omit<Driver, 'vehicle'> {
   vehicle: Vehicle | null;
+  user: User; // Datos del usuario asociado
+  // Helpers para acceso directo (evitar user.name)
+  name: string;
+  email: string;
+  avatarUrl: string;
+  phone: string;
+  rating: number;
 }
 
 // DriverWithVehicleInfo extends Driver with vehicle information for UI display
 export interface DriverWithVehicleInfo extends Driver {
+  // Datos del usuario (desde User)
+  name: string;
+  email: string;
+  avatarUrl: string;
+  rating: number;
+  phone: string;
+  // Datos del vehículo (desde Vehicle)
   vehicleBrand: string;
   vehicleModel: string;
   licensePlate: string;
@@ -117,17 +131,20 @@ export interface DriverWithVehicleInfo extends Driver {
 
 export interface User {
   id: string;
-  name:string;
+  name: string;
   email: string;
   avatarUrl: string;
-  role: UserRole;
+  roles: UserRole[]; // Array de roles: puede ser ['rider'], ['driver'], ['rider', 'driver'], ['admin'], etc.
   signupDate: string; // ISO Date string
-  totalRides: number;
-  rating: number; // Passenger rating
-  phone?: string;
-  address?: string;
-  status?: 'active' | 'blocked' | 'incomplete';
-  isAdmin?: boolean;
+  totalRidesAsPassenger: number; // Viajes como pasajero
+  rating: number; // Calificación general del usuario
+  phone: string;
+  address: string;
+  status: 'active' | 'blocked' | 'incomplete';
+  // Campos legacy (mantener por compatibilidad temporal)
+  role?: UserRole; // @deprecated - usar roles array
+  isAdmin?: boolean; // @deprecated - verificar si 'admin' está en roles
+  totalRides?: number; // @deprecated - usar totalRidesAsPassenger
 }
 
 export type FareBreakdown = {

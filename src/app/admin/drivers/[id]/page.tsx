@@ -169,7 +169,16 @@ type EnrichedRide = Omit<Ride, "passenger" | "driver" | "vehicle"> & {
   driver: Driver;
   vehicle?: Vehicle;
 };
-type EnrichedDriver = Omit<Driver, "vehicle"> & { vehicle: Vehicle | null };
+// EnrichedDriver ya está definido en types.ts, pero lo redefinimos aquí para claridad
+type EnrichedDriver = Omit<Driver, "vehicle"> & { 
+  vehicle: Vehicle | null;
+  user: AppUser;
+  name: string;
+  email: string;
+  avatarUrl: string;
+  phone: string;
+  rating: number;
+};
 
 export default function DriverDetailsPage() {
   const router = useRouter();
@@ -297,6 +306,20 @@ export default function DriverDetailsPage() {
             ...driverSnap.data(),
           } as Driver;
           
+          // Cargar datos del usuario (nombre, email, avatar, etc.)
+          const userSnap = await getDoc(doc(db, "users", driverData.userId));
+          if (!userSnap.exists()) {
+            console.error(`Usuario ${driverData.userId} no encontrado`);
+            toast({
+              title: "Error",
+              description: "No se encontraron los datos del usuario asociado al conductor",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+          const userData = { id: userSnap.id, ...userSnap.data() } as AppUser;
+          
           let vehicleData: Vehicle | null = null;
           
           // Intentar obtener el vehículo si existe la referencia
@@ -310,7 +333,18 @@ export default function DriverDetailsPage() {
             }
           }
           
-          const enrichedDriver = { ...driverData, vehicle: vehicleData };
+          // Combinar Driver + User + Vehicle (EnrichedDriver)
+          const enrichedDriver: EnrichedDriver = { 
+            ...driverData, 
+            vehicle: vehicleData,
+            user: userData,
+            // Helpers de acceso directo
+            name: userData.name,
+            email: userData.email,
+            avatarUrl: userData.avatarUrl,
+            phone: userData.phone,
+            rating: userData.rating,
+          };
 
           setDriver(enrichedDriver);
           setPaymentModel(enrichedDriver.paymentModel);

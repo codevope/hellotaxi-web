@@ -3,14 +3,12 @@
 
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import type { Driver, Vehicle } from '@/lib/types';
+import type { Driver, Vehicle, User, EnrichedDriver } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, DocumentReference } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { DataTable } from '../ui/data-table';
 import { driversColumns } from './drivers-table-columns';
-
-type EnrichedDriver = Omit<Driver, 'vehicle'> & { vehicle: Vehicle | null };
 
 async function getDrivers(): Promise<EnrichedDriver[]> {
     const driversCol = collection(db, 'drivers');
@@ -19,18 +17,35 @@ async function getDrivers(): Promise<EnrichedDriver[]> {
     
     const enrichedDrivers: EnrichedDriver[] = [];
     for(const driver of driverList) {
+        // Obtener datos del usuario (nombre, email, avatar, etc.)
+        const userSnap = await getDoc(doc(db, 'users', driver.userId));
+        if (!userSnap.exists()) {
+            console.warn(`Usuario ${driver.userId} no encontrado para conductor ${driver.id}`);
+            continue;
+        }
+        const user = { id: userSnap.id, ...userSnap.data() } as User;
+        
+        // Obtener vehículo si existe
+        let vehicle: Vehicle | null = null;
         if(driver.vehicle && driver.vehicle instanceof DocumentReference) {
             const vehicleSnap = await getDoc(driver.vehicle);
             if(vehicleSnap.exists()){
-                enrichedDrivers.push({ ...driver, vehicle: vehicleSnap.data() as Vehicle });
-            } else {
-                // Referencia de vehículo existe pero el documento no
-                enrichedDrivers.push({ ...driver, vehicle: null });
+                vehicle = { id: vehicleSnap.id, ...vehicleSnap.data() } as Vehicle;
             }
-        } else {
-            // Sin vehículo asignado
-            enrichedDrivers.push({ ...driver, vehicle: null });
         }
+        
+        // Combinar Driver + User + Vehicle
+        enrichedDrivers.push({ 
+            ...driver, 
+            vehicle,
+            user,
+            // Helpers de acceso directo
+            name: user.name,
+            email: user.email,
+            avatarUrl: user.avatarUrl,
+            phone: user.phone,
+            rating: user.rating,
+        });
     }
     return enrichedDrivers;
 }

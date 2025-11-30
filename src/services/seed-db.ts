@@ -96,18 +96,35 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
   }
   console.log(`${vehicles.length} vehicles prepared for batch.`);
 
-  const driverRefsByName = new Map<string, DocumentReference>();
+  const driverRefsByEmail = new Map<string, DocumentReference>();
+  const driverRefsByName = new Map<string, DocumentReference>(); // Para compatibilidad con rides
   for (const driverData of drivers) {
-    const driverRef = doc(collection(db, 'drivers'));
-    const vehicleRef = vehicleRefsByPlate.get(driverData.licensePlate);
-    if (!vehicleRef) {
-        console.error(`Vehicle with plate ${driverData.licensePlate} not found for driver ${driverData.name}`);
+    // Cast para acceder a campos temporales userEmail y userName
+    const driverDataWithTemp = driverData as typeof driverData & { userEmail: string, userName: string };
+    
+    // Obtener referencia del usuario por email
+    const userRef = userRefsByEmail.get(driverDataWithTemp.userEmail);
+    if (!userRef) {
+        console.error(`User with email ${driverDataWithTemp.userEmail} not found for driver`);
         continue;
     }
-    const { licensePlate, ...driverWithoutPlate } = driverData;
-    const driverDataWithId = { ...driverWithoutPlate, id: driverRef.id, vehicle: vehicleRef };
+    
+    const driverRef = doc(collection(db, 'drivers'), userRef.id); // Mismo ID que el usuario
+    const vehicleRef = vehicleRefsByPlate.get(driverDataWithTemp.licensePlate);
+    if (!vehicleRef) {
+        console.error(`Vehicle with plate ${driverDataWithTemp.licensePlate} not found for driver ${driverDataWithTemp.userName}`);
+        continue;
+    }
+    const { licensePlate, userName, userEmail, ...driverWithoutTempFields } = driverDataWithTemp;
+    const driverDataWithId = { 
+      ...driverWithoutTempFields, 
+      id: driverRef.id,
+      userId: userRef.id, // Referencia al usuario
+      vehicle: vehicleRef 
+    };
     batch.set(driverRef, driverDataWithId);
-    driverRefsByName.set(driverData.name, driverRef);
+    driverRefsByEmail.set(userEmail, driverRef);
+    driverRefsByName.set(userName, driverRef); // Para buscar por nombre en rides
 
     // Update the vehicle with its assigned driver's ID
     batch.update(vehicleRef, { driverId: driverRef.id });
@@ -147,9 +164,14 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
   const rideRefs: DocumentReference[] = [];
   for (const rideData of rides) {
     const { driverName, passengerEmail, ...rest } = rideData;
-    const driverRef = driverRefsByName.get(driverName);
+    // Buscar conductor por nombre
+    const driver = drivers.find(d => d.userName === driverName);
+    if (!driver) {
+        console.error(`Driver ${driverName} not found for ride`);
+        continue;
+    }
+    const driverRef = driverRefsByEmail.get(driver.userEmail);
     const passengerRef = userRefsByEmail.get(passengerEmail);
-    const driver = drivers.find(d => d.name === driverName);
     const vehicleRef = driver ? vehicleRefsByPlate.get(driver.licensePlate) : null;
     
     if (driverRef && passengerRef && vehicleRef) {

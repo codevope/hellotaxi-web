@@ -96,8 +96,12 @@ export function useRideLogic({ user, initialHistoryLimit = 25 }: UseRideLogicPro
     audioRef.current.volume = 0.8;
     
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (audioRef.current && !audioRef.current.paused) {
+        try {
+          audioRef.current.pause();
+        } catch (error) {
+          // Ignorar errores al pausar durante cleanup
+        }
       }
     };
   }, []);
@@ -475,12 +479,19 @@ export function useRideLogic({ user, initialHistoryLimit = 25 }: UseRideLogicPro
   // UTILIDADES
   // ====================================
   
-  const playNotificationSound = () => {
+  const playNotificationSound = async () => {
     if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => {
-        console.log('No se pudo reproducir notificación:', error);
-      });
+      try {
+        audioRef.current.currentTime = 0;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.log('No se pudo reproducir notificación:', error);
+        }
+      }
     }
   };
 

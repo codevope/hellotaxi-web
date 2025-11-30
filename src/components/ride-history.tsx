@@ -23,7 +23,10 @@ import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type EnrichedRide = Omit<Ride, "driver" | "passenger"> & {
-  driver: Driver;
+  driver: Driver & {
+    name: string;
+    avatarUrl: string;
+  };
   passenger: User;
 };
 
@@ -65,16 +68,27 @@ export default function RideHistory() {
         );
 
         const enrichedRidesPromises = ridesList.map(async (ride) => {
-          let driver: Driver | null = null;
+          let enrichedDriver: (Driver & { name: string; avatarUrl: string }) | null = null;
           if (ride.driver) {
             const driverSnap = await getDoc(ride.driver);
             if (driverSnap.exists()) {
-              driver = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+              const driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+              
+              // Cargar datos del usuario asociado al conductor
+              const userSnap = await getDoc(doc(db, 'users', driverData.userId));
+              if (userSnap.exists()) {
+                const userData = userSnap.data() as User;
+                enrichedDriver = {
+                  ...driverData,
+                  name: userData.name,
+                  avatarUrl: userData.avatarUrl,
+                };
+              }
             }
           }
           // We assume passenger is the current user, so no need to fetch again
-          return driver
-            ? ({ ...ride, driver, passenger: user as any } as EnrichedRide)
+          return enrichedDriver
+            ? ({ ...ride, driver: enrichedDriver, passenger: user as any } as EnrichedRide)
             : null;
         });
 

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/providers/auth-provider';
-import '../styles/maps.css';
 import './globals.css';
 
 export const metadata: Metadata = {

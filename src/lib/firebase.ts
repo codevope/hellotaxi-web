@@ -2,6 +2,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -35,4 +36,5 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
 }
 
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export default app;

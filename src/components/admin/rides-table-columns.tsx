@@ -10,7 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import type { Ride, User, Driver, Vehicle } from "@/lib/types";
 
 type EnrichedRide = Omit<Ride, "driver" | "passenger" | "vehicle"> & {
-  driver?: Driver;
+  driver?: Driver & { name: string; avatarUrl: string };
   passenger?: User;
   vehicle?: Vehicle;
 };

@@ -408,43 +408,43 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                             return (
                                 <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
                                     <CardHeader>
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                                            <div className="flex-1">
-                                                <CardTitle className="text-lg flex items-center gap-2">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <CardTitle className="text-lg flex items-center gap-2 mb-2">
                                                     <User className="h-5 w-5" />
                                                     <span>{label}</span>
                                                 </CardTitle>
-                                                 {expiryDate ? (
-                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-                                                        <CardDescription className={cn("flex items-center gap-1.5", expiryInfo?.color)}>
-                                                            {expiryInfo?.icon}
-                                                            <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
-                                                        </CardDescription>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleEditDateClick(name)}
-                                                            className="h-6 px-2 text-xs w-fit"
-                                                        >
-                                                            <Calendar className="h-3 w-3 mr-1" />
-                                                            Editar
-                                                        </Button>
-                                                    </div>
-                                                ) : (
+                                                <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
+                                                    {individualDocStatusConfig[status].label}
+                                                </Badge>
+                                            </div>
+                                            {expiryDate ? (
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                                    <CardDescription className={cn("flex items-center gap-1.5", expiryInfo?.color)}>
+                                                        {expiryInfo?.icon}
+                                                        <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
+                                                    </CardDescription>
                                                     <Button
-                                                        variant="outline"
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleEditDateClick(name)}
-                                                        className="mt-2 w-fit"
+                                                        className="h-6 px-2 text-xs w-fit"
                                                     >
                                                         <Calendar className="h-3 w-3 mr-1" />
-                                                        Agregar fecha de vencimiento
+                                                        Editar
                                                     </Button>
-                                                )}
-                                            </div>
-                                            <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
-                                                {individualDocStatusConfig[status].label}
-                                            </Badge>
+                                                </div>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEditDateClick(name)}
+                                                    className="w-fit"
+                                                >
+                                                    <Calendar className="h-3 w-3 mr-1" />
+                                                    Agregar fecha de vencimiento
+                                                </Button>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
@@ -518,16 +518,26 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                             return (
                                 <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
                                     <CardHeader>
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                                            <div className="flex-1">
-                                                <CardTitle className="text-lg flex items-center gap-2">
-                                                    <Car className="h-5 w-5" />
-                                                    <span>{label}</span>
-                                                </CardTitle>
-                                            </div>
+                                        <div className="space-y-2">
+                                            <CardTitle className="text-lg flex items-center gap-2">
+                                                <Car className="h-5 w-5" />
+                                                <span>{label}</span>
+                                            </CardTitle>
                                             <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
                                                 {individualDocStatusConfig[status].label}
                                             </Badge>
+                                            {expiryDate && (
+                                                <CardDescription className={cn("flex items-center gap-1.5 pt-1", expiryInfo?.color)}>
+                                                    {expiryInfo?.icon}
+                                                    <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
+                                                </CardDescription>
+                                            )}
+                                            {registrationDate && (
+                                                <CardDescription className="flex items-center gap-1.5 pt-1">
+                                                    <CalendarIcon className="h-3 w-3" />
+                                                    <span className="text-xs sm:text-sm">Registrado: {format(new Date(registrationDate), 'dd/MM/yyyy')}</span>
+                                                </CardDescription>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">

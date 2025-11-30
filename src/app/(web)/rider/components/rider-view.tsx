@@ -77,26 +77,42 @@ import { useChatNotifications } from "@/components/chat/chat-notification";
 import RatingForm from "@/components/forms/rating-form";
 import { processRating } from "@/ai/flows/process-rating";
 import { useRideStore } from "@/store/ride-store";
-import type { Vehicle, DriverWithVehicleInfo } from "@/lib/types";
+import type { Vehicle, DriverWithVehicleInfo, User } from "@/lib/types";
 import { AudioEnabler } from "@/components/pwa/audio-enabler";
 
-// Helper function to enrich driver with vehicle information
+// Helper function to enrich driver with vehicle and user information
 async function enrichDriverWithVehicle(
   driver: Driver
 ): Promise<DriverWithVehicleInfo> {
-  console.log('🚗 Enriching driver with vehicle info:', {
+  console.log('🚗 Enriching driver with vehicle and user info:', {
     driverId: driver.id,
-    driverName: driver.name,
-    hasPhone: !!driver.phone,
-    phone: driver.phone
+    userId: driver.userId,
   });
   
   try {
+    // Cargar datos del usuario
+    const userSnap = await getDoc(doc(db, 'users', driver.userId));
+    if (!userSnap.exists()) {
+      throw new Error(`User not found for driver ${driver.id}`);
+    }
+    const userData = { id: userSnap.id, ...userSnap.data() } as User;
+
+    // Cargar datos del vehículo
+    if (!driver.vehicle) {
+      throw new Error('Driver has no vehicle assigned');
+    }
     const vehicleSnap = await getDoc(driver.vehicle);
     if (vehicleSnap.exists()) {
       const vehicleData = vehicleSnap.data() as Vehicle;
-      const enrichedDriver = {
-        ...driver, // Esto incluye phone si existe
+      const enrichedDriver: DriverWithVehicleInfo = {
+        ...driver,
+        // Datos del usuario
+        name: userData.name,
+        email: userData.email,
+        avatarUrl: userData.avatarUrl,
+        rating: userData.rating,
+        phone: userData.phone,
+        // Datos del vehículo
         vehicleBrand: vehicleData.brand,
         vehicleModel: vehicleData.model,
         licensePlate: vehicleData.licensePlate,
@@ -105,22 +121,18 @@ async function enrichDriverWithVehicle(
       };
       
       console.log('✅ Driver enriched successfully:', {
+        name: enrichedDriver.name,
         hasPhone: !!enrichedDriver.phone,
-        phone: enrichedDriver.phone
       });
       
       return enrichedDriver;
+    } else {
+      throw new Error('Vehicle data not found');
     }
   } catch (error) {
-    console.error("Error loading vehicle data:", error);
+    console.error("Error loading driver data:", error);
+    throw error;
   }
-
-  return {
-    ...driver, // Mantener todos los campos incluyendo phone
-    vehicleBrand: "N/A",
-    vehicleModel: "N/A",
-    licensePlate: "N/A",
-  };
 }
 
 interface RiderDesktopViewProps {
@@ -572,6 +584,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-sm p-0">
+              <SheetTitle className="sr-only">Asistente de Soporte</SheetTitle>
               <SupportChat />
             </SheetContent>
           </Sheet>

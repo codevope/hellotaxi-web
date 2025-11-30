@@ -63,7 +63,10 @@ import ProfileValidationStatus from '@/components/profile-validation-status';
 import Link from 'next/link';
 
 type EnrichedRide = Omit<Ride, "driver" | "passenger" | "vehicle"> & {
-  driver?: Driver;
+  driver?: Driver & {
+    name: string;
+    avatarUrl: string;
+  };
   passenger?: User;
   vehicle?: Vehicle;
 };
@@ -123,12 +126,24 @@ export default function UserDetailsPage() {
           const userRidesPromises = ridesSnapshot.docs.map(
             async (rideDoc) => {
               const rideData = { id: rideDoc.id, ...rideDoc.data() } as Ride
-              let driver: Driver | undefined;
+              let enrichedDriver: (Driver & { name: string; avatarUrl: string }) | undefined;
               let vehicle: Vehicle | undefined;
               
               if (rideData.driver) {
                 const driverSnap = await getDoc(rideData.driver as DocumentReference);
-                if (driverSnap.exists()) driver = driverSnap.data() as Driver;
+                if (driverSnap.exists()) {
+                  const driverData = driverSnap.data() as Driver;
+                  // Cargar datos del usuario del conductor
+                  const driverUserSnap = await getDoc(doc(db, 'users', driverData.userId));
+                  if (driverUserSnap.exists()) {
+                    const driverUser = driverUserSnap.data() as User;
+                    enrichedDriver = {
+                      ...driverData,
+                      name: driverUser.name,
+                      avatarUrl: driverUser.avatarUrl,
+                    };
+                  }
+                }
               }
               
               if (rideData.vehicle) {
@@ -138,7 +153,7 @@ export default function UserDetailsPage() {
               
               // Crear un objeto que coincida con EnrichedRide
               const { driver: _driver, passenger: _passenger, vehicle: _vehicle, ...rest } = rideData;
-              return { ...rest, driver, passenger: userData, vehicle };
+              return { ...rest, driver: enrichedDriver, passenger: userData, vehicle };
             }
           );
           const userRides = await Promise.all(userRidesPromises);

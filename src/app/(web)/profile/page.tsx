@@ -69,7 +69,7 @@ export default function DesktopProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    if (!appUser?.id) {
+    if (!appUser?.id || !user) {
       toast({
         title: "Error",
         description: "No se pudo identificar al usuario. Por favor, recarga la página.",
@@ -80,9 +80,8 @@ export default function DesktopProfilePage() {
 
     setIsSaving(true);
     try {
-      // Determinar si es driver o user
-      const collection = isDriver ? "drivers" : "users";
-      const userRef = doc(db, collection, appUser.id);
+      // Siempre actualizar en users (datos personales están ahí)
+      const userRef = doc(db, "users", appUser.id);
 
       const updateData = {
         name: name.trim(),
@@ -90,7 +89,18 @@ export default function DesktopProfilePage() {
         address: address.trim(),
       };
 
-      await updateDoc(userRef, updateData);
+      // Verificar si el usuario ahora cumple con todos los requisitos para 'active'
+      const providerIds = user.providerData.map((p) => p.providerId);
+      const hasPassword = providerIds.includes('password');
+      const hasGoogle = providerIds.includes('google.com');
+      const hasPhone = phone.trim().length > 0;
+      
+      const newStatus = hasPassword && hasGoogle && hasPhone ? 'active' : 'incomplete';
+
+      await updateDoc(userRef, {
+        ...updateData,
+        status: newStatus
+      });
 
       // Actualizar appUser con los nuevos datos
       if (setAppUser) {
@@ -99,6 +109,7 @@ export default function DesktopProfilePage() {
           name: updateData.name,
           phone: updateData.phone,
           address: updateData.address,
+          status: newStatus,
         };
         setAppUser(updatedAppUser);
       }

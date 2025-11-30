@@ -65,7 +65,13 @@ export default function EnhancedChat({
     return () => {
       if (audioRef.current) {
         setIsPlaying(false);
-        audioRef.current.pause();
+        try {
+          if (!audioRef.current.paused) {
+            audioRef.current.pause();
+          }
+        } catch (error) {
+          // Ignorar errores al pausar durante cleanup
+        }
         audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
         audioRef.current.removeEventListener('error', () => setIsPlaying(false));
         audioRef.current.src = '';
@@ -77,10 +83,15 @@ export default function EnhancedChat({
     if (audioRef.current && !isPlaying) {
       try {
         setIsPlaying(true);
-        audioRef.current.currentTime = 0; // Reiniciar desde el inicio
-        await audioRef.current.play();
+        audioRef.current.currentTime = 0;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
       } catch (error) {
-        console.log('No se pudo reproducir el sonido del mensaje:', error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.log('No se pudo reproducir el sonido del mensaje:', error);
+        }
         setIsPlaying(false);
       }
     }

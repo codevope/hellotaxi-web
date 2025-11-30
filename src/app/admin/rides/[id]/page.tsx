@@ -42,7 +42,7 @@ import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 
-type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { driver: Driver; passenger: User; vehicle: Vehicle };
+type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { \n  driver: Driver & { name: string; avatarUrl: string; rating: number } | null; \n  passenger: User; \n  vehicle: Vehicle | null; \n};
 
 const rideStatusConfig: Record<RideStatus, { label: string; variant: 'secondary' | 'default' | 'destructive' }> = {
   completed: { label: 'Completado', variant: 'secondary' as const },
@@ -104,12 +104,25 @@ export default function RideDetailsPage() {
               console.log('👤 Passenger data loaded:', passengerData);
 
               // Verificar conductor (opcional)
-              let driverData: Driver | null = null;
+              let enrichedDriver: (Driver & { name: string; avatarUrl: string; rating: number }) | null = null;
               if (rideData.driver) {
                 const driverSnap = await getDoc(rideData.driver);
                 if (driverSnap.exists()) {
-                  driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
-                  console.log('🚗 Driver data loaded:', driverData);
+                  const driverData = { id: driverSnap.id, ...driverSnap.data() } as Driver;
+                  // Cargar datos del usuario del conductor
+                  const driverUserSnap = await getDoc(doc(db, 'users', driverData.userId));
+                  if (driverUserSnap.exists()) {
+                    const driverUser = driverUserSnap.data() as User;
+                    enrichedDriver = {
+                      ...driverData,
+                      name: driverUser.name,
+                      avatarUrl: driverUser.avatarUrl,
+                      rating: driverUser.rating,
+                    };
+                    console.log('🚗 Driver data loaded:', enrichedDriver);
+                  } else {
+                    console.warn("⚠️ Driver user data not found");
+                  }
                 } else {
                   console.warn("⚠️ Driver reference exists but document not found");
                 }
@@ -134,7 +147,7 @@ export default function RideDetailsPage() {
               // Crear el ride enriquecido
               const enrichedRide = { 
                 ...rideData, 
-                driver: driverData, 
+                driver: enrichedDriver, 
                 passenger: passengerData,
                 vehicle: vehicleData
               } as EnrichedRide;
@@ -143,9 +156,9 @@ export default function RideDetailsPage() {
               console.log('✅ Enriched ride set:', enrichedRide);
 
               // Cargar reviews del conductor si existe
-              if (driverData) {
+              if (enrichedDriver) {
                 try {
-                  const reviewsQuery = query(collection(db, 'drivers', driverData.id, 'reviews'), orderBy('createdAt', 'desc'));
+                  const reviewsQuery = query(collection(db, 'drivers', enrichedDriver.id, 'reviews'), orderBy('createdAt', 'desc'));
                   const reviewsSnapshot = await getDocs(reviewsQuery);
                   const driverReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
                   setReviews(driverReviews);

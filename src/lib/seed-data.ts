@@ -103,11 +103,11 @@ const driverLocations: Record<string, Omit<Location, 'id'>> = {
 // ================================================================= //
 //                            DRIVERS                                //
 // ================================================================= //
-export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[] = [
+// Nota: userName y userEmail son temporales para seed, no parte del modelo Driver
+export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate: string, userName: string, userEmail: string})[] = [
   {
-    name: 'Juan Perez',
-    avatarUrl: defaultAvatar,
-    rating: 4.8,
+    userName: 'Juan Perez',
+    userEmail: 'juan.perez@example.com',
     licensePlate: 'ABC-123', // This will be used to link the vehicle
     status: 'available',
     documentsStatus: 'approved',
@@ -128,9 +128,8 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     location: { id: 'loc-juan', ...driverLocations['juan-perez'] }
   },
   {
-    name: 'Maria Rodriguez',
-    avatarUrl: defaultAvatar,
-    rating: 4.9,
+    userName: 'Maria Rodriguez',
+    userEmail: 'maria.rodriguez@example.com',
     licensePlate: 'DEF-456',
     status: 'unavailable',
     documentsStatus: 'approved',
@@ -151,9 +150,8 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     location: { id: 'loc-maria', ...driverLocations['maria-rodriguez'] }
   },
   {
-    name: 'Carlos Gomez',
-    avatarUrl: defaultAvatar,
-    rating: 4.7,
+    userName: 'Carlos Gomez',
+    userEmail: 'carlos.gomez@example.com',
     licensePlate: 'GHI-789',
     status: 'available',
     documentsStatus: 'pending',
@@ -174,9 +172,8 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
     location: { id: 'loc-carlos', ...driverLocations['carlos-gomez'] }
   },
    {
-    name: 'Ana Torres',
-    avatarUrl: defaultAvatar,
-    rating: 5.0,
+    userName: 'Ana Torres',
+    userEmail: 'ana.torres@example.com',
     licensePlate: 'JKL-012',
     status: 'available',
     documentsStatus: 'approved',
@@ -203,38 +200,119 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle'> & {licensePlate: string})[
 //                             USERS                                 //
 // ================================================================= //
 export const users: (Omit<User, 'id'>)[] = [
+    // Conductores (también son usuarios)
+    {
+        name: 'Juan Perez',
+        email: 'juan.perez@example.com',
+        avatarUrl: defaultAvatar,
+        roles: ['driver', 'rider'],
+        signupDate: '2024-01-10T08:00:00Z',
+        totalRidesAsPassenger: 5,
+        rating: 4.8,
+        phone: '+51 987 654 321',
+        address: 'Av. Arequipa 1234, San Isidro',
+        status: 'active',
+        // Legacy fields
+        role: 'driver',
+        isAdmin: false,
+        totalRides: 5,
+    },
+    {
+        name: 'Maria Rodriguez',
+        email: 'maria.rodriguez@example.com',
+        avatarUrl: defaultAvatar,
+        roles: ['driver', 'rider'],
+        signupDate: '2024-02-15T09:00:00Z',
+        totalRidesAsPassenger: 3,
+        rating: 4.9,
+        phone: '+51 987 654 322',
+        address: 'Jr. de la Unión 567, Lima',
+        status: 'active',
+        // Legacy fields
+        role: 'driver',
+        isAdmin: false,
+        totalRides: 3,
+    },
+    {
+        name: 'Carlos Gomez',
+        email: 'carlos.gomez@example.com',
+        avatarUrl: defaultAvatar,
+        roles: ['driver', 'rider'],
+        signupDate: '2024-03-20T10:00:00Z',
+        totalRidesAsPassenger: 2,
+        rating: 4.7,
+        phone: '+51 987 654 323',
+        address: 'Av. La Marina 890, Pueblo Libre',
+        status: 'active',
+        // Legacy fields
+        role: 'driver',
+        isAdmin: false,
+        totalRides: 2,
+    },
+    {
+        name: 'Ana Torres',
+        email: 'ana.torres@example.com',
+        avatarUrl: defaultAvatar,
+        roles: ['driver', 'rider'],
+        signupDate: '2024-04-25T11:00:00Z',
+        totalRidesAsPassenger: 1,
+        rating: 5.0,
+        phone: '+51 987 654 324',
+        address: 'Av. Benavides 345, Surco',
+        status: 'active',
+        // Legacy fields
+        role: 'driver',
+        isAdmin: false,
+        totalRides: 1,
+    },
+    // Pasajeros regulares
     {
         name: 'Lucia Fernandez',
         email: 'lucia.f@example.com',
         avatarUrl: defaultAvatar,
-        role: 'passenger',
+        roles: ['rider'],
         signupDate: '2025-01-15T10:00:00Z',
-        totalRides: 25,
+        totalRidesAsPassenger: 25,
         rating: 4.9,
         phone: '+51 999 888 777',
-        address: 'Av. Larco 123, Miraflores'
+        address: 'Av. Larco 123, Miraflores',
+        status: 'active',
+        // Legacy fields
+        role: 'passenger',
+        isAdmin: false,
+        totalRides: 25,
     },
     {
         name: 'Miguel Castro',
         email: 'miguel.c@example.com',
         avatarUrl: defaultAvatar,
-        role: 'passenger',
+        roles: ['rider'],
         signupDate: '2025-03-20T14:30:00Z',
-        totalRides: 12,
+        totalRidesAsPassenger: 12,
         rating: 4.7,
         phone: '+51 911 222 333',
-        address: 'Calle Las Begonias 456, San Isidro'
+        address: 'Calle Las Begonias 456, San Isidro',
+        status: 'active',
+        // Legacy fields
+        role: 'passenger',
+        isAdmin: false,
+        totalRides: 12,
     },
      {
         name: 'Sofia Vargas',
         email: 'sofia.v@example.com',
         avatarUrl: defaultAvatar,
-        role: 'passenger',
+        roles: ['rider'],
         signupDate: '2025-05-10T09:00:00Z',
-        totalRides: 5,
+        totalRidesAsPassenger: 5,
         rating: 5.0,
-        phone: '',
-        address: ''
+        phone: '+51 999 777 666',
+        address: 'Av. Pardo 789, Miraflores',
+        status: 'active',
+        // Legacy fields
+        role: 'passenger',
+        isAdmin: false,
+        totalRides: 5,
     }
 ];
 

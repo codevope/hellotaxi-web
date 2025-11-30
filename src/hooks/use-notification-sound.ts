@@ -218,10 +218,12 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
     }
 
     try {
-      // Si el audio ya está reproduciéndose, detenerlo primero
+      // Si el audio ya está reproduciéndose, detenerlo primero y esperar
       if (!notificationAudio.paused) {
         notificationAudio.pause();
         notificationAudio.currentTime = 0;
+        // Pequeño delay para asegurar que pause() se complete
+        await new Promise(resolve => setTimeout(resolve, 50));
         console.log(`⏹️ Audio detenido para reproducir nuevamente: ${soundFileName}`);
       }
       
@@ -232,11 +234,19 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
       // Resetear el audio al inicio
       notificationAudio.currentTime = 0;
       
-      // Reproducir
-      await notificationAudio.play();
+      // Reproducir con manejo de errores específico
+      const playPromise = notificationAudio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
       console.log(`🔔 Sonido reproducido correctamente: ${soundPath}`);
       return true;
     } catch (error) {
+      // Ignorar errores de interrupción de play/pause
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log(`⚠️ Reproducción interrumpida (normal): ${soundPath}`);
+        return false;
+      }
       console.error(`Error reproduciendo sonido ${soundPath}:`, error);
       return false;
     }

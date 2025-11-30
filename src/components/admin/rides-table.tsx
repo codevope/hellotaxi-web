@@ -29,7 +29,11 @@ import { DataTable } from '../ui/data-table';
 import { columns } from './rides-table-columns';
 
 
-type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { driver?: Driver; passenger?: User; vehicle?: Vehicle };
+type EnrichedRide = Omit<Ride, 'driver' | 'passenger' | 'vehicle'> & { 
+  driver?: Driver & { name: string; avatarUrl: string }; 
+  passenger?: User; 
+  vehicle?: Vehicle; 
+};
 
 async function getRides(): Promise<EnrichedRide[]> {
   const [usersSnap, driversSnap, vehiclesSnap] = await Promise.all([
@@ -52,13 +56,26 @@ async function getRides(): Promise<EnrichedRide[]> {
 
   const enrichedRides = ridesList.map(ride => {
     const passenger = ride.passenger instanceof DocumentReference ? usersMap.get(ride.passenger.id) : undefined;
-    const driver = ride.driver instanceof DocumentReference ? driversMap.get(ride.driver.id) : undefined;
+    const driverData = ride.driver instanceof DocumentReference ? driversMap.get(ride.driver.id) : undefined;
     const vehicle = ride.vehicle instanceof DocumentReference ? vehiclesMap.get(ride.vehicle.id) : undefined;
+    
+    // Enriquecer driver con datos de usuario
+    let enrichedDriver: (Driver & { name: string; avatarUrl: string }) | undefined;
+    if (driverData) {
+      const driverUser = usersMap.get(driverData.userId);
+      if (driverUser) {
+        enrichedDriver = {
+          ...driverData,
+          name: driverUser.name,
+          avatarUrl: driverUser.avatarUrl,
+        };
+      }
+    }
     
     return {
       ...ride,
       passenger,
-      driver,
+      driver: enrichedDriver,
       vehicle,
     };
   });

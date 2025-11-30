@@ -30,10 +30,12 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { useAuth } from '@/hooks/auth/use-auth';
+import { useRouter } from 'next/navigation';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const { appUser, signOut } = useAuth();
+  const router = useRouter();
   const isActive = (path: string) => pathname.startsWith(path);
 
   const isAdmin = appUser?.isAdmin || false;
@@ -170,7 +172,10 @@ export default function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={signOut}>
+            <SidebarMenuButton onClick={async () => {
+              await signOut();
+              router.push('/login');
+            }}>
               <LogOut />
               <span>Cerrar Sesión</span>
             </SidebarMenuButton>
