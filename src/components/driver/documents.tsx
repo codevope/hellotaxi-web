@@ -408,23 +408,23 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                             return (
                                 <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
                                     <CardHeader>
-                                        <div className="flex justify-between items-start">
-                                            <div>
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                            <div className="flex-1">
                                                 <CardTitle className="text-lg flex items-center gap-2">
                                                     <User className="h-5 w-5" />
                                                     <span>{label}</span>
                                                 </CardTitle>
                                                  {expiryDate ? (
-                                                    <div className="flex items-center gap-2 mt-2">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
                                                         <CardDescription className={cn("flex items-center gap-1.5", expiryInfo?.color)}>
                                                             {expiryInfo?.icon}
-                                                            <span>{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
+                                                            <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
                                                         </CardDescription>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleEditDateClick(name)}
-                                                            className="h-6 px-2 text-xs"
+                                                            className="h-6 px-2 text-xs w-fit"
                                                         >
                                                             <Calendar className="h-3 w-3 mr-1" />
                                                             Editar
@@ -435,14 +435,14 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => handleEditDateClick(name)}
-                                                        className="mt-2"
+                                                        className="mt-2 w-fit"
                                                     >
                                                         <Calendar className="h-3 w-3 mr-1" />
                                                         Agregar fecha de vencimiento
                                                     </Button>
                                                 )}
                                             </div>
-                                            <Badge variant={individualDocStatusConfig[status].variant}>
+                                            <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
                                                 {individualDocStatusConfig[status].label}
                                             </Badge>
                                         </div>
@@ -518,14 +518,14 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                             return (
                                 <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
                                     <CardHeader>
-                                        <div className="flex justify-between items-start">
-                                            <div>
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                            <div className="flex-1">
                                                 <CardTitle className="text-lg flex items-center gap-2">
                                                     <Car className="h-5 w-5" />
                                                     <span>{label}</span>
                                                 </CardTitle>
                                             </div>
-                                            <Badge variant={individualDocStatusConfig[status].variant}>
+                                            <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
                                                 {individualDocStatusConfig[status].label}
                                             </Badge>
                                         </div>

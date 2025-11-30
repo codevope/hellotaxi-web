@@ -821,11 +821,54 @@ export default function DriverDetailsPage() {
     }
   };
 
-  const handleIndividualDocStatusChange = (
+  const handleIndividualDocStatusChange = async (
     docName: DocumentName,
     status: DocumentStatus
   ) => {
-    setIndividualDocStatuses((prev) => ({ ...prev, [docName]: status }));
+    if (!driver) return;
+    
+    setIsUpdating(true);
+    try {
+      const driverRef = doc(db, "drivers", driver.id);
+      
+      // Actualizar el estado individual del documento
+      const updatedDocStatuses = { ...individualDocStatuses, [docName]: status };
+      
+      // Verificar si todos los documentos están aprobados
+      const allDocsApproved = Object.values(updatedDocStatuses).every(
+        (s) => s === "approved"
+      );
+      
+      // Si todos están aprobados, actualizar documentsStatus a 'approved'
+      const newDocumentsStatus = allDocsApproved ? "approved" : driver.documentsStatus;
+      
+      // Actualizar en Firestore
+      await updateDoc(driverRef, {
+        documentStatus: updatedDocStatuses,
+        documentsStatus: newDocumentsStatus
+      });
+      
+      // Actualizar estados locales
+      setIndividualDocStatuses(updatedDocStatuses);
+      setDocumentsStatus(newDocumentsStatus);
+      setDriver({ ...driver, documentStatus: updatedDocStatuses as Record<DocumentName, DocumentStatus>, documentsStatus: newDocumentsStatus });
+      
+      toast({
+        title: `Documento ${status === "approved" ? "Aprobado" : "Rechazado"}`,
+        description: allDocsApproved 
+          ? `${docNameMap[docName]} aprobado. Todos los documentos están aprobados.`
+          : `${docNameMap[docName]} marcado como ${status === "approved" ? "aprobado" : "rechazado"}.`,
+      });
+    } catch (error) {
+      console.error("Error updating document status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el estado del documento.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleViewDocument = (docName: DocumentName) => {
@@ -1557,7 +1600,7 @@ export default function DriverDetailsPage() {
                             >
                               {statusInfo.icon}
                               <span>
-                                {statusInfo.label} (Vence: {format(new Date(docDetail.expiryDate), "dd/MM/yyyy")})
+                                {statusInfo.label} (Vence: {docDetail.expiryDate && !isNaN(new Date(docDetail.expiryDate).getTime()) ? format(new Date(docDetail.expiryDate), "dd/MM/yyyy") : "Fecha inválida"})
                               </span>
                             </div>
                           ) : (
@@ -1661,17 +1704,17 @@ export default function DriverDetailsPage() {
                               {statusInfo.icon}
                               <span>
                                 {statusInfo.label} (Vence:{" "}
-                                {format(
+                                {docDetail.expiryDate && !isNaN(new Date(docDetail.expiryDate).getTime()) ? format(
                                   new Date(docDetail.expiryDate!),
                                   "dd/MM/yyyy"
-                                )}
+                                ) : "Fecha inválida"}
                                 )
                               </span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5 text-sm ml-7 text-muted-foreground">
                               <CalendarCheck className="h-4 w-4" />
-                              {docDetail.registrationDate ? (
+                              {docDetail.registrationDate && !isNaN(new Date(docDetail.registrationDate).getTime()) ? (
                                 <span>
                                   Registrado:{" "}
                                   {format(
@@ -1859,7 +1902,7 @@ export default function DriverDetailsPage() {
                           </Badge>
                         </div>
                         <p className="text-xs text-amber-700 mt-2">
-                          La membresía fue pausada el {format(new Date(driver.membershipPausedDate), "dd MMM yyyy", { locale: es })}. No se generarán nuevos pagos hasta que la reactives.
+                          La membresía fue pausada el {driver.membershipPausedDate && !isNaN(new Date(driver.membershipPausedDate).getTime()) ? format(new Date(driver.membershipPausedDate), "dd MMM yyyy", { locale: es }) : "fecha desconocida"}. No se generarán nuevos pagos hasta que la reactives.
                         </p>
                       </div>
                     )}
@@ -2125,7 +2168,7 @@ export default function DriverDetailsPage() {
                             {format(dueDate, "dd MMM yyyy", { locale: es })}
                           </TableCell>
                           <TableCell>
-                            {payment.paidDate ? (
+                            {payment.paidDate && !isNaN(new Date(payment.paidDate).getTime()) ? (
                               <span className="text-sm text-green-600">
                                 {format(new Date(payment.paidDate), "dd MMM yyyy", { locale: es })}
                               </span>

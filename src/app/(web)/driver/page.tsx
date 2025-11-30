@@ -899,7 +899,41 @@ function DriverPageContent() {
 
                   <TabsContent value="documentos" className="mt-0 p-0">
                     <div className="h-[calc(100vh-300px)] overflow-y-auto">
-                      <div className="p-4 sm:p-6">
+                      <div className="p-4 sm:p-6 space-y-4">
+                        {/* Estado General de Documentos */}
+                        <Card className="border-2">
+                          <CardHeader className="pb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <FileText className="h-5 w-5 text-blue-600" />
+                                Estado de Documentos
+                              </CardTitle>
+                              <Badge 
+                                variant={
+                                  driver.documentsStatus === 'approved' ? 'default' : 
+                                  driver.documentsStatus === 'pending' ? 'outline' : 
+                                  'destructive'
+                                }
+                                className="text-xs w-fit"
+                              >
+                                {driver.documentsStatus === 'approved' ? '✓ Aprobado' : 
+                                 driver.documentsStatus === 'pending' ? '⏳ Pendiente' : 
+                                 '✗ Rechazado'}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <CardDescription className="text-xs">
+                              {driver.documentsStatus === 'approved' 
+                                ? 'Todos tus documentos han sido aprobados. Puedes comenzar a recibir viajes.'
+                                : driver.documentsStatus === 'pending'
+                                ? 'Tus documentos están en revisión. Recibirás una notificación cuando sean aprobados.'
+                                : 'Algunos documentos fueron rechazados. Por favor, revisa y vuelve a subirlos.'}
+                            </CardDescription>
+                          </CardContent>
+                        </Card>
+
+                        {/* Componente de Documentos */}
                         <DriverDocuments driver={driver} onUpdate={(updatedDriver) => setDriver(updatedDriver)} />
                       </div>
                     </div>
@@ -962,54 +996,6 @@ function DriverPageContent() {
                                    driver.vehicle.status === 'inactive' ? 'Inactivo' : driver.vehicle.status == null ? 'No Asignado' : driver.vehicle.status}
                                 </Badge>
                               </div>
-                            </CardContent>
-                          </Card>
-
-                          {/* Documentos del vehículo */}
-                          <Card className="shadow-sm">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-green-600" />
-                                Documentos del Vehículo
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {driver.vehicle.insuranceExpiry ? (
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b">
-                                  <span className="text-xs text-muted-foreground">Seguro</span>
-                                  <span className="text-xs sm:text-sm font-medium">
-                                    {format(new Date(driver.vehicle.insuranceExpiry), "d MMM yyyy", { locale: es })}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                                  Seguro no registrado
-                                </div>
-                              )}
-                              {driver.vehicle.technicalReviewExpiry ? (
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b">
-                                  <span className="text-xs text-muted-foreground">Revisión Técnica</span>
-                                  <span className="text-xs sm:text-sm font-medium">
-                                    {format(new Date(driver.vehicle.technicalReviewExpiry), "d MMM yyyy", { locale: es })}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                                  Revisión Técnica no registrada
-                                </div>
-                              )}
-                              {driver.vehicle.propertyCardRegistrationDate ? (
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2">
-                                  <span className="text-xs text-muted-foreground">Tarjeta de Propiedad</span>
-                                  <span className="text-xs sm:text-sm font-medium">
-                                    {format(new Date(driver.vehicle.propertyCardRegistrationDate), "d MMM yyyy", { locale: es })}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                                  Tarjeta de Propiedad no registrada
-                                </div>
-                              )}
                             </CardContent>
                           </Card>
 
