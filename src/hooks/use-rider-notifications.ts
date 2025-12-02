@@ -49,7 +49,6 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       
       if (hasNotificationAPI) {
         const permission = Notification.permission;
-        console.log('🔍 [Rider] Permisos de notificación:', permission);
         setHasPermission(permission === 'granted');
       }
       
@@ -58,6 +57,35 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
     checkCapabilities();
   }, []);
+
+  // Habilitar audio en primera interacción del usuario (solo si no está ya habilitado)
+  useEffect(() => {
+    // Solo agregar listeners si el audio NO está habilitado y NO hay permiso previo
+    const hasPermission = localStorage.getItem('hellotaxi-audio-permission') === 'granted';
+    
+    if (!audioEnabled && !hasPermission && canUseNotifications) {
+      
+      const handleFirstInteraction = async () => {
+        const enabled = await enableAudio();
+        if (enabled) {
+          document.removeEventListener('click', handleFirstInteraction);
+          document.removeEventListener('touchstart', handleFirstInteraction);
+          document.removeEventListener('keydown', handleFirstInteraction);
+        }
+      };
+
+      document.addEventListener('click', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+      document.addEventListener('keydown', handleFirstInteraction);
+
+      return () => {
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
 
   // Solicitar permisos de notificación
   const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
@@ -92,7 +120,6 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       const hasAskedBefore = localStorage.getItem('hellotaxi-rider-permissions-asked');
       
       if (!hasPermission && !hasAskedBefore) {
-        console.log('🔔 [Rider] Solicitando permisos automáticamente...');
         
         // Mostrar toast informativo primero
         toast({
@@ -108,24 +135,22 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
           
           if (granted) {
             // Habilitar audio automáticamente
-            console.log('🔊 [Rider] Habilitando audio automáticamente...');
             const audioResult = await enableAudio();
             
             if (audioResult) {
               toast({
-                title: "✅ Todo listo",
+                title: " Todo listo",
                 description: "Notificaciones y sonido activados. Recibirás alertas cuando el conductor cambie el estado de tu viaje",
                 duration: 5000,
               });
             } else {
               // Si falla la activación automática de audio (requiere interacción)
-             console.log('🔇 [Rider] No se pudo habilitar audio automáticamente, requiere interacción del usuario');
+             console.log('[Rider] No se pudo habilitar audio automáticamente, requiere interacción del usuario');
             }
           }
         }, 3000);
       } else if (hasPermission && !audioEnabled) {
         // Si ya tiene permisos pero el audio no está habilitado, intentar habilitarlo
-        console.log('🔊 [Rider] Permisos concedidos pero audio no habilitado, intentando habilitar...');
         await enableAudio();
       }
     };
@@ -139,11 +164,6 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     newStatus: string,
     rideData: any
   ) => {
-    console.log('🚗 [Rider] Procesando cambio de estado:', {
-      anterior: previousStatus,
-      nuevo: newStatus,
-      viaje: rideData.id
-    });
 
     let title = '';
     let message = '';
@@ -169,7 +189,6 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       case 'completed':
         // No reproducir sonido si ya fue calificado (evita duplicado al enviar rating)
         if (rideData.isRatedByPassenger) {
-          console.log('🔇 [Rider] Viaje ya calificado, no reproducir sonido');
           shouldPlaySound = false;
         }
         title = '¡Viaje completado!';
@@ -178,7 +197,6 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
         break;
       default:
         shouldPlaySound = false;
-        console.log('🔇 [Rider] Estado no relevante para notificaciones:', newStatus);
         return;
     }
 
@@ -209,24 +227,20 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
         // Auto-cerrar después de 8 segundos
         setTimeout(() => notification.close(), 8000);
-
-        console.log('🔔 [Rider] Notificación nativa mostrada:', title);
       } catch (error) {
-        console.error('❌ [Rider] Error mostrando notificación nativa:', error);
+        console.error(' [Rider] Error mostrando notificación nativa:', error);
       }
     }
 
     // Reproducir sonido específico según el evento
     if (shouldPlaySound && audioEnabled) {
       try {
-        console.log(`🔊 [Rider] Reproduciendo sonido: ${soundFile}.mp3 para estado: ${newStatus}`);
-        const soundResult = await playNotificationSound({ 
+         const soundResult = await playNotificationSound({ 
           volume: 0.8,
           soundFile: soundFile // Pasar el archivo de sonido específico
         });
-        console.log('🔊 [Rider] Resultado reproducción sonido:', soundResult);
       } catch (error) {
-        console.error('❌ [Rider] Error reproduciendo sonido:', error);
+        console.error(' [Rider] Error reproduciendo sonido:', error);
       }
     }
   }, [hasPermission, canUseNotifications, audioEnabled, playNotificationSound, toast]);
@@ -234,11 +248,8 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
   // Escuchar cambios en los viajes del rider
   useEffect(() => {
     if (!riderId || !isLoaded) {
-      console.log('⏳ [Rider] Esperando rider ID o carga inicial...');
       return;
     }
-
-    console.log('👂 [Rider] Configurando listener de viajes para rider:', riderId);
 
     // Query para viajes activos del rider (incluir todos los estados relevantes)
     const ridesQuery = query(
@@ -247,16 +258,10 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
       where('status', 'in', ['accepted', 'arrived', 'in-progress', 'completed'])
     );
 
-    console.log('👂 [Rider] Query configurado para estados: accepted, arrived, in-progress, completed');
-
     const unsubscribe = onSnapshot(ridesQuery, async (snapshot) => {
-      console.log('📡 [Rider] Cambios detectados en viajes:', {
-        totalDocs: snapshot.size,
-        cambios: snapshot.docChanges().length
-      });
+
 
       for (const change of snapshot.docChanges()) {
-        console.log('📡 [Rider] Tipo de cambio:', change.type);
         
         if (change.type === 'modified' || change.type === 'added') {
           const rideDataRaw = change.doc.data();
@@ -264,22 +269,13 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
           
           const currentStatus = rideData.status;
           const previousStatus = lastRideStatus.current[rideData.id];
-          
-          console.log('🔄 [Rider] Viaje detectado:', {
-            rideId: rideData.id,
-            statusAnterior: previousStatus,
-            statusActual: currentStatus,
-            esNuevoViaje: change.type === 'added'
-          });
 
           // Solo notificar si es un cambio real de estado (no la primera vez que vemos el viaje)
           if (previousStatus && previousStatus !== currentStatus && 
               ['accepted', 'arrived', 'in-progress', 'completed'].includes(currentStatus)) {
-            console.log('🎯 [Rider] ¡Cambio de estado real detectado!');
             await handleDriverStatusChange(previousStatus, currentStatus, rideData);
           } else if (!previousStatus && ['accepted', 'arrived', 'in-progress'].includes(currentStatus)) {
             // Si es la primera vez que vemos el viaje y ya está en un estado avanzado
-            console.log('🎯 [Rider] Nuevo viaje en estado avanzado detectado');
             await handleDriverStatusChange('pending', currentStatus, rideData);
           }
 
@@ -288,18 +284,16 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
         }
       }
     }, (error) => {
-      console.error('❌ [Rider] Error en listener de viajes:', error);
+      console.error(' [Rider] Error en listener de viajes:', error);
     });
 
     return () => {
-      console.log('🔌 [Rider] Desconectando listener de viajes');
       unsubscribe();
     };
   }, [riderId, isLoaded, handleDriverStatusChange]);
 
   // Función de prueba
   const testDriverStatusNotification = useCallback(() => {
-    console.log('🧪 [Rider] Ejecutando prueba de notificación...');
     
     handleDriverStatusChange('pending', 'accepted', {
       id: 'test-ride-123',

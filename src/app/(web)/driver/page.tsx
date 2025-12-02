@@ -27,6 +27,7 @@ import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useDriverRequestsContext } from "@/components/providers/driver-requests-provider";
 import type {
   Ride,
   User,
@@ -38,7 +39,7 @@ type DriverActiveRide = Omit<Ride, "passenger" | "driver"> & {
   passenger: User;
   driver: EnrichedDriver;
 };
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { collection, doc, updateDoc, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -58,8 +59,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 // simulación ahora gestionada dentro de useDriverActiveRide
-import { useDriverActiveRide } from "@/hooks/driver/use-driver-active-ride";
-import { useIncomingRideRequests } from "@/hooks/driver/use-incoming-ride-requests";
+import { useDriverActiveRideContext } from "@/components/providers/driver-active-ride-provider";
 import {
   Sheet,
   SheetContent,
@@ -97,6 +97,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { SSLWarningBanner } from "@/components/ssl-warning-banner";
 import { AudioEnabler } from "@/components/pwa/audio-enabler";
 import DriverSOSAlerts from "@/components/driver/sos-alerts";
+import { useChatNotifications, ChatNotification } from "@/components/chat/chat-notification";
 
 type EnrichedRide = Omit<Ride, "passenger" | "driver"> & {
   passenger: User;
@@ -141,8 +142,10 @@ function DriverPageContent() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDriverChatOpen, setIsDriverChatOpen] = useState(false);
   const [rejectedRideIds, setRejectedRideIds] = useState<string[]>([]);
+  const isFirstChatLoad = useRef(true);
+  const previousMessageCount = useRef(0);
 
-  // Hook: activo y rating
+  // Provider global: activo y rating
   const {
     activeRide: activeRideHook,
     completedRideForRating,
@@ -150,7 +153,7 @@ function DriverPageContent() {
     updateRideStatus,
     isCompletingRide,
     driverLocation,
-  } = useDriverActiveRide({ driver, setAvailability });
+  } = useDriverActiveRideContext();
 
   // Hook: notificaciones con sonido SEGURO
   const {
@@ -169,6 +172,15 @@ function DriverPageContent() {
     isSecureContext,
     canUseNotifications,
   } = useDriverNotificationsSafe(driver);
+
+  // Hook: notificaciones de chat
+  const {
+    notification: chatNotification,
+    sender: notificationSender,
+    isVisible: isNotificationVisible,
+    showNotification,
+    hideNotification
+  } = useChatNotifications(!isDriverChatOpen);
 
   // Efecto para solicitar permisos de notificación cuando el conductor se conecta por primera vez
   useEffect(() => {
@@ -226,10 +238,6 @@ function DriverPageContent() {
         !hasTriedReactivation
       ) {
         setHasAttemptedAutoReactivation(true);
-        console.log("🔄 Intentando reactivar audio automáticamente...", {
-          fromDB: shouldTryDB,
-          fromLocal: shouldTryLocal,
-        });
 
         const reactivated = await tryReenableAudio();
         if (reactivated) {
@@ -280,31 +288,17 @@ function DriverPageContent() {
     }
   }, [activeRideHook, activeRide, setActiveRide]);
 
-  // Hook: solicitudes entrantes
+  // NOTA: useIncomingRideRequests ahora está en DriverRequestsProvider (global)
+  // Obtenemos las funciones y valores del contexto global
   const {
-    incomingRequest: incomingRequestHook,
     requestTimeLeft,
-    isCountering: isCounteringHook,
     counterOfferAmount,
     setCounterOfferAmount,
     acceptRequest,
     rejectRequest,
     submitCounterOffer,
     startCounterMode,
-  } = useIncomingRideRequests({
-    driver,
-    isAvailable,
-    rejectedRideIds,
-    setRejectedRideIds,
-    toast,
-    playNotificationSound: () => playSound({ volume: 0.8 }),
-  });
-
-  useEffect(() => {
-    if (incomingRequestHook !== incomingRequest) {
-      setIncomingRequest(incomingRequestHook);
-    }
-  }, [incomingRequestHook, incomingRequest, setIncomingRequest]);
+  } = useDriverRequestsContext();
 
   // Sync driver availability status with local state
   useEffect(() => {
@@ -338,6 +332,38 @@ function DriverPageContent() {
       }
     }
   }, [activeRideHook, completedRideForRating, hasUserClosedSheet]);
+
+  // Listener para notificaciones de mensajes de chat
+  useEffect(() => {
+    if (!activeRideHook || !user?.uid || !activeRideHook.passenger) {
+      isFirstChatLoad.current = true;
+      previousMessageCount.current = 0;
+      return;
+    }
+
+    // Detectar nuevos mensajes del pasajero
+    if (!isFirstChatLoad.current && chatMessages.length > previousMessageCount.current) {
+      const lastMessage = chatMessages[chatMessages.length - 1];
+    
+      
+      // Si el último mensaje es del pasajero (no del conductor actual)
+      if (lastMessage.userId !== user.uid) {
+        
+        // Solo mostrar notificación emergente si el chat está cerrado
+        if (!isDriverChatOpen && activeRideHook.passenger) {
+          showNotification(lastMessage, activeRideHook.passenger);
+        } else {
+          console.log('[Driver] Chat abierto, no se muestra notificación');
+        }
+      } else {
+        console.log('[Driver] Mensaje propio, ignorando notificación');
+      }
+    }
+    
+    // Actualizar refs para la próxima vez
+    isFirstChatLoad.current = false;
+    previousMessageCount.current = chatMessages.length;
+  }, [chatMessages, user?.uid, activeRideHook, isDriverChatOpen, showNotification]);
 
   const handleAvailabilityChange = async (available: boolean) => {
     if (!driver) return;
@@ -479,6 +505,20 @@ function DriverPageContent() {
         onEnable={enableAudio}
         isEnabled={audioEnabled}
       />
+      
+      {/* Notificación de chat flotante */}
+      <ChatNotification
+        message={chatNotification}
+        sender={notificationSender}
+        isVisible={isNotificationVisible}
+        onClose={hideNotification}
+        onClick={() => {
+          hideNotification();
+          setIsDriverChatOpen(true);
+        }}
+        duration={5000}
+      />
+      
       <div className="flex flex-col min-h-screen bg-background">
         <main className="flex-1 p-2 sm:p-4 lg:p-8 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 min-h-[calc(100vh-200px)]">
@@ -625,12 +665,12 @@ function DriverPageContent() {
               )}
 
               {/* Solo mostrar solicitudes entrantes como antes */}
-              {incomingRequestHook && (
+              {incomingRequest && (
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t p-4">
                   <DriverStatePanel
-                    incomingRequest={incomingRequestHook}
+                    incomingRequest={incomingRequest}
                     requestTimeLeft={requestTimeLeft}
-                    isCountering={isCounteringHook}
+                    isCountering={isCountering}
                     counterOfferAmount={counterOfferAmount}
                     setCounterOfferAmount={setCounterOfferAmount}
                     acceptRequest={acceptRequest}

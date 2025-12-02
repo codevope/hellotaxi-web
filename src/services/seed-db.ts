@@ -28,7 +28,6 @@ const collectionsToReset = [
  * Exported to allow clearing database without re-seeding.
  */
 export async function clearCollections() {
-    console.log('Clearing transactional collections...');
 
     for (const collectionName of collectionsToReset) {
         const collectionRef = collection(db, collectionName);
@@ -41,13 +40,11 @@ export async function clearCollections() {
             for (const doc of querySnapshot.docs) {
                 await deleteDoc(doc.ref);
             }
-             console.log(`Deleted ${querySnapshot.docs.length} documents from ${collectionName}.`);
         } catch (error) {
             console.warn(`Could not query or delete from collection ${collectionName}. It might not exist or be protected by rules. Skipping.`);
         }
     }
     
-    console.log('Transactional collections cleared.');
 }
 
 /**
@@ -58,7 +55,6 @@ export async function clearCollections() {
  */
 export async function seedDatabase(dataType: SeedDataType = 'test') {
   const batch = writeBatch(db);
-  console.log(`Starting to seed database with ${dataType} data...`);
 
   // Select the appropriate data source
   const data = dataType === 'test' ? testData : blankData;
@@ -86,7 +82,7 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
     batch.set(userRef, { ...userData, id: userRef.id });
     userRefsByEmail.set(userData.email, userRef);
   }
-  console.log(`${users.length} users prepared for batch.`);
+
   
   const vehicleRefsByPlate = new Map<string, DocumentReference>();
   for (const vehicleData of vehicles) {
@@ -94,7 +90,6 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
       batch.set(vehicleRef, { ...vehicleData, id: vehicleRef.id, driverId: '' }); // driverId will be updated later
       vehicleRefsByPlate.set(vehicleData.licensePlate, vehicleRef);
   }
-  console.log(`${vehicles.length} vehicles prepared for batch.`);
 
   const driverRefsByEmail = new Map<string, DocumentReference>();
   const driverRefsByName = new Map<string, DocumentReference>(); // Para compatibilidad con rides
@@ -129,35 +124,28 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
     // Update the vehicle with its assigned driver's ID
     batch.update(vehicleRef, { driverId: driverRef.id });
   }
-  console.log(`${drivers.length} drivers prepared for batch.`);
-  
   for (const notificationData of notifications) {
     const notificationRef = doc(collection(db, 'notifications'));
     batch.set(notificationRef, { ...notificationData, id: notificationRef.id });
   }
-  console.log(`${notifications.length} notifications prepared for batch.`);
   
   for (const couponData of coupons) {
     const couponRef = doc(collection(db, 'coupons'));
     batch.set(couponRef, { ...couponData, id: couponRef.id });
   }
-  console.log(`${coupons.length} coupons prepared for batch.`);
 
   for (const ruleData of specialFareRules) {
     const ruleRef = doc(collection(db, 'specialFareRules'));
     batch.set(ruleRef, { ...ruleData, id: ruleRef.id });
   }
-  console.log(`${specialFareRules.length} special fare rules prepared for batch.`);
 
   for (const modelData of vehicleModels) {
     const modelRef = doc(collection(db, 'vehicleModels'));
     batch.set(modelRef, { ...modelData, id: modelRef.id });
   }
-  console.log(`${vehicleModels.length} vehicle models prepared for batch.`);
 
   const settingsDocRef = doc(db, 'appSettings', 'main');
   batch.set(settingsDocRef, { id: 'main', ...settings, serviceTypes, cancellationReasons, specialFareRules, peakTimeRules });
-  console.log('App settings prepared for batch.');
 
 
   // --- PHASE 2: Seed dependent collections using the created references ---
@@ -186,7 +174,6 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
       rideRefs.push(rideRef);
     }
   }
-  console.log(`${rides.length} rides prepared for batch.`);
 
   for (const claimData of claims) {
     const { claimantEmail, rideIndex, ...rest } = claimData;
@@ -203,8 +190,7 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
         });
     }
   }
-  console.log(`${claims.length} claims prepared for batch.`);
-  
+
   for (const alertData of sosAlerts) {
     const { driverName, passengerEmail, rideIndex, ...rest } = alertData;
     const driverRef = driverRefsByName.get(driverName);
@@ -222,12 +208,10 @@ export async function seedDatabase(dataType: SeedDataType = 'test') {
         });
     }
   }
-  console.log(`${sosAlerts.length} SOS alerts prepared for batch.`);
 
 
   // Commit the batch
   await batch.commit();
-  console.log('Database seeded successfully!');
 }
 
 

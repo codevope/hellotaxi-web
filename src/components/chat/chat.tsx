@@ -114,8 +114,7 @@ export default function Chat({
     
     // Usar el protocolo tel: para iniciar una llamada
     window.location.href = `tel:${cleanedPhone}`;
-    
-    console.log('Iniciando llamada a:', cleanedPhone);
+
   };
 
   return (

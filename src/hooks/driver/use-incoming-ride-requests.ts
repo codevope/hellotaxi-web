@@ -3,6 +3,7 @@ import { doc, collection, query, where, onSnapshot, runTransaction, getDoc, upda
 import { db } from '@/lib/firebase';
 import type { Ride, User, EnrichedDriver, ServiceType } from '@/lib/types';
 import { useDriverRideStore } from '@/store/driver-ride-store';
+import { useRouter, usePathname } from 'next/navigation';
 
 /**
  * Determina si un conductor puede ver un viaje basado en el tipo de servicio.
@@ -52,46 +53,71 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
   const [counterOfferAmount, setCounterOfferAmount] = useState('0');
   // Estado para tracking del timer activo
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Listener de viajes buscando (searching)
   useEffect(() => {
-    console.log('🔍 [DEBUG] Estado del hook:', {
-      hasDriver: !!driver,
-      driverId: driver?.id,
-      isAvailable,
-      hasActiveRide: !!activeRide,
-      hasIncomingRequest: !!incomingRequest,
-      driverServiceType: driver?.vehicle?.serviceType
-    });
+
     
-    if (!driver || !isAvailable || activeRide || incomingRequest) return;
+    if (!driver) {
+      return;
+    }
+    
     
     // Verificar que el conductor tenga vehículo con serviceType
     if (!driver.vehicle?.serviceType) {
-      console.log('⚠️ [FILTRO] Conductor sin vehículo o serviceType definido');
       return;
     }
 
+
     const q = query(collection(db, 'rides'), where('status', '==', 'searching'));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (useDriverRideStore.getState().activeRide || useDriverRideStore.getState().incomingRequest) return;
+
+      
+      // Verificar condiciones dentro del listener
+      if (!isAvailable) {
+        return;
+      }
+      // Si ya hay un viaje activo, no procesar nuevas solicitudes
+      if (useDriverRideStore.getState().activeRide) return;
+      
+      const currentIncomingRequest = useDriverRideStore.getState().incomingRequest;
+      
+      // Si hay una solicitud actual, verificar si aún existe en el snapshot
+      if (currentIncomingRequest) {
+        const stillExists = snapshot.docs.some(d => d.id === currentIncomingRequest.id && d.data().status === 'searching');
+        
+        if (!stillExists) {
+         setIncomingRequest(null);
+          setIsCountering(false);
+          // No retornar aquí, continuar procesando por si hay nuevas solicitudes
+        } else {
+          // La solicitud actual aún existe, no procesar otras
+          return;
+        }
+      }
+      
       const potential = snapshot.docs
         .map(d => ({ id: d.id, ...d.data() } as Ride))
         .filter(ride => {
-          const alreadyOffered = !!ride.offeredTo;
           const alreadyRejected = rejectedRideIds.includes(ride.id) || ride.rejectedBy?.some(ref => ref.id === driver.id);
+          
+          // Verificar si el viaje fue ofrecido hace más de 40 segundos (considerarlo expirado)
+          let alreadyOffered = !!ride.offeredTo;
+          if (alreadyOffered && ride.offeredToTimestamp) {
+            const offeredTime = new Date(ride.offeredToTimestamp).getTime();
+            const now = Date.now();
+            const elapsed = (now - offeredTime) / 1000; // segundos transcurridos
+            
+            if (elapsed > 40) {
+              alreadyOffered = false; // Tratar como si no estuviera ofrecido
+            }
+          }
           
           // 🎯 FILTRO JERÁRQUICO: Verificar si el conductor puede ver este viaje
           const canSeeRide = canDriverSeeRide(driver.vehicle!.serviceType, ride.serviceType);
-          
-          console.log('🔍 [FILTRO] Evaluando viaje:', {
-            rideId: ride.id,
-            rideServiceType: ride.serviceType,
-            driverServiceType: driver.vehicle!.serviceType,
-            canSeeRide,
-            alreadyOffered,
-            alreadyRejected
-          });
+
           
           return !alreadyOffered && !alreadyRejected && canSeeRide;
         });
@@ -104,7 +130,10 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
           if (!fresh.exists() || fresh.data().status !== 'searching' || fresh.data().offeredTo) {
             throw new Error('Ride taken or cancelled');
           }
-          tx.update(rideRef, { offeredTo: doc(db, 'drivers', driver.id) });
+          tx.update(rideRef, { 
+            offeredTo: doc(db, 'drivers', driver.id),
+            offeredToTimestamp: new Date().toISOString()
+          });
         });
         const passengerSnap = await getDoc(rideToOffer.passenger);
         if (passengerSnap.exists()) {
@@ -114,17 +143,25 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
           
           // Usar setTimeout para evitar actualizaciones de estado durante render
           setTimeout(async () => {
-            console.log('🚖 MOBILE: Nueva solicitud detectada:', newRequest);
             setIncomingRequest(newRequest);
+        
             
-            // Reproducir sonido de notificación
+            if (pathname && !pathname.startsWith('/driver')) {
+              try {
+                router.push('/driver');
+              } catch (error) {
+                console.error(' [REDIRECT] Error en router.push:', error);
+              }
+            } else {
+              console.log('[REDIRECT] Ya está en /driver o pathname no válido, no redirigir');
+            }
+            
+            // Reproducir sonido de notificación (taxi.mp3 para solicitudes entrantes)
             if (playNotificationSound) {
               try {
-                console.log('🔊 MOBILE: Reproduciendo sonido de notificación...');
-                const soundResult = await playNotificationSound();
-                console.log('🔊 MOBILE: Sonido reproducido:', soundResult);
+                const soundResult = await playNotificationSound({ soundFile: 'taxi' });
               } catch (error) {
-                console.error('❌ MOBILE: Error playing notification sound:', error);
+                console.error(' MOBILE: Error playing notification sound:', error);
               }
             } else {
               console.log('MOBILE: playNotificationSound no disponible');
@@ -132,15 +169,14 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
             
             // Mostrar toast inmediatamente para dispositivos móviles
             if (toast) {
-              console.log('MOBILE: Mostrando toast...');
               toast({
-                title: '🚖 Nueva solicitud de viaje',
+                title: 'Nueva solicitud de viaje',
                 description: `Recogida: ${newRequest.pickup}`,
                 duration: 2000,
                 className: 'border-l-4 border-l-[#2E4CA6] bg-gradient-to-r from-blue-50 to-white',
               });
             } else {
-              console.log('⚠️ MOBILE: toast no disponible');
+              console.log('MOBILE: toast no disponible');
             }
           }, 0);
         }
@@ -148,81 +184,57 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         console.log('Could not secure ride offer:', (e as Error).message);
       }
     });
-    return () => unsubscribe();
-  }, [driver, isAvailable, activeRide, incomingRequest, rejectedRideIds, setIncomingRequest]);
+    return () => {
+      unsubscribe();
+    };
+  }, [driver, rejectedRideIds, setIncomingRequest, setIsCountering, toast, playNotificationSound, router, pathname, isAvailable]);
 
-  // Listener para cambios en el viaje actual (cancelación, etc.)
+  //  Listener para detectar cancelación de solicitud entrante
   useEffect(() => {
-    if (!incomingRequest) return;
+    if (!incomingRequest) {
+      return;
+    }
 
-    console.log('👁️ [RIDE-LISTENER] Iniciando listener para ride:', incomingRequest.id);
     const rideRef = doc(db, 'rides', incomingRequest.id);
-    const requestId = incomingRequest.id; // Capturar ID al momento de crear el listener
+    const requestId = incomingRequest.id;
     
     const unsubscribe = onSnapshot(rideRef, (snapshot) => {
-      // Verificar que el incomingRequest actual sigue siendo el mismo
       const currentRequest = useDriverRideStore.getState().incomingRequest;
       if (!currentRequest || currentRequest.id !== requestId) {
-        console.log('👁️ [RIDE-LISTENER] Request ya no es actual, ignorando snapshot');
         return;
       }
 
       if (!snapshot.exists()) {
-        console.log('🗑️ [RIDE-LISTENER] Ride eliminado, cerrando sheet');
         setIncomingRequest(null);
         setIsCountering(false);
         return;
       }
 
       const rideData = snapshot.data();
-      console.log('📊 [RIDE-LISTENER] Estado del ride:', rideData.status, 'para request:', requestId);
       
-      // Si el viaje fue cancelado o aceptado por otro conductor, cerrar el sheet
       if (rideData.status === 'cancelled') {
-        console.log('🚫 [RIDE-LISTENER] Viaje cancelado, cerrando sheet');
-        
-        // Mostrar notificación de cancelación
-        if (toast) {
-          toast({
-            title: '🚫 Viaje Cancelado',
-            description: 'El pasajero canceló la solicitud de viaje.',
-            duration: 4000,
-            variant: 'destructive',
-          });
-        }
 
-        // Reproducir sonido de error para cancelación
-        if (playNotificationSound) {
-          try {
-            playNotificationSound({ soundFile: 'error' });
-          } catch (error) {
-            console.log('🔊 [RIDE-LISTENER] No se pudo reproducir sonido de cancelación');
-          }
-        }
+        toast({
+          title: 'Viaje Cancelado',
+          description: 'El pasajero canceló la solicitud de viaje.',
+          duration: 6000,
+          variant: 'destructive',
+        });
+
+        const audio = new Audio('/sounds/error.mp3');
+        audio.volume = 0.7;
+        audio.play().catch(e => console.error('Error sonido:', e));
         
         setIncomingRequest(null);
         setIsCountering(false);
       } else if (rideData.status === 'accepted' && rideData.driver?.id !== driver?.id) {
-        console.log('👥 [RIDE-LISTENER] Viaje tomado por otro conductor, cerrando sheet');
         
-        // Mostrar notificación de viaje tomado
-        if (toast) {
-          toast({
-            title: '👥 Viaje Tomado',
-            description: 'Otro conductor aceptó esta solicitud.',
-            duration: 4000,
-            className: 'border-l-4 border-l-blue-500',
-          });
-        }
-
-        // Reproducir sonido de notificación
-        if (playNotificationSound) {
-          try {
-            playNotificationSound();
-          } catch (error) {
-            console.log('🔊 [RIDE-LISTENER] No se pudo reproducir sonido de viaje tomado');
-          }
-        }
+        toast({
+          title: '⚠️ Viaje Tomado',
+          description: 'Otro conductor aceptó este viaje.',
+          duration: 5000,
+          variant: 'default',
+        });
         
         setIncomingRequest(null);
         setIsCountering(false);
@@ -230,30 +242,26 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     });
 
     return () => {
-      console.log('🗑️ [RIDE-LISTENER] Cleanup listener para ride:', requestId);
       unsubscribe();
     };
-  }, [incomingRequest?.id, driver, setIncomingRequest, setIsCountering, toast, playNotificationSound]);
+  }, [incomingRequest, toast, driver, setIncomingRequest, setIsCountering]);
 
   // Countdown / auto reject
   const autoRejectRequest = useCallback(async (requestId: string) => {
-    console.log('⏰ [AUTO-REJECT] Iniciando auto-reject para request:', requestId);
     if (!driver) {
-      console.log('⏰ [AUTO-REJECT] No hay driver, cancelando');
       return;
     }
     
     // Verificar que la solicitud actual aún sea la misma antes de proceder
     const currentRequest = useDriverRideStore.getState().incomingRequest;
     if (!currentRequest || currentRequest.id !== requestId) {
-      console.log('⏰ [AUTO-REJECT] Solicitud ya no es actual, cancelando auto-reject');
       return;
     }
     
     // Mostrar notificación de tiempo agotado ANTES de limpiar
     if (toast) {
       toast({
-        title: '⏰ Tiempo Agotado',
+        title: 'Tiempo Agotado',
         description: 'La solicitud de viaje ha expirado.',
         duration: 4000,
         className: 'border-l-4 border-l-yellow-500',
@@ -264,9 +272,7 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     if (playNotificationSound) {
       try {
         await playNotificationSound({ soundFile: 'error' });
-        console.log('🔊 [AUTO-REJECT] Sonido de timeout reproducido');
       } catch (error) {
-        console.log('🔊 [AUTO-REJECT] No se pudo reproducir sonido:', error);
       }
     }
     
@@ -275,7 +281,6 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     try {
       const rideSnap = await getDoc(rideRef);
       if (!rideSnap.exists()) {
-        console.log('📋 [AUTO-REJECT] Ride no longer exists, solo limpiando UI');
         // Solo limpiar UI si el viaje ya no existe
         setIncomingRequest(null);
         setIsCountering(false);
@@ -285,37 +290,31 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
       
       const rideData = rideSnap.data();
       if (rideData.status === 'counter-offered') {
-        console.log('💰 [AUTO-REJECT] Ride is in counter-offered state, skipping DB update');
         setIncomingRequest(null);
         setIsCountering(false);
         return;
       }
       
       if (!['searching'].includes(rideData.status)) {
-        console.log('📋 [AUTO-REJECT] Ride status changed to', rideData.status, 'skipping DB update');
         setIncomingRequest(null);
         setIsCountering(false);
         return;
       }
       
-      console.log('✅ [AUTO-REJECT] Actualizando base de datos...');
       await updateDoc(rideRef, { 
         rejectedBy: arrayUnion(doc(db, 'drivers', driver.id)), 
         offeredTo: null 
       });
-      console.log('✅ [AUTO-REJECT] Base de datos actualizada correctamente');
     } catch (err) {
-      console.error('❌ [AUTO-REJECT] Error updating database:', err);
+      console.error(' [AUTO-REJECT] Error updating database:', err);
     }
     
     // Limpiar el store DESPUÉS de mostrar notificaciones
-    console.log('🧹 [AUTO-REJECT] Limpiando incomingRequest del store...');
     setIncomingRequest(null);
     setIsCountering(false);
     setRejectedRideIds(prevIds => [...prevIds, requestId]);
     
-    console.log('✅ [AUTO-REJECT] Auto-reject completado para:', requestId);
-  }, [driver, setIncomingRequest, setRejectedRideIds, toast, playNotificationSound]);
+  }, [driver, setIncomingRequest, setIsCountering, setRejectedRideIds, toast, playNotificationSound]);
 
   useEffect(() => {
     if (!incomingRequest) { 
@@ -330,11 +329,9 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     
     // Solo crear nuevo timer si no hay uno activo para esta solicitud
     if (activeTimerId === incomingRequest.id) {
-      console.log('⏱️ [TIMER] Timer ya activo para request:', incomingRequest.id);
       return;
     }
     
-    console.log('⏱️ [TIMER] Iniciando timer para request:', incomingRequest.id);
     setActiveTimerId(incomingRequest.id);
     setRequestTimeLeft(30);
     
@@ -342,28 +339,30 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
     let timeLeft = 30;
     
     const timer = setInterval(() => {
+      // 🛑 DETENER el temporizador si el conductor está haciendo una contraoferta
+      const currentState = useDriverRideStore.getState();
+      if (currentState.isCountering) {
+        return; // No decrementar el tiempo mientras se hace contraoferta
+      }
+
       timeLeft -= 1;
-      console.log('⏱️ [TIMER] Tiempo restante:', timeLeft, 'para request:', requestId);
       
       setRequestTimeLeft(timeLeft);
       
       if (timeLeft <= 0) {
-        console.log('⏰ [TIMER] Tiempo agotado para request:', requestId);
         clearInterval(timer);
         
         // Verificar que la solicitud aún sea la actual antes de ejecutar auto-reject
         const current = useDriverRideStore.getState().incomingRequest;
         if (current && current.id === requestId && driver) {
-          console.log('⏰ [TIMER] Ejecutando auto-reject...');
           setTimeout(() => autoRejectRequest(requestId), 0);
         } else {
-          console.log('⏰ [TIMER] Solicitud ya no es actual, cancelando auto-reject');
+          console.log('[TIMER] Solicitud ya no es actual, cancelando auto-reject');
         }
       }
     }, 1000);
     
     return () => {
-      console.log('🗙️ [TIMER] Limpiando timer para request:', requestId);
       clearInterval(timer);
     };
   }, [incomingRequest?.id]); // Solo depender del ID para evitar loops infinitos
@@ -380,7 +379,6 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         }
         
         const rideData = snap.data();
-        console.log('🔍 [Accept Request] Estado actual del viaje:', rideData.status);
         
         if (!['searching','counter-offered'].includes(rideData.status)) {
           throw new Error(`El viaje ya no está disponible. Estado actual: ${rideData.status}`);
@@ -394,14 +392,14 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         tx.update(doc(db, 'drivers', driver.id), { status: 'on-ride' });
       });
     } catch (e: any) {
-      console.error('❌ Error accepting request:', e);
+      console.error(' Error accepting request:', e);
       
       // Si el viaje fue cancelado, mostrar mensaje específico y cerrar sheet
       if (e.message?.includes('cancelado') || e.message?.includes('cancelled')) {
         if (toast) {
           toast({ 
             variant: 'destructive', 
-            title: '🚫 Viaje Cancelado', 
+            title: 'Viaje Cancelado', 
             description: 'El pasajero canceló el viaje.' 
           });
         }
@@ -456,7 +454,6 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         if (rideData.status === 'counter-offered' && 
             rideData.offeredTo && 
             rideData.offeredTo.id === driver.id) {
-          console.log('🔄 Conductor cancela su propia contraoferta, regresando a búsqueda');
           updateData.status = 'searching';
           updateData.fare = rideData.originalFare || rideData.fare; // Restaurar tarifa original si existe
         }
@@ -475,13 +472,7 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
 
   const submitCounterOffer = useCallback(async () => {
     if (!incomingRequest || !counterOfferAmount || !driver) return;
-    
-    console.log('🚛 Submitting counter offer:', {
-      rideId: incomingRequest.id,
-      driverId: driver.id,
-      counterOfferAmount,
-      originalFare: incomingRequest.fare
-    });
+
     
     const rideRef = doc(db, 'rides', incomingRequest.id);
     const driverRef = doc(db, 'drivers', driver.id);
@@ -496,7 +487,6 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         }
         
         const rideData = rideSnapshot.data();
-        console.log('🔍 [Counter Offer] Estado actual del viaje:', rideData.status);
         
         // Verificar que el viaje esté en un estado válido para contraoferta
         if (!['searching', 'counter-offered'].includes(rideData.status)) {
@@ -515,11 +505,8 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
           offeredTo: driverRef 
         };
         
-        console.log('📤 Updating ride with data:', updateData);
         tx.update(rideRef, updateData);
       });
-      
-      console.log('✅ Counter offer submitted successfully');
       
       // Clear the incoming request immediately to prevent auto-reject
       setIncomingRequest(null);
@@ -529,14 +516,14 @@ export function useIncomingRideRequests({ driver, isAvailable, rejectedRideIds, 
         toast({ title: 'Contraoferta Enviada', description: `Has propuesto una tarifa de S/${parseFloat(counterOfferAmount).toFixed(2)}` });
       }
     } catch (e: any) {
-      console.error('❌ Error submitting counter offer:', e);
+      console.error(' Error submitting counter offer:', e);
       
       // Si el viaje fue cancelado, mostrar mensaje específico y cerrar sheet
       if (e.message?.includes('cancelado') || e.message?.includes('cancelled')) {
         if (toast) {
           toast({ 
             variant: 'destructive', 
-            title: '🚫 Viaje Cancelado', 
+            title: 'Viaje Cancelado', 
             description: 'El pasajero canceló el viaje mientras preparabas tu contraoferta.' 
           });
         }

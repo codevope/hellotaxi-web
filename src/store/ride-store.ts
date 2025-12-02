@@ -73,7 +73,6 @@ export const useRideStore = create<RideState & RideActions>((set, get) => ({
   setDropoffLocation: (location) => set({ dropoffLocation: location }),
   setDriverLocation: (location) => set({ driverLocation: location }),
   setCounterOffer: (value) => {
-    console.log('💰 Setting counter offer:', value);
     if (value !== null) {
       const currentState = get();
       // Store original fare if not already stored
@@ -100,7 +99,6 @@ export const useRideStore = create<RideState & RideActions>((set, get) => ({
   setOriginalFare: (fare) => set({ originalFare: fare }),
   setCustomFare: (fare) => set({ customFare: fare }),
   setRouteInfo: (info) => {
-    console.log('📍 Setting route info:', !!info);
     const currentState = get();
     // Only change status to calculated/idle if not in a more advanced state
     if (!['searching', 'assigned', 'rating', 'counter-offered'].includes(currentState.status)) {
@@ -116,14 +114,12 @@ export const useRideStore = create<RideState & RideActions>((set, get) => ({
   completeRideForRating: (driver) => set({ status: 'rating', assignedDriver: driver }),
   
   resetRide: () => {
-    console.log('🔄 Resetting ride state');
     // Keep pickup and dropoff locations for convenience
     const { pickupLocation, dropoffLocation } = get();
     set({ ...initialState, pickupLocation, dropoffLocation });
   },
   
   resetAll: () => {
-    console.log('🔄 Resetting all ride state including locations');
     set(initialState);
   },
 }));

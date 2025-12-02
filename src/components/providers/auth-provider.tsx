@@ -42,11 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (userSnap.exists()) {
           const userData = { id: userSnap.id, ...userSnap.data() } as AppUser;
-          console.log("👤 Usuario cargado desde:", userSnap.ref.path, userData);
           setAppUser(userData);
         } else {
           // Usuario autenticado pero sin perfil - crear perfil inicial
-          console.log("📝 Creando perfil inicial para:", firebaseUser.email);
           
           const name = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario';
           const newUserData: AppUser = {
@@ -54,21 +52,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: name,
             email: firebaseUser.email || '',
             avatarUrl: firebaseUser.photoURL || '/img/avatar.png',
-            role: 'passenger',
+            roles: ['rider'],
             signupDate: new Date().toISOString(),
-            totalRides: 0,
+            totalRidesAsPassenger: 0,
             rating: 5.0,
             phone: firebaseUser.phoneNumber || '',
             address: '',
-            isAdmin: false,
             status: 'incomplete',
+            role: 'rider',
+            isAdmin: false,
+            totalRides: 0,
           };
           
           // Crear documento en users
           const newUserRef = doc(db, 'users', firebaseUser.uid);
           await setDoc(newUserRef, newUserData);
           
-          console.log("✅ Perfil creado exitosamente");
           setAppUser(newUserData);
         }
       } else {

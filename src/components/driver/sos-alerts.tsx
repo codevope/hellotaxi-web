@@ -20,7 +20,36 @@ type EnrichedSOSAlert = Omit<SOSAlert, 'driver' | 'passenger'> & {
 
 export default function DriverSOSAlerts() {
   const [alerts, setAlerts] = useState<EnrichedSOSAlert[]>([]);
-  const { playSound } = useNotificationSound();
+  const { audioEnabled, playNotificationSound, enableAudio } = useNotificationSound('/sounds/error.mp3');
+
+  // Habilitar audio en primera interacción del usuario (solo si no está ya habilitado)
+  useEffect(() => {
+    // Solo agregar listeners si el audio NO está habilitado y NO hay permiso previo
+    const hasPermission = localStorage.getItem('hellotaxi-audio-permission') === 'granted';
+    
+    if (!audioEnabled && !hasPermission) {
+   
+      const handleFirstInteraction = async () => {
+        const enabled = await enableAudio();
+        if (enabled) {
+          document.removeEventListener('click', handleFirstInteraction);
+          document.removeEventListener('touchstart', handleFirstInteraction);
+          document.removeEventListener('keydown', handleFirstInteraction);
+        }
+      };
+
+      document.addEventListener('click', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+      document.addEventListener('keydown', handleFirstInteraction);
+
+      return () => {
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
 
   useEffect(() => {
     // Escuchar alertas SOS activas de otros conductores
@@ -79,16 +108,23 @@ export default function DriverSOSAlerts() {
         }
       }
 
-      // Reproducir sonido si hay nuevas alertas
+      // Reproducir sonido solo si hay nuevas alertas y el audio está habilitado
       if (newAlerts.length > alerts.length && alerts.length > 0) {
-        playSound();
+        if (audioEnabled) {
+          playNotificationSound({ 
+            volume: 1.0,
+            soundFile: 'error'
+          });
+        } else {
+          console.log('[Driver SOS] Audio no habilitado, omitiendo sonido');
+        }
       }
 
       setAlerts(newAlerts);
     });
 
     return () => unsubscribe();
-  }, [alerts.length, playSound]);
+  }, [alerts.length, audioEnabled, playNotificationSound]);
 
   if (alerts.length === 0) {
     return null;
@@ -166,7 +202,7 @@ export default function DriverSOSAlerts() {
 
             <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
               <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                ⚠️ Si estás cerca, considera prestar ayuda o contactar a las autoridades.
+                Si estás cerca, considera prestar ayuda o contactar a las autoridades.
               </p>
             </div>
           </CardContent>

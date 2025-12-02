@@ -23,7 +23,6 @@ interface PWANotificationProps {
 export default function PWAInstallNotification({
   showOnHome = false,
 }: PWANotificationProps) {
-  console.log("PWAInstallNotification renderizado con showOnHome:", showOnHome);
 
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -35,7 +34,6 @@ export default function PWAInstallNotification({
 
   // Log cuando cambie el estado del modal
   useEffect(() => {
-    console.log("showInstallModal cambió a:", showInstallModal);
   }, [showInstallModal]);
 
   useEffect(() => {
@@ -49,15 +47,9 @@ export default function PWAInstallNotification({
     setIsIOS(isIOSDevice);
     setIsStandalone(isInStandalone);
 
-    console.log("PWA Check inicial:", {
-      isIOSDevice,
-      isInStandalone,
-      showOnHome,
-    });
 
     // No mostrar nada si ya está instalado
     if (isInStandalone) {
-      console.log("App ya está instalada, no mostrar PWA notification");
       return;
     }
 
@@ -71,15 +63,12 @@ export default function PWAInstallNotification({
 
       // Si el usuario la rechazó 3 veces, no mostrar más (hasta que limpie localStorage)
       if (permanentDismiss === "true" && dismissCount >= 3) {
-        console.log(
-          "PWA notification permanentemente rechazada después de 3 intentos"
-        );
+
         return false;
       }
 
       // Primera vez que entra
       if (!lastShown) {
-        console.log("Primera visita - mostrar PWA notification");
         return true;
       }
 
@@ -92,55 +81,23 @@ export default function PWAInstallNotification({
       if (dismissCount === 2) cooldownDays = 7; // Después del segundo, esperar 1 semana
       if (dismissCount >= 3) cooldownDays = 30; // Después del tercero, esperar 1 mes
 
-      console.log("PWA Check temporal:", {
-        daysSinceLastShown: daysSinceLastShown.toFixed(1),
-        cooldownDays,
-        dismissCount,
-        shouldShow: daysSinceLastShown >= cooldownDays,
-      });
 
       return daysSinceLastShown >= cooldownDays;
     };
 
     // Verificar si ya fue rechazado
     const shouldShow = checkShouldShowNotification();
-    console.log("PWA Check detallado:", {
-      isIOSDevice,
-      showOnHome,
-      shouldShow,
-      isInStandalone,
-      serviceWorkerSupport: "serviceWorker" in navigator,
-      pushManagerSupport: "PushManager" in window,
-    });
 
-    // Registrar Service Worker primero
-    if ("serviceWorker" in navigator) {
-      // Temporalmente deshabilitado para evitar error de workbox en desarrollo
-      console.log("Service Worker registration disabled during development");
-      /*
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registrado exitosamente:', registration);
-        })
-        .catch((error) => {
-          console.log('Error al registrar el Service Worker:', error);
-        });
-      */
-    }
 
     // Manejar evento de instalación PWA
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log("beforeinstallprompt triggered");
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
 
       // Mostrar modal después de un tiempo si debe mostrarse
       if (shouldShow && showOnHome) {
-        console.log("Programando PWA modal para Chrome/Edge en 2 segundos");
         setTimeout(() => {
-          console.log("Showing PWA modal (Chrome/Edge)");
           setShowInstallModal(true);
           // Actualizar timestamp de última vez mostrada
           localStorage.setItem("pwa-last-shown", Date.now().toString());
@@ -150,33 +107,20 @@ export default function PWAInstallNotification({
 
     // Mostrar notificación automáticamente si debe mostrarse
     if (showOnHome && shouldShow) {
-      console.log("✅ PWA modal programado para mostrarse en 3 segundos");
       setTimeout(() => {
-        console.log("🚀 MOSTRANDO PWA modal automáticamente");
         setShowInstallModal(true);
         // Actualizar timestamp de última vez mostrada
         localStorage.setItem("pwa-last-shown", Date.now().toString());
       }, 3000);
     } else if (showOnHome && !shouldShow) {
-      console.log("❌ PWA modal NO se muestra - aún en período de espera");
+      console.log("PWA modal NO se muestra - aún en período de espera");
     }
 
-    // Para dispositivos que soportan PWA pero no tienen el evento, mostrar instrucciones
-    // if (showOnHome && !wasPromptDismissed) {
-    //   // Detectar si es un navegador que soporta PWA
-    //   const isPWACapable = 'serviceWorker' in navigator && 'PushManager' in window;
 
-    //   if (isPWACapable || isIOSDevice) {
-    //     setTimeout(() => {
-    //       console.log('Showing PWA modal (fallback for PWA-capable browsers)');
-    //       setShowInstallModal(true);
-    //     }, 4000);
-    //   }
-    // }
 
     // Detectar si ya está instalada
     const handleAppInstalled = () => {
-      console.log("App installed");
+
       setIsInstallable(false);
       setDeferredPrompt(null);
       setShowInstallModal(false);
@@ -190,12 +134,10 @@ export default function PWAInstallNotification({
     };
 
     // Registrar listeners
-    console.log("Registrando event listeners para PWA");
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      console.log("Limpiando event listeners para PWA");
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt
@@ -219,7 +161,6 @@ export default function PWAInstallNotification({
         const { outcome } = await deferredPrompt.userChoice;
 
         if (outcome === "accepted") {
-          console.log("Usuario aceptó instalar la PWA");
           toast({
             title: "¡Instalación iniciada!",
             description: "HelloTaxi se está instalando en tu dispositivo.",
@@ -289,35 +230,15 @@ export default function PWAInstallNotification({
       });
     }
 
-    console.log("PWA modal rechazado:", {
-      dismissCount: newDismissCount,
-      permanentDismiss: newDismissCount >= 3,
-    });
   };
 
   // No renderizar si no está en pantalla de inicio o si ya está instalado
   if (!showOnHome || isStandalone) {
-    console.log("No renderizando PWA notification:", {
-      showOnHome,
-      isStandalone,
-    });
+
     return null;
   }
 
   // PARA TESTING - TEMPORAL
-  console.log("PWA notification render check:", {
-    showOnHome,
-    isStandalone,
-    showInstallModal,
-    lastShown: localStorage.getItem("pwa-last-shown"),
-    dismissCount: localStorage.getItem("pwa-dismiss-count"),
-    permanentDismiss: localStorage.getItem("pwa-permanent-dismiss"),
-  });
-
-  console.log(
-    "Renderizando PWA notification, showInstallModal:",
-    showInstallModal
-  );
 
   return (
     <AnimatePresence>

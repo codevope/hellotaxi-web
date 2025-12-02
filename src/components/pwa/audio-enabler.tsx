@@ -61,26 +61,26 @@ export function AudioEnabler({ onEnable, isEnabled }: AudioEnablerProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4"
+        className="fixed top-4 sm:top-20 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 sm:max-w-md sm:w-full"
       >
-        <div className="bg-gradient-to-r from-[#2E4CA6] to-[#049DD9] rounded-lg shadow-2xl p-4 border border-white/20">
-          <div className="flex items-start gap-3">
-            <div className="bg-white/20 p-2 rounded-full">
-              <Volume2 className="h-5 w-5 text-white" />
+        <div className="bg-gradient-to-r from-[#2E4CA6] to-[#049DD9] rounded-lg shadow-2xl p-3 sm:p-4 border border-white/20">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <div className="bg-white/20 p-1.5 sm:p-2 rounded-full shrink-0">
+              <Volume2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             
-            <div className="flex-1">
-              <h3 className="font-semibold text-white mb-1">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-white text-sm sm:text-base mb-0.5 sm:mb-1">
                 🔊 Activa el Sonido
               </h3>
-              <p className="text-sm text-white/90 mb-3">
+              <p className="text-xs sm:text-sm text-white/90 mb-2 sm:mb-3 leading-tight">
                 Habilita los sonidos para recibir alertas de audio cuando cambien el estado de tu viaje o lleguen nuevas solicitudes
               </p>
               
-              <div className="flex gap-2">
+              <div className="flex flex-col xs:flex-row gap-2">
                 <Button
                   onClick={handleEnable}
-                  className="bg-white text-[#2E4CA6] hover:bg-white/90 font-semibold flex-1"
+                  className="bg-white text-[#2E4CA6] hover:bg-white/90 font-semibold flex-1 text-xs sm:text-sm h-8 sm:h-9"
                   size="sm"
                 >
                   Activar Sonido
@@ -88,7 +88,7 @@ export function AudioEnabler({ onEnable, isEnabled }: AudioEnablerProps) {
                 <Button
                   onClick={handleDismiss}
                   variant="ghost"
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 text-xs sm:text-sm h-8 sm:h-9"
                   size="sm"
                 >
                   Ahora no
@@ -98,9 +98,10 @@ export function AudioEnabler({ onEnable, isEnabled }: AudioEnablerProps) {
 
             <button
               onClick={handleDismiss}
-              className="text-white/60 hover:text-white transition-colors"
+              className="text-white/60 hover:text-white transition-colors shrink-0 -mt-1 -mr-1"
+              aria-label="Cerrar"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>

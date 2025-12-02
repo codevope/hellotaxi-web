@@ -73,7 +73,7 @@ import {
 import { getSettings } from "@/services/settings-service";
 import EnhancedChat from "@/components/chat/enhanced-chat";
 import { useEnhancedChat, useChatTyping } from "@/hooks/use-enhanced-chat";
-import { useChatNotifications } from "@/components/chat/chat-notification";
+import { useChatNotifications, ChatNotification } from "@/components/chat/chat-notification";
 import RatingForm from "@/components/forms/rating-form";
 import { processRating } from "@/ai/flows/process-rating";
 import { useRideStore } from "@/store/ride-store";
@@ -84,11 +84,7 @@ import { AudioEnabler } from "@/components/pwa/audio-enabler";
 async function enrichDriverWithVehicle(
   driver: Driver
 ): Promise<DriverWithVehicleInfo> {
-  console.log('🚗 Enriching driver with vehicle and user info:', {
-    driverId: driver.id,
-    userId: driver.userId,
-  });
-  
+
   try {
     // Cargar datos del usuario
     const userSnap = await getDoc(doc(db, 'users', driver.userId));
@@ -120,11 +116,6 @@ async function enrichDriverWithVehicle(
         vehicleYear: vehicleData.year,
       };
       
-      console.log('✅ Driver enriched successfully:', {
-        name: enrichedDriver.name,
-        hasPhone: !!enrichedDriver.phone,
-      });
-      
       return enrichedDriver;
     } else {
       throw new Error('Vehicle data not found');
@@ -145,16 +136,9 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
   // Efecto para inicializar notificaciones del rider
   useEffect(() => {
     if (notifications && appUser?.id) {
-      console.log('🎯 [Rider Desktop] Notificaciones inicializadas:', {
-        riderId: appUser.id,
-        hasPermission: notifications.hasPermission,
-        audioEnabled: notifications.audioEnabled,
-        isLoaded: notifications.isLoaded
-      });
       
       // Solicitar permisos automáticamente si no los tiene
       if (!notifications.hasPermission && notifications.canUseNotifications) {
-        console.log('[Rider Desktop] Solicitando permisos de notificación automáticamente...');
         notifications.requestNotificationPermission();
       }
       
@@ -232,7 +216,6 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
         ...doc.data()
       } as Driver));
       setAvailableDrivers(drivers);
-      console.log('🚗 [RIDER] Conductores disponibles actualizados:', drivers.length);
     });
 
     return () => unsubscribe();
@@ -257,13 +240,12 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
           try {
             const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, { location: newLocation });
-            console.log('📍 [RIDER] Ubicación actualizada:', newLocation);
           } catch (error) {
-            console.error('❌ [RIDER] Error actualizando ubicación:', error);
+            console.error('[RIDER] Error actualizando ubicación:', error);
           }
         },
         (error) => {
-          console.error('❌ [RIDER] Error obteniendo geolocalización:', error);
+          console.error('[RIDER] Error obteniendo geolocalización:', error);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -376,7 +358,6 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
         const driverData = snapshot.data();
         if (driverData.location) {
           setDriverLocation(driverData.location);
-          console.log('📍 [RIDER] Ubicación del conductor actualizada en mapa:', driverData.location);
         }
       }
     });
@@ -384,23 +365,41 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
     return () => unsubscribe();
   }, [assignedDriver, status, setDriverLocation]);
 
-  // Listener for chat messages
+  // Listener for chat messages with notifications
   useEffect(() => {
-    if (!activeRide || status !== "assigned") return;
+    if (!activeRide || status !== "assigned" || !user?.uid || !assignedDriver) return;
 
+    let isFirstLoad = true;
     const chatQuery = query(
       collection(db, "rides", activeRide.id, "chatMessages"),
       orderBy("timestamp", "asc")
     );
+    
     const unsubscribe = onSnapshot(chatQuery, (querySnapshot) => {
       const messages = querySnapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as ChatMessage)
       );
+      
+      // Detectar nuevos mensajes del conductor
+      if (!isFirstLoad && messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        
+        // Si el último mensaje es del conductor (no del pasajero actual)
+        if (lastMessage.userId !== user.uid && assignedDriver) {
+          
+          // Solo mostrar notificación emergente si el chat está cerrado
+          if (!isDriverChatOpen) {
+            showNotification(lastMessage, assignedDriver);
+          }
+        }
+      }
+      
       setChatMessages(messages);
+      isFirstLoad = false;
     });
 
     return () => unsubscribe();
-  }, [activeRide, status, setChatMessages]);
+  }, [activeRide, status, user?.uid, assignedDriver, isDriverChatOpen, setChatMessages, showNotification]);
 
   const handleSosConfirm = async () => {
     if (!activeRide || !user || !assignedDriver) return;
@@ -445,13 +444,6 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
         // Campos adicionales para notificaciones más detalladas
         pickupLocation: pickupLocation,
         dropoffLocation: dropoffLocation,
-      });
-
-      // Log para debugging
-      console.log('✅ Viaje cancelado por pasajero:', {
-        rideId: currentRide.id,
-        reason: reason.reason,
-        cancelledAt: new Date().toISOString()
       });
 
       toast({
@@ -563,6 +555,20 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
         onEnable={notifications.enableAudio}
         isEnabled={notifications.audioEnabled}
       />
+      
+      {/* Notificación de chat flotante */}
+      <ChatNotification
+        message={chatNotification}
+        sender={notificationSender}
+        isVisible={isNotificationVisible}
+        onClose={hideNotification}
+        onClick={() => {
+          hideNotification();
+          setIsDriverChatOpen(true);
+        }}
+        duration={5000}
+      />
+      
       <div className="p-2 sm:p-4 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         <div className="lg:col-span-2 flex flex-col min-h-[50vh] sm:min-h-[60vh] rounded-xl overflow-hidden shadow-lg relative">

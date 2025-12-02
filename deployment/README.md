@@ -37,11 +37,11 @@ chmod +x deployment/scripts/deploy.sh
 ```
 
 **¡Eso es todo!** El script hace:
-- ✅ Verifica DNS automáticamente
-- ✅ Construye la imagen Docker
-- ✅ Genera certificados SSL con Let's Encrypt
-- ✅ Configura Nginx con HTTPS
-- ✅ Inicia todos los servicios
+-  Verifica DNS automáticamente
+-  Construye la imagen Docker
+-  Genera certificados SSL con Let's Encrypt
+-  Configura Nginx con HTTPS
+-  Inicia todos los servicios
 
 ## 🔧 Variables de Entorno Requeridas
 
@@ -65,10 +65,10 @@ www.hellotaxi.pe   A    TU_IP_SERVIDOR
 ## 🔐 SSL Automático
 
 El sistema incluye:
-- ✅ Certificados Let's Encrypt automáticos
-- ✅ Renovación automática cada 30 días
-- ✅ Redirección HTTP → HTTPS
-- ✅ Headers de seguridad modernos
+-  Certificados Let's Encrypt automáticos
+-  Renovación automática cada 30 días
+-  Redirección HTTP → HTTPS
+-  Headers de seguridad modernos
 
 ## 📊 Monitoreo
 

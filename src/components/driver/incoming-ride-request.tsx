@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from 'react';
 import { 
   Car, 
   Star, 
@@ -25,6 +26,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CounterOfferSelector } from '@/components/forms/counter-offer-selector';
+import { useToast } from '@/hooks/use-toast';
 import type { User } from "@/lib/types";
 
 interface IncomingRideRequestProps {
@@ -62,6 +64,27 @@ export function IncomingRideRequest({
   onSubmitCounterOffer,
   onCancelCounterOffer,
 }: IncomingRideRequestProps) {
+  const { toast } = useToast();
+  const previousOpenState = useRef(isOpen);
+  
+  //  SIMPLIFICADO: Solo detectar cierre y notificar
+  useEffect(() => {
+    if (previousOpenState.current === true && isOpen === false) {
+      
+      toast({
+        title: 'Viaje Cancelado',
+        description: 'El pasajero canceló la solicitud de viaje.',
+        duration: 6000,
+        variant: 'destructive',
+      });
+      
+      const audio = new Audio('/sounds/error.mp3');
+      audio.volume = 0.7;
+      audio.play().catch(e => console.error('Error sonido:', e));
+    }
+    previousOpenState.current = isOpen;
+  }, [isOpen, toast]);
+
   const handleCounterOfferSubmit = () => {
     onSubmitCounterOffer();
   };
@@ -70,8 +93,7 @@ export function IncomingRideRequest({
     onStartCounterOffer();
   };
 
-  // Debug log para verificar que el componente se renderiza
-  console.log('🚗 IncomingRideRequest renderizado - Nuevo diseño aplicado');
+  // Log simplificado
 
   return (
     <Sheet

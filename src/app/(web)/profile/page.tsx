@@ -25,30 +25,79 @@ import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
-import {
-  User,
-  Mail,
-  Phone,
-  Home,
-  Star,
-  Car,
-  LogOut,
-  Settings,
-  Calendar,
-  MapPin,
-} from "lucide-react";
+import { db, auth } from "@/lib/firebase";
+import type { User } from "@/lib/types";
+import { updatePassword } from "firebase/auth";
+import { Star, Car, LogOut, Settings, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale/es";
 
 export default function DesktopProfilePage() {
+  // Estado para la contraseña
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // Cambiar la contraseña usando Firebase Auth
+  const handleSavePassword = async () => {
+    if (!auth.currentUser) {
+      toast({
+        title: "Error",
+        description:
+          "No se pudo identificar al usuario. Por favor, recarga la página.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      // Cambiar la contraseña en Firebase Auth
+      await updatePassword(auth.currentUser, password);
+      setPassword("");
+      setConfirmPassword("");
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña de acceso se actualizó correctamente.",
+      });
+    } catch (error: any) {
+      let errorMessage =
+        "No se pudo actualizar la contraseña. Intenta de nuevo.";
+      if (error?.code === "auth/requires-recent-login") {
+        errorMessage =
+          "Por seguridad, debes volver a iniciar sesión para cambiar la contraseña.";
+      }
+      toast({
+        title: "Error al guardar",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
   const { user, appUser, signOut, setAppUser } = useAuth();
   const { isDriver } = useDriverAuth();
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -72,7 +121,8 @@ export default function DesktopProfilePage() {
     if (!appUser?.id || !user) {
       toast({
         title: "Error",
-        description: "No se pudo identificar al usuario. Por favor, recarga la página.",
+        description:
+          "No se pudo identificar al usuario. Por favor, recarga la página.",
         variant: "destructive",
       });
       return;
@@ -91,21 +141,22 @@ export default function DesktopProfilePage() {
 
       // Verificar si el usuario ahora cumple con todos los requisitos para 'active'
       const providerIds = user.providerData.map((p) => p.providerId);
-      const hasPassword = providerIds.includes('password');
-      const hasGoogle = providerIds.includes('google.com');
+      const hasPassword = providerIds.includes("password");
+      const hasGoogle = providerIds.includes("google.com");
       const hasPhone = phone.trim().length > 0;
-      
-      const newStatus = hasPassword && hasGoogle && hasPhone ? 'active' : 'incomplete';
+
+      const newStatus: "active" | "blocked" | "incomplete" =
+        hasPassword && hasGoogle && hasPhone ? "active" : "incomplete";
 
       await updateDoc(userRef, {
         ...updateData,
-        status: newStatus
+        status: newStatus,
       });
 
       // Actualizar appUser con los nuevos datos
       if (setAppUser) {
-        const updatedAppUser = {
-          ...appUser,
+        const updatedAppUser: User = {
+          ...appUser!,
           name: updateData.name,
           phone: updateData.phone,
           address: updateData.address,
@@ -116,19 +167,20 @@ export default function DesktopProfilePage() {
 
       toast({
         title: "Perfil actualizado",
-        description: "Tu nombre, teléfono y dirección se guardaron correctamente",
+        description:
+          "Tu nombre, teléfono y dirección se guardaron correctamente",
       });
     } catch (error: any) {
       console.error("Error guardando perfil:", error);
-      
+
       let errorMessage = "No se pudo actualizar tu perfil. Intenta de nuevo.";
-      
-      if (error?.code === 'permission-denied') {
+
+      if (error?.code === "permission-denied") {
         errorMessage = "No tienes permisos para actualizar este perfil.";
-      } else if (error?.code === 'not-found') {
+      } else if (error?.code === "not-found") {
         errorMessage = "El perfil no existe en la base de datos.";
       }
-      
+
       toast({
         title: "Error al guardar",
         description: errorMessage,
@@ -155,9 +207,15 @@ export default function DesktopProfilePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Mi Perfil</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Gestiona tu información personal</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
+            Gestiona tu información personal
+          </p>
         </div>
-        <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+          className="w-full sm:w-auto"
+        >
           <LogOut className="w-4 h-4 mr-2" />
           Cerrar Sesión
         </Button>
@@ -170,21 +228,26 @@ export default function DesktopProfilePage() {
             <CardContent className="pt-6">
               <div className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24 sm:w-32 sm:h-32">
-                  {(appUser?.avatarUrl || user?.photoURL) ? (
+                  {appUser?.avatarUrl || user?.photoURL ? (
                     <AvatarImage
                       src={appUser?.avatarUrl || user?.photoURL || ""}
                       alt={appUser?.name || user?.displayName || "Usuario"}
                     />
                   ) : null}
                   <AvatarFallback className="bg-blue-100 text-blue-800 text-3xl sm:text-4xl">
-                    {appUser?.name?.charAt(0) || user?.displayName?.charAt(0) || "U"}
+                    {appUser?.name?.charAt(0) ||
+                      user?.displayName?.charAt(0) || (
+                        <MapPin className="w-8 h-8" />
+                      )}
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
                   <h2 className="text-xl sm:text-2xl font-bold">
                     {appUser?.name || user?.displayName || "Usuario"}
                   </h2>
-                  <p className="text-sm sm:text-base text-gray-600 break-all">{appUser?.email || user?.email}</p>
+                  <p className="text-sm sm:text-base text-gray-600 break-all">
+                    {appUser?.email || user?.email}
+                  </p>
                 </div>
                 {isDriver && (
                   <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-3 sm:px-4 py-2 rounded-full font-medium text-sm">
@@ -200,7 +263,9 @@ export default function DesktopProfilePage() {
           {appUser && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Estadísticas</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Estadísticas
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -208,7 +273,9 @@ export default function DesktopProfilePage() {
                     <div className="text-xl sm:text-2xl font-bold text-blue-600">
                       {(appUser as any).ridesCount || appUser.totalRides || 0}
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-600">Viajes Totales</div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      Viajes Totales
+                    </div>
                   </div>
                   <Car className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                 </div>
@@ -218,7 +285,9 @@ export default function DesktopProfilePage() {
                       <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                       {appUser.rating?.toFixed(1) || "5.0"}
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-600">Calificación</div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      Calificación
+                    </div>
                   </div>
                 </div>
                 {(appUser as any).createdAt && (
@@ -226,22 +295,64 @@ export default function DesktopProfilePage() {
                     <Calendar className="w-4 h-4" />
                     <span>
                       Miembro desde{" "}
-                      {format((appUser as any).createdAt.toDate(), "MMMM yyyy", {
-                        locale: es,
-                      })}
+                      {format(
+                        (appUser as any).createdAt.toDate(),
+                        "MMMM yyyy",
+                        {
+                          locale: es,
+                        }
+                      )}
                     </span>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
+
+          {/* Acceso Rápido */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Acceso Rápido</CardTitle>
+              <CardDescription className="text-sm">
+                Accede a tus servicios y gestiones
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!isDriver && (
+                <>
+                  <Link href="/rider">
+                    <Button variant="outline" className="w-full my-2">
+                      <MapPin className="w-5 h-5 mr-2" />
+                      Ir al Panel de Pasajero
+                    </Button>
+                  </Link>
+                  <Link href="/profile/claims">
+                    <Button variant="outline" className="w-full my-2">
+                      <Settings className="w-5 h-5 mr-2" />
+                      Mis Reclamos
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {isDriver && (
+                <Link href="/driver">
+                  <Button className="w-full my-2">
+                    <Car className="w-5 h-5 mr-2" />
+                    Ir al Panel de Conductor
+                  </Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Columna Derecha - Información Personal */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Información Personal</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                Información Personal
+              </CardTitle>
               <CardDescription className="text-sm">
                 Actualiza tu información de perfil
               </CardDescription>
@@ -249,7 +360,9 @@ export default function DesktopProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2 md:col-span-1">
-                  <Label htmlFor="name" className="text-sm">Nombre Completo</Label>
+                  <Label htmlFor="name" className="text-sm">
+                    Nombre Completo
+                  </Label>
                   <Input
                     id="name"
                     value={name}
@@ -259,7 +372,9 @@ export default function DesktopProfilePage() {
                   />
                 </div>
                 <div className="sm:col-span-2 md:col-span-1">
-                  <Label htmlFor="email" className="text-sm">Email</Label>
+                  <Label htmlFor="email" className="text-sm">
+                    Email
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -269,7 +384,9 @@ export default function DesktopProfilePage() {
                   />
                 </div>
                 <div className="sm:col-span-2 md:col-span-1">
-                  <Label htmlFor="phone" className="text-sm">Teléfono</Label>
+                  <Label htmlFor="phone" className="text-sm">
+                    Teléfono
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -280,7 +397,9 @@ export default function DesktopProfilePage() {
                   />
                 </div>
                 <div className="sm:col-span-2 md:col-span-1">
-                  <Label htmlFor="address" className="text-sm">Dirección</Label>
+                  <Label htmlFor="address" className="text-sm">
+                    Dirección
+                  </Label>
                   <Input
                     id="address"
                     value={address}
@@ -291,15 +410,15 @@ export default function DesktopProfilePage() {
                 </div>
               </div>
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleCancel}
                   disabled={isSaving}
                   className="w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSaveProfile}
                   disabled={isSaving}
                   className="w-full sm:w-auto"
@@ -310,28 +429,50 @@ export default function DesktopProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Card de Seguridad - Cambiar Contraseña */}
           <Card>
             <CardHeader>
-              <CardTitle>Acceso Rápido</CardTitle>
-              <CardDescription>
-                Accede a tus servicios y gestiones
+              <CardTitle className="text-lg sm:text-xl">
+                Seguridad
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Actualiza tu contraseña de acceso (opcional)
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {isDriver && (
-                <Link href="/driver">
-                  <Button className="w-full">
-                    <Car className="w-5 h-5 mr-2" />
-                    Ir al Panel de Conductor
-                  </Button>
-                </Link>
-              )}
-              <Link href="/profile/claims">
-                <Button variant="outline" className="w-full">
-                  <Settings className="w-5 h-5 mr-2" />
-                  Mis Reclamos
-                </Button>
-              </Link>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="password" className="text-sm">
+                  Nueva Contraseña
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword" className="text-sm">
+                  Confirmar Contraseña
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repite la contraseña"
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                onClick={handleSavePassword}
+                disabled={isSavingPassword || !password}
+                className="w-full"
+              >
+                {isSavingPassword ? "Guardando..." : "Guardar Contraseña"}
+              </Button>
             </CardContent>
           </Card>
         </div>

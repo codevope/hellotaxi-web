@@ -2,19 +2,18 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { User as FirebaseUser } from "firebase/auth";
 import { Button } from "@/components/ui/button";
+import type { User } from '@/lib/types';
+import { cn } from "@/lib/utils";
 import {
-  CheckCircle2,
-  AlertCircle,
   Mail,
   Lock,
   Phone,
   Shield,
+  CheckCircle2,
   ShieldQuestion,
 } from "lucide-react";
-import type { User as FirebaseUser } from "firebase/auth";
-import { cn } from "@/lib/utils";
-import type { User } from '@/lib/types';
 
 
 interface ProfileValidationStatusProps {

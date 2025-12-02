@@ -60,6 +60,9 @@ export function DriverStatePanel(props: DriverStatePanelProps) {
     passengerNameForChat,
   } = props;
 
+  //  REMOVIDO - La detección de cancelación ahora se hace en driver-active-ride-provider.tsx
+  // Este componente solo renderiza la UI
+
   if (incomingRequest) {
     return (
       <IncomingRideRequest

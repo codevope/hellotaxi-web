@@ -20,10 +20,10 @@ chmod +x deployment/scripts/deploy-everything.sh
 ```
 
 **🎯 El script hace TODO:**
-- ✅ Construye la imagen Docker
-- ✅ Genera certificados SSL automáticamente
-- ✅ Configura Nginx con HTTPS
-- ✅ Inicia todos los servicios
+-  Construye la imagen Docker
+-  Genera certificados SSL automáticamente
+-  Configura Nginx con HTTPS
+-  Inicia todos los servicios
 
 ⚠️ **Requisito**: Configura tu DNS antes del deployment:
 ```

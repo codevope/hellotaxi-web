@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DriverRating } from '@/components/driver/driver-rating';
 import { PriceDisplay } from '@/components/forms/price-display';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +31,27 @@ export function AssignedDriverCard({
   assignedDriver,
   onOpenCancelDialog,
 }: AssignedDriverCardProps) {
+  const { toast } = useToast();
+  const previousRideRef = useRef<Ride | null>(activeRide);
+  
+  //  SIMPLIFICADO: Detectar cuando desaparece el viaje
+  useEffect(() => {
+    if (previousRideRef.current && !activeRide) {
+      
+      toast({
+        title: 'Viaje Cancelado',
+        description: 'El conductor canceló el viaje.',
+        duration: 6000,
+        variant: 'destructive',
+      });
+      
+      const audio = new Audio('/sounds/error.mp3');
+      audio.volume = 0.7;
+      audio.play().catch(e => console.error('Error sonido:', e));
+    }
+    previousRideRef.current = activeRide;
+  }, [activeRide, toast]);
+
   const getStatusHeader = () => {
     switch (activeRide.status) {
       case 'accepted':

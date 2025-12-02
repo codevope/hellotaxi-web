@@ -79,12 +79,7 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
   // Calculate and display route
   useEffect(() => {
     // Log inicial para debugging
-    console.log('🗺️ RouteDisplay useEffect ejecutado:', {
-      hasDirectionsService: !!directionsService,
-      hasDirectionsRenderer: !!directionsRenderer,
-      origin,
-      destination
-    });
+
 
     if (!directionsService || !directionsRenderer || !origin || !destination) {
       // Clear existing route
@@ -104,7 +99,7 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
     const isValidLng = (lng: number) => lng >= -180 && lng <= 180;
 
     if (!isValidLat(origin.lat) || !isValidLng(origin.lng)) {
-      console.error('❌ Coordenadas de origen inválidas:', origin);
+      console.error(' Coordenadas de origen inválidas:', origin);
       if (onError) {
         onError('Las coordenadas de origen son inválidas');
       }
@@ -112,7 +107,7 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
     }
 
     if (!isValidLat(destination.lat) || !isValidLng(destination.lng)) {
-      console.error('❌ Coordenadas de destino inválidas:', destination);
+      console.error(' Coordenadas de destino inválidas:', destination);
       if (onError) {
         onError('Las coordenadas de destino son inválidas');
       }
@@ -127,13 +122,8 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
 
     const distanceInKm = distance * 111; // Aproximadamente 111 km por grado
 
-    console.log('📏 Distancia calculada entre puntos:', {
-      distance,
-      distanceInKm: distanceInKm.toFixed(2) + ' km'
-    });
-
     if (distance < 0.0001) { // Aproximadamente 11 metros
-      console.error('❌ Los puntos de origen y destino están muy cerca o son idénticos:', {
+      console.error(' Los puntos de origen y destino están muy cerca o son idénticos:', {
         origin,
         destination,
         distanceInMeters: (distance * 111000).toFixed(2)
@@ -143,17 +133,6 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
       }
       return;
     }
-
-    console.log('✅ Calculando ruta de Google Maps:', {
-      origin: { 
-        lat: origin.lat, 
-        lng: origin.lng
-      },
-      destination: { 
-        lat: destination.lat, 
-        lng: destination.lng
-      }
-    });
 
     const request: google.maps.DirectionsRequest = {
       origin: new google.maps.LatLng(origin.lat, origin.lng),
@@ -168,7 +147,6 @@ const RouteDisplay: React.FC<RouteDisplayProps> = ({
 
     directionsService.route(request, (result, status) => {
       if (status === 'OK' && result) {
-        console.log('Ruta calculada exitosamente:', result);
         directionsRenderer.setDirections(result);
         
         // Ajustar el mapa para mostrar toda la ruta

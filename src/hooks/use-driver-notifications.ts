@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { getBrowserCapabilities } from '@/lib/browser-capabilities';
 import { useNotificationSound } from '@/hooks/use-notification-sound';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,28 @@ import type { Driver, EnrichedDriver, Ride } from '@/lib/types';
 export const useDriverNotificationsSafe = (driver?: Driver | EnrichedDriver | null) => {
   const [capabilities] = useState(getBrowserCapabilities());
   const { toast } = useToast();
+  
+  // 💾 Cargar datos del conductor desde localStorage si no se proporciona
+  const [cachedDriver, setCachedDriver] = useState<any>(null);
+  
+  useEffect(() => {
+    if (!driver) {
+      try {
+        const storedDriver = localStorage.getItem('hellotaxi-driver-data');
+        if (storedDriver) {
+          const driverData = JSON.parse(storedDriver);
+          setCachedDriver(driverData);
+        }
+      } catch (error) {
+        console.error(' [Safe] Error cargando datos del conductor desde localStorage:', error);
+      }
+    } else {
+      setCachedDriver(driver);
+    }
+  }, [driver]);
+  
+  // Usar driver proporcionado o el cacheado
+  const activeDriver = driver || cachedDriver;
   
   // Ref para mantener el ID del ride activo previo
   const previousActiveRideId = useRef<string | null>(null);
@@ -50,6 +72,35 @@ export const useDriverNotificationsSafe = (driver?: Driver | EnrichedDriver | nu
     playNotificationSound // Agregar función de sonido específico
   } = soundHook;
 
+  // Habilitar audio en primera interacción del usuario (solo si no está ya habilitado)
+  useEffect(() => {
+    // Solo agregar listeners si el audio NO está habilitado y NO hay permiso previo
+    const hasPermission = localStorage.getItem('hellotaxi-audio-permission') === 'granted';
+    
+    if (!audioEnabled && !hasPermission && capabilities.canUseNotifications) {
+      
+      const handleFirstInteraction = async () => {
+        const enabled = await enableAudio();
+        if (enabled) {
+          document.removeEventListener('click', handleFirstInteraction);
+          document.removeEventListener('touchstart', handleFirstInteraction);
+          document.removeEventListener('keydown', handleFirstInteraction);
+        }
+      };
+
+      document.addEventListener('click', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+      document.addEventListener('keydown', handleFirstInteraction);
+
+      return () => {
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
+
   // Mostrar advertencia de SSL una sola vez
   useEffect(() => {
     if (!capabilities.isSecureContext && capabilities.isProduction && driver) {
@@ -66,140 +117,55 @@ export const useDriverNotificationsSafe = (driver?: Driver | EnrichedDriver | nu
     }
   }, [capabilities, driver, toast]);
 
-  // Efecto para escuchar cancelaciones de viajes asignados al conductor
-  useEffect(() => {
-    if (!driver?.id) {
-      console.log('🚫 [Safe] No hay conductor ID, no se puede escuchar cancelaciones');
-      return;
-    }
-
-    console.log('🔍 [Safe] Configurando listener de cancelaciones para conductor:', driver.id);
-
-    // Escuchar todos los viajes donde este conductor está asignado
-    const ridesQuery = query(
-      collection(db, 'rides'),
-      where('driver', '==', doc(db, 'drivers', driver.id))
-    );
-
-    console.log('🔍 [Safe] Query configurado para escuchar viajes del conductor:', driver.id);
-
-    const unsubscribe = onSnapshot(ridesQuery, (snapshot: QuerySnapshot) => {
-      console.log('📡 [Safe] Snapshot recibido:', {
-        docsCount: snapshot.docs.length,
-        changesCount: snapshot.docChanges().length
-      });
-
-      snapshot.docChanges().forEach((change: DocumentChange) => {
-        console.log('🔍 [Safe] Cambio detectado:', {
-          type: change.type,
-          docId: change.doc.id
-        });
-
-        if (change.type === 'modified') {
-          const rideData = { id: change.doc.id, ...change.doc.data() } as Ride;
-          
-          console.log('🔍 [Safe] Viaje modificado:', {
-            rideId: rideData.id,
-            status: rideData.status,
-            cancelledBy: rideData.cancelledBy,
-            driverAssigned: driver.id
-          });
-          
-          // Solo notificar si es una cancelación por pasajero
-          if (rideData.status === 'cancelled' && rideData.cancelledBy === 'passenger') {
-            console.log('❌ [Safe] CANCELACIÓN DETECTADA:', {
-              rideId: rideData.id,
-              reason: rideData.cancellationReason?.reason,
-              cancelledBy: rideData.cancelledBy,
-              driverAssigned: driver.id
-            });
-            
-            handleRideCancellation(rideData);
-          } else {
-            console.log('ℹ️ [Safe] No es cancelación por pasajero, ignorando');
-          }
-        }
-      });
-    }, (error: FirestoreError) => {
-      console.error('❌ [Safe] Error escuchando cancelaciones de viajes:', error);
-    });
-
-    // Cleanup
-    return () => {
-      console.log('🧹 [Safe] Limpiando listener de cancelaciones para conductor:', driver.id);
-      unsubscribe();
-    };
-  }, [driver?.id]);
-
-  const handleRideCancellation = async (rideData: Ride) => {
+  // Función para manejar cancelación de viaje (usar useCallback para estabilizar)
+  const handleRideCancellation = useCallback(async (rideData: Ride) => {
     // Prevenir múltiples notificaciones para la misma cancelación
     const cancellationKey = `${rideData.id}-${rideData.cancelledAt}`;
     
     if (lastProcessedCancellation.current === cancellationKey) {
-      console.log('🔄 [Safe] Cancelación ya procesada, ignorando:', cancellationKey);
       return;
     }
     
-    console.log('❌ [Safe] Procesando NUEVA cancelación de viaje:', {
-      rideId: rideData.id,
-      cancellationKey,
-      reason: rideData.cancellationReason?.reason,
-      pickup: rideData.pickup || rideData.pickupLocation
-    });
     
     // Marcar como procesada INMEDIATAMENTE
     lastProcessedCancellation.current = cancellationKey;
     
-    // Reproducir sonido de notificación de cancelación (si es posible)
-    console.log('🔊 [Safe] Intentando reproducir sonido de cancelación (notification.mp3)...');
-    if (capabilities.canUseNotifications) {
+    // Reproducir sonido de error para cancelación
+    if (audioEnabled) {
       try {
-        const soundPlayed = await playNotificationSound({ volume: 0.8 });
-        console.log('🔊 [Safe] Resultado reproducción notification.mp3:', soundPlayed);
-        
-        if (!soundPlayed) {
-          console.log('🔊 [Safe] Sonido falló, intentando fallback...');
-          // Fallback directo
-          const fallbackAudio = new Audio('/sounds/notification.mp3');
-          fallbackAudio.volume = 0.8;
-          try {
-            await fallbackAudio.play();
-            console.log('🔊 [Safe] ✅ Fallback audio exitoso');
-          } catch (fallbackError) {
-            console.error('🔊 [Safe] ❌ Fallback audio falló:', fallbackError);
-          }
-        }
-      } catch (soundError) {
-        console.error('🔊 [Safe] Error en playNotificationSound:', soundError);
+        await playNotificationSound({ 
+          volume: 0.8,
+          soundFile: 'error'
+        });
+      } catch (error) {
+        console.error('[Driver] Error reproduciendo sonido:', error);
       }
     } else {
-      console.log('🔊 [Safe] Notificaciones no disponibles, no se puede reproducir sonido');
+      console.log('[Driver] Audio no habilitado, omitiendo sonido');
     }
     
     // Cambiar estado del conductor a disponible
-    if (driver?.id) {
+    if (activeDriver?.id) {
       try {
-        console.log('🔄 [Safe] Cambiando estado del conductor a disponible...');
-        const driverRef = doc(db, 'drivers', driver.id);
+        const driverRef = doc(db, 'drivers', activeDriver.id);
         await updateDoc(driverRef, {
           status: 'available'
         });
-        console.log('✅ [Safe] Estado del conductor cambiado a disponible');
       } catch (error) {
-        console.error('❌ [Safe] Error cambiando estado del conductor:', error);
+        console.error('[Safe] Error cambiando estado del conductor:', error);
       }
     } else {
-      console.log('⚠️ [Safe] No se puede cambiar estado: driver ID no disponible');
+      console.log('[Safe] No se puede cambiar estado: driver ID no disponible');
     }
     
     // Preparar información detallada
     const cancellationMessage = rideData.cancellationReason?.reason || 'No se especificó motivo';
     const pickupInfo = rideData.pickup || (rideData.pickupLocation ? `Lat: ${rideData.pickupLocation.lat}, Lng: ${rideData.pickupLocation.lng}` : '');
     
-    // Mostrar notificación toast prominente (siempre funciona)
+    // Mostrar notificación toast prominente
     console.log('[Safe] Mostrando toast de cancelación...');
     toast({
-      title: '🚫 Viaje Cancelado por Pasajero',
+      title: 'Viaje Cancelado por Pasajero',
       description: `${cancellationMessage}${pickupInfo ? `\nRecogida: ${pickupInfo}` : ''}`,
       duration: 25000,
       className: 'border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-white shadow-lg',
@@ -209,24 +175,23 @@ export const useDriverNotificationsSafe = (driver?: Driver | EnrichedDriver | nu
     // Enviar notificación del navegador si están habilitadas
     if (capabilities.canUseNotifications && hasPermission && 'Notification' in window) {
       try {
-        console.log('🔔 [Safe] Enviando notificación del navegador...');
-        new Notification('🚫 Viaje Cancelado - HelloTaxi', {
+        new Notification('Viaje Cancelado - HelloTaxi', {
           body: `El pasajero canceló el viaje.\nMotivo: ${cancellationMessage}${pickupInfo ? `\nRecogida: ${pickupInfo}` : ''}`,
           icon: '/icons/android/android-chrome-192x192.png',
           badge: '/icons/android/android-chrome-96x96.png',
           tag: `ride-cancellation-${rideData.id}`,
           requireInteraction: true
         });
-        console.log('🔔 [Safe] Notificación del navegador enviada para cancelación');
       } catch (error) {
-        console.error('❌ [Safe] Error enviando notificación del navegador:', error);
+        console.error(' [Safe] Error enviando notificación del navegador:', error);
       }
-    } else {
-      console.log('🔔 [Safe] Notificaciones del navegador no disponibles');
     }
+  }, [audioEnabled, playNotificationSound, activeDriver?.id, capabilities.canUseNotifications, hasPermission, toast]);
 
-    console.log('✅ [Safe] Notificación de cancelación procesada completamente');
-  };
+  //  DESHABILITADO - Este listener está duplicado y causa conflictos
+  // La detección de cancelaciones ahora se maneja en:
+  // 1. use-incoming-ride-requests.ts (para solicitudes antes de aceptar)
+  // 2. driver-active-ride-provider.tsx (para viajes activos después de aceptar)
 
   // Versión segura de las funciones
   const safeEnableAudio = async (): Promise<boolean> => {

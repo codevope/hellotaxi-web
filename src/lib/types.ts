@@ -141,6 +141,7 @@ export interface User {
   phone: string;
   address: string;
   status: 'active' | 'blocked' | 'incomplete';
+  password?: string; // Contraseña opcional para mejorar seguridad
   // Campos legacy (mantener por compatibilidad temporal)
   role?: UserRole; // @deprecated - usar roles array
   isAdmin?: boolean; // @deprecated - verificar si 'admin' está en roles
@@ -191,6 +192,7 @@ export interface Ride {
   rejectedBy?: DocumentReference[];
   isRatedByPassenger?: boolean;
   offeredTo?: DocumentReference | null;
+  offeredToTimestamp?: string; // ISO Date string - cuando se ofreció el viaje a un conductor
   // Calificaciones del viaje específico
   driverRating?: number; // Calificación que el pasajero le dio al conductor en este viaje
   driverComment?: string; // Comentario del pasajero sobre el conductor

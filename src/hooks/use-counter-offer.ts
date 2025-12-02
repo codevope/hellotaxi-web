@@ -45,7 +45,6 @@ export function useCounterOffer(
       return;
     }
 
-    console.log('🎯 Starting counter-offer listener for driver:', driver.id);
     setIsListening(true);
     setError(null);
 
@@ -59,14 +58,12 @@ export function useCounterOffer(
     const unsubscribe = onSnapshot(
       q,
       async (snapshot) => {
-        console.log('🔔 Counter-offer listener triggered, docs:', snapshot.docs.length);
         
         for (const rideDoc of snapshot.docs) {
           const rideData = rideDoc.data() as Ride;
           const rideId = rideDoc.id;
           
-          console.log(`✅ Counter-offer accepted! Ride ${rideId} - Status: ${rideData.status}`);
-          
+      
           try {
             // Enrich the ride data
             const passengerDoc = await getDoc(rideData.passenger as DocumentReference);
@@ -83,17 +80,13 @@ export function useCounterOffer(
               passenger: passengerData,
               driver: driver
             };
-            
-            console.log('🎯 Setting active ride from counter-offer:', enrichedRide);
-            console.log('💰 Counter-offer fare from rideData:', rideData.fare);
-            console.log('💰 Counter-offer fare from enrichedRide:', enrichedRide.fare);
+          
             
             // Set as active ride
             setActiveRide(enrichedRide);
             
             // Show success notification with proper null checking
             const fareAmount = rideData.fare ?? enrichedRide.fare ?? 0;
-            console.log('💵 Final fare amount to display:', fareAmount);
             toast({
               title: '¡Contraoferta Aceptada!',
               description: `El pasajero aceptó tu contraoferta de S/${fareAmount.toFixed(2)}. El viaje comenzará pronto.`,
@@ -119,7 +112,6 @@ export function useCounterOffer(
 
     // Cleanup
     return () => {
-      console.log('🧹 Cleaning up counter-offer listener');
       unsubscribe();
       setIsListening(false);
     };

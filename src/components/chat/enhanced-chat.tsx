@@ -14,7 +14,7 @@ import {
   Clock,
   Smile
 } from 'lucide-react';
-import type { ChatMessage, User, Driver } from '@/lib/types';
+import type { ChatMessage, User, DriverWithVehicleInfo } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,7 +24,7 @@ interface EnhancedChatProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   isLoading?: boolean;
-  otherUser?: User | Driver | null; // El otro usuario en el chat
+  otherUser?: User | DriverWithVehicleInfo | null; // El otro usuario en el chat
   isTyping?: boolean;
   onTypingStart?: () => void;
   onTypingStop?: () => void;
@@ -100,13 +100,6 @@ export default function EnhancedChat({
 
   // Debug logs
   useEffect(() => {
-    console.log('EnhancedChat - User detection:', {
-      appUser,
-      vehicleId: (appUser as any)?.vehicleId,
-      paymentModel: (appUser as any)?.paymentModel,
-      isDriver,
-      userType
-    });
   }, [appUser, isDriver, userType]);
 
   useEffect(() => {
@@ -120,15 +113,10 @@ export default function EnhancedChat({
   }, [messages]);
 
   const handleSend = async () => {
-    console.log('EnhancedChat handleSend:', { 
-      hasText: !!inputText.trim(), 
-      isLoading, 
-      text: inputText.trim() 
-    });
+
     if (inputText.trim() && !isLoading) {
-      console.log('Sending message:', inputText);
       onSendMessage(inputText);
-      await playMessageSound(); // Reproducir sonido al enviar mensaje
+      // No reproducir sonido al enviar, solo al recibir
       setInputText('');
       onTypingStop?.();
     }
@@ -211,17 +199,10 @@ export default function EnhancedChat({
     // Usar el protocolo tel: para iniciar una llamada
     window.location.href = `tel:${cleanedPhone}`;
     
-    console.log('Iniciando llamada a:', cleanedPhone);
   };
 
   // Log para debugging
   useEffect(() => {
-    console.log('EnhancedChat - otherUser phone:', {
-      hasOtherUser: !!otherUser,
-      otherUserName: otherUser?.name,
-      otherUserPhone: otherUser?.phone,
-      shouldShowCallButton: !!otherUser?.phone
-    });
   }, [otherUser]);
 
   return (

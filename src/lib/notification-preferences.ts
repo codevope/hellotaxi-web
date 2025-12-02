@@ -20,24 +20,19 @@ export async function updateDriverNotificationPreferences(
   driverId: string,
   updates: NotificationPreferencesUpdate
 ): Promise<void> {
-  console.log('📝 Iniciando actualización de preferencias BD:', { driverId, updates });
   const driverRef = doc(db, 'drivers', driverId);
   
   try {
     // Obtener preferencias actuales
-    console.log('📖 Obteniendo documento del conductor...');
     const driverDoc = await getDoc(driverRef);
     
     if (!driverDoc.exists()) {
-      console.error('❌ El documento del conductor no existe:', driverId);
+      console.error(' El documento del conductor no existe:', driverId);
       throw new Error('Driver document not found');
     }
     
     const driverData = driverDoc.data() as Driver;
-    console.log('📄 Datos actuales del conductor:', { 
-      id: driverId, 
-      hasNotificationPreferences: !!driverData?.notificationPreferences 
-    });
+
     
     const currentPreferences = driverData?.notificationPreferences || {
       browserNotifications: false,
@@ -57,14 +52,12 @@ export async function updateDriverNotificationPreferences(
       deviceInfo: updatedDeviceInfo,
     };
 
-    console.log('💾 Guardando nuevas preferencias:', newPreferences);
     await updateDoc(driverRef, {
       notificationPreferences: newPreferences,
     });
 
-    console.log('✅ Preferencias de notificación actualizadas en BD exitosamente');
   } catch (error) {
-    console.error('❌ Error actualizando preferencias de notificación:', error);
+    console.error(' Error actualizando preferencias de notificación:', error);
     throw error;
   }
 }
@@ -86,7 +79,7 @@ export async function getDriverNotificationPreferences(
       soundNotifications: false,
     };
   } catch (error) {
-    console.error('❌ Error obteniendo preferencias de notificación:', error);
+    console.error(' Error obteniendo preferencias de notificación:', error);
     return {
       browserNotifications: false,
       soundNotifications: false,

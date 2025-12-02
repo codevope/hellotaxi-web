@@ -95,7 +95,7 @@ const RidePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/30 to-background overflow-hidden">
       {/* Hero Section con CTA principal */}
-      <section className="relative py-16 md:py-10 bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] text-white text-center overflow-hidden">
+      <section className="relative py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] text-white text-center overflow-hidden">
         {/* Fondo animado con partículas */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {floatingIcons.map(({ Icon, delay, x, y }, index) => (
@@ -135,10 +135,10 @@ const RidePage = () => {
           }}
         />
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
           <motion.h1
-            className="text-4xl md:text-6xl font-bold font-headline mb-6"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-headline mb-4 sm:mb-6"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -160,7 +160,7 @@ const RidePage = () => {
           </motion.h1>
 
           <motion.p
-            className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-10"
+            className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-6 sm:mb-8 md:mb-10 px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -181,7 +181,7 @@ const RidePage = () => {
               onClick={handleRideAction}
               disabled={loading}
               size="lg"
-              className="px-10 py-6 text-lg font-semibold shadow-2xl bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white transition-all duration-300 group"
+              className="px-6 sm:px-8 md:px-10 py-4 sm:py-5 md:py-6 text-base sm:text-lg font-semibold shadow-2xl bg-white text-[#2E4CA6] hover:bg-[#05C7F2] hover:text-white transition-all duration-300 group"
             >
               <MapPin className="mr-2 h-5 w-5 group-hover:animate-bounce" />
               {loading ? 'Cargando...' : 'Comenzar Ahora'}
@@ -193,7 +193,7 @@ const RidePage = () => {
       </section>
 
       {/* Sección de Vehículos Premium - ULTRA LLAMATIVA */}
-      <section className="py-20 bg-gradient-to-br from-[#F2F2F2] via-white to-[#F2F2F2] relative overflow-hidden">
+      <section className="py-10 sm:py-16 md:py-20 bg-gradient-to-br from-[#F2F2F2] via-white to-[#F2F2F2] relative overflow-hidden">
         {/* Fondo animado con ondas */}
         <motion.div
           className="absolute inset-0 opacity-5"
@@ -211,10 +211,10 @@ const RidePage = () => {
           }}
         />
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Título animado */}
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-12 md:mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -239,12 +239,12 @@ const RidePage = () => {
               <Sparkles className="h-5 w-5 animate-pulse" />
             </motion.div>
 
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 px-2">
               <span className="bg-gradient-to-r from-[#2E4CA6] via-[#0477BF] to-[#049DD9] bg-clip-text text-transparent">
                 Elige tu vehículo ideal
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
               Tenemos el auto perfecto para cada ocasión. Desde económicos hasta
               premium.
             </p>
@@ -253,12 +253,12 @@ const RidePage = () => {
           {/* Selector de vehículos con animaciones impresionantes */}
           <div className="max-w-6xl mx-auto">
             {/* Miniaturas de selección */}
-            <div className="flex justify-center gap-4 mb-12">
+            <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8 md:mb-12 px-2">
               {vehicles.map((vehicle, index) => (
                 <motion.button
                   key={index}
                   onClick={() => setSelectedCar(index)}
-                  className={`relative p-4 rounded-2xl transition-all duration-300 ${
+                  className={`relative p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 ${
                     selectedCar === index
                       ? "bg-gradient-to-br from-[#2E4CA6] to-[#049DD9] shadow-2xl"
                       : "bg-white border-2 border-gray-200 hover:border-[#049DD9]"
@@ -270,7 +270,7 @@ const RidePage = () => {
                   transition={{ delay: index * 0.1 }}
                 >
                   <motion.div
-                    className="relative w-20 h-20"
+                    className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20"
                     animate={
                       selectedCar === index
                         ? {
@@ -312,9 +312,9 @@ const RidePage = () => {
             >
               <Card className="overflow-hidden border-0 shadow-2xl">
                 <div
-                  className={`bg-gradient-to-br ${vehicles[selectedCar].gradient} p-8 md:p-12`}
+                  className={`bg-gradient-to-br ${vehicles[selectedCar].gradient} p-4 sm:p-6 md:p-8 lg:p-12`}
                 >
-                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-center">
                     {/* Imagen del vehículo con animación */}
                     <motion.div
                       className="relative"
@@ -323,7 +323,7 @@ const RidePage = () => {
                       transition={{ delay: 0.2, type: "spring" }}
                     >
                       <motion.div
-                        className="relative w-full h-64 md:h-80"
+                        className="relative w-full h-48 sm:h-56 md:h-64 lg:h-80"
                         animate={{
                           y: [0, -20, 0],
                           rotateZ: [0, 2, 0, -2, 0],
@@ -359,21 +359,21 @@ const RidePage = () => {
 
                     {/* Información del vehículo */}
                     <motion.div
-                      className="text-white space-y-6"
+                      className="text-white space-y-3 sm:space-y-4 md:space-y-6"
                       initial={{ x: 100, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
                       transition={{ delay: 0.4 }}
                     >
                       <div>
                         <motion.h3
-                          className="text-4xl font-bold mb-2"
+                          className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
                           initial={{ scale: 0.8 }}
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 200 }}
                         >
                           {vehicles[selectedCar].name}
                         </motion.h3>
-                        <p className="text-white/90 text-lg">
+                        <p className="text-white/90 text-sm sm:text-base md:text-lg">
                           {vehicles[selectedCar].description}
                         </p>
                       </div>
@@ -470,10 +470,10 @@ const RidePage = () => {
                       className="p-4 rounded-xl bg-gradient-to-br from-[#2E4CA6]/10 to-[#0477BF]/10"
                     >
                       <Gauge className="h-8 w-8 mx-auto mb-2 text-[#0477BF]" />
-                      <div className="font-bold text-lg text-[#2E4CA6]">
+                      <div className="font-bold text-base text-[#2E4CA6]">
                         Rápido
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs md:text-sm text-muted-foreground">
                         Llegada inmediata
                       </div>
                     </motion.div>
@@ -483,10 +483,10 @@ const RidePage = () => {
                       className="p-4 rounded-xl bg-gradient-to-br from-[#049DD9]/10 to-[#05C7F2]/10"
                     >
                       <Shield className="h-8 w-8 mx-auto mb-2 text-[#049DD9]" />
-                      <div className="font-bold text-lg text-[#0477BF]">
+                      <div className="font-bold text-base text-[#0477BF]">
                         Seguro
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs md:text-sm text-muted-foreground">
                         100% verificado
                       </div>
                     </motion.div>
@@ -496,10 +496,10 @@ const RidePage = () => {
                       className="p-4 rounded-xl bg-gradient-to-br from-[#05C7F2]/10 to-[#049DD9]/10"
                     >
                       <UserCheck className="h-8 w-8 mx-auto mb-2 text-[#05C7F2]" />
-                      <div className="font-bold text-lg text-[#049DD9]">
+                      <div className="font-bold text-base text-[#049DD9]">
                         Confiable
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs md:text-sm text-muted-foreground">
                         Mejor calificación
                       </div>
                     </motion.div>

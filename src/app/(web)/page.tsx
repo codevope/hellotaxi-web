@@ -38,7 +38,6 @@ export default function HomePage() {
   // Redirigir móviles al login móvil cuando no estén autenticados
   useEffect(() => {
     if (isMobileDevice && !loading && !user) {
-      console.log("Mobile detected - redirecting to mobile login");
       router.push("/login");
     }
   }, [isMobileDevice, loading, router, user]);

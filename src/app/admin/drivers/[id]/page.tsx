@@ -280,15 +280,7 @@ export default function DriverDetailsPage() {
         } else {
           appSettings = await getSettings();
         }
-        
-        console.log('⚙️ Settings cargados:', {
-          commissionPercentageEconomy: appSettings.commissionPercentageEconomy,
-          commissionPercentageComfort: appSettings.commissionPercentageComfort,
-          commissionPercentageExclusive: appSettings.commissionPercentageExclusive,
-          membershipFeeEconomy: appSettings.membershipFeeEconomy,
-          membershipFeeComfort: appSettings.membershipFeeComfort,
-          membershipFeeExclusive: appSettings.membershipFeeExclusive,
-        });
+
         setSettings(appSettings);
 
         const fetchedVehicleModels = vehicleModelsSnapshot.docs.map(
@@ -483,12 +475,8 @@ export default function DriverDetailsPage() {
   // Actualizar precios cuando el usuario cambia el tipo de servicio en el select (estado local)
   useEffect(() => {
     if (!settings) {
-      console.log('⚠️ Settings no disponible');
       return;
     }
-
-    console.log('🔄 Tipo de servicio cambió a:', serviceType, '| Modelo de pago:', paymentModel);
-    console.log('📊 Settings completo:', settings);
 
     // Determinar si usar precio/comisión personalizado o default
     const hasCustomCommission = driver?.commissionPercentage !== undefined;
@@ -500,11 +488,7 @@ export default function DriverDetailsPage() {
         serviceType === 'economy' ? settings.commissionPercentageEconomy :
         serviceType === 'comfort' ? settings.commissionPercentageComfort :
         settings.commissionPercentageExclusive;
-      console.log('💰 Actualizando comisión a:', defaultCommission, {
-        economy: settings.commissionPercentageEconomy,
-        comfort: settings.commissionPercentageComfort,
-        exclusive: settings.commissionPercentageExclusive
-      });
+
       setCommissionPercentage(defaultCommission);
     }
 
@@ -514,21 +498,9 @@ export default function DriverDetailsPage() {
         serviceType === 'economy' ? settings.membershipFeeEconomy :
         serviceType === 'comfort' ? settings.membershipFeeComfort :
         settings.membershipFeeExclusive;
-      
-      console.log('💵 Precios de membresía:', {
-        economy: settings.membershipFeeEconomy,
-        comfort: settings.membershipFeeComfort,
-        exclusive: settings.membershipFeeExclusive,
-        selected: defaultMembershipPrice
-      });
-      
-      console.log('🔍 Driver membershipPricing:', driver?.membershipPricing);
-      console.log('🔍 hasCustomMembership:', hasCustomMembership);
-      console.log('🔍 Precio personalizado para', serviceType, ':', driver?.membershipPricing?.[serviceType]);
-      
+
       // Usar precio personalizado si existe, sino default
       const finalPrice = hasCustomMembership ? driver!.membershipPricing![serviceType] : defaultMembershipPrice;
-      console.log('💵 Actualizando precio de membresía a:', finalPrice);
       setMembershipPrice(finalPrice);
     }
   }, [serviceType, settings, paymentModel, driver?.commissionPercentage, driver?.membershipPricing]);
@@ -556,7 +528,6 @@ export default function DriverDetailsPage() {
         // Ordenar por fecha de vencimiento (más recientes primero)
         payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
         
-        console.log('📋 Payment history loaded:', payments.length, 'payments for driver', id);
         setPaymentHistory(payments);
       } catch (error) {
         console.error("Error loading payment history:", error);
@@ -639,7 +610,6 @@ export default function DriverDetailsPage() {
 
       // Si cambia de membresía a comisión, cancelar pagos pendientes
       if (driver.paymentModel === 'membership' && paymentModel === 'commission') {
-        console.log('⏸️ Pausando membresía, cancelando pagos pendientes...');
         await handlePauseMembership();
         driverUpdates.membershipPausedDate = new Date().toISOString();
       }
@@ -647,7 +617,6 @@ export default function DriverDetailsPage() {
       // Si cambia de comisión a membresía (reactivación), generar nuevo período
       const isReactivating = driver.paymentModel === 'commission' && paymentModel === 'membership';
       if (isReactivating) {
-        console.log('▶️ Reactivando membresía...');
         // La fecha de inicio será la nueva membershipStartDate configurada
         driverUpdates.membershipPausedDate = deleteField() as any;
       }
@@ -809,7 +778,6 @@ export default function DriverDetailsPage() {
 
       // Si se configuró membresía, generar el primer período de pago si no existe
       if (paymentModel === 'membership' && membershipStartDate && updatedVehicle) {
-        console.log('🔄 Generando primer período de pago...');
         await generatePaymentPeriod(updatedDriver, updatedVehicle);
       }
 
@@ -1053,27 +1021,20 @@ export default function DriverDetailsPage() {
 
   const generatePaymentPeriod = async (driverData: EnrichedDriver, vehicleData: Vehicle) => {
     if (!driverData || !vehicleData || !driverData.membershipStartDate) {
-      console.log('⚠️ Datos insuficientes para generar pago:', { 
-        hasDriver: !!driverData, 
-        hasVehicle: !!vehicleData, 
-        hasStartDate: !!driverData?.membershipStartDate 
-      });
+
       return;
     }
 
     try {
-      console.log('🔍 Buscando pagos existentes para driver:', driverData.id);
       // Buscar el último período generado
       const paymentsQuery = query(
         collection(db, "membershipPayments"),
         where("driverId", "==", driverData.id)
       );
       const paymentsSnap = await getDocs(paymentsQuery);
-      console.log('📊 Pagos encontrados:', paymentsSnap.size);
       
       if (paymentsSnap.empty && driverData.membershipStartDate) {
         // Si no hay pagos, crear el primero
-        console.log('✨ Creando primer período de pago...');
         // Parsear la fecha manualmente para evitar problemas de zona horaria
         const [year, month, day] = driverData.membershipStartDate.split('-').map(Number);
         const startDate = new Date(year, month - 1, day); // month es 0-indexed
@@ -1094,14 +1055,6 @@ export default function DriverDetailsPage() {
                        serviceType === 'comfort' ? settings?.membershipFeeComfort :
                        settings?.membershipFeeExclusive) || 0;
 
-        console.log('💰 Datos del pago a crear:', { 
-          serviceType, 
-          amount, 
-          periodStart: startDate.toISOString(), 
-          periodEnd: endDate.toISOString(),
-          dueDate: dueDate.toISOString()
-        });
-
         const newPayment: Omit<MembershipPayment, 'id'> = {
           driverId: driverData.id,
           amount,
@@ -1115,7 +1068,6 @@ export default function DriverDetailsPage() {
 
         const newPaymentRef = doc(collection(db, "membershipPayments"));
         await setDoc(newPaymentRef, newPayment);
-        console.log('✅ Pago creado con ID:', newPaymentRef.id);
         
         // Recargar historial
         const updatedPayments = await getDocs(paymentsQuery);
@@ -1135,15 +1087,9 @@ export default function DriverDetailsPage() {
         payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
         const lastPayment = payments[0];
         const now = new Date();
-        
-        console.log('🔍 Verificando si necesita siguiente período...', { 
-          lastPaymentDue: lastPayment?.dueDate, 
-          isOverdue: lastPayment && new Date(lastPayment.dueDate) < now 
-        });
-        
+
         // Si el último pago ya venció, generar el siguiente
         if (lastPayment && new Date(lastPayment.dueDate) < now) {
-          console.log('✨ Generando siguiente período...');
           const nextPeriodStart = new Date(lastPayment.periodEnd);
           const nextDueDate = new Date(nextPeriodStart);
           
@@ -1172,8 +1118,7 @@ export default function DriverDetailsPage() {
 
           const newPaymentRef = doc(collection(db, "membershipPayments"));
           await setDoc(newPaymentRef, newPayment);
-          console.log('✅ Siguiente período creado con ID:', newPaymentRef.id);
-          
+
           // Recargar historial
           const updatedPayments = await getDocs(paymentsQuery);
           const updatedPaymentsList = updatedPayments.docs.map(doc => ({
@@ -1185,7 +1130,7 @@ export default function DriverDetailsPage() {
         }
       }
     } catch (error) {
-      console.error("❌ Error generating payment period:", error);
+      console.error(" Error generating payment period:", error);
     }
   };
 
@@ -1207,14 +1152,11 @@ export default function DriverDetailsPage() {
       );
       const paymentsSnap = await getDocs(paymentsQuery);
 
-      console.log(`🚫 Cancelando ${paymentsSnap.size} pagos pendientes...`);
-
       // Cancelar todos los pagos pendientes
       const cancelPromises = paymentsSnap.docs.map(async (paymentDoc) => {
         await updateDoc(doc(db, "membershipPayments", paymentDoc.id), {
           status: 'cancelled',
         });
-        console.log(`✅ Pago ${paymentDoc.id} cancelado`);
       });
 
       await Promise.all(cancelPromises);
@@ -1233,7 +1175,7 @@ export default function DriverDetailsPage() {
         description: `Se cancelaron ${paymentsSnap.size} pagos pendientes.`,
       });
     } catch (error) {
-      console.error("❌ Error pausando membresía:", error);
+      console.error(" Error pausando membresía:", error);
       toast({
         variant: "destructive",
         title: "Error",

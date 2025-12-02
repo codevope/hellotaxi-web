@@ -20,14 +20,12 @@ export default function RideDebugger() {
     setDebugInfo(null);
 
     try {
-      console.log('🔍 Debugging ride ID:', rideId);
       
       // 1. Verificar si el documento existe
       const rideRef = doc(db, 'rides', rideId);
       const rideSnap = await getDoc(rideRef);
       
       const exists = rideSnap.exists();
-      console.log('📄 Document exists:', exists);
       
       let rideData = null;
       let driverData = null;
@@ -37,29 +35,25 @@ export default function RideDebugger() {
       if (exists) {
         const rawData = rideSnap.data();
         rideData = { id: rideSnap.id, ...rawData };
-        console.log('📋 Ride data:', rideData);
         
         // 2. Verificar referencias
         try {
           if (rawData?.driver) {
             const driverSnap = await getDoc(rawData.driver);
             driverData = driverSnap.exists() ? { id: driverSnap.id, ...driverSnap.data() as any } : null;
-            console.log('🚗 Driver data:', driverData);
           }
           
           if (rawData?.passenger) {
             const passengerSnap = await getDoc(rawData.passenger);
             passengerData = passengerSnap.exists() ? { id: passengerSnap.id, ...passengerSnap.data() as any } : null;
-            console.log('👤 Passenger data:', passengerData);
           }
           
           if (rawData?.vehicle) {
             const vehicleSnap = await getDoc(rawData.vehicle);
             vehicleData = vehicleSnap.exists() ? { id: vehicleSnap.id, ...vehicleSnap.data() as any } : null;
-            console.log('🚙 Vehicle data:', vehicleData);
           }
         } catch (refError) {
-          console.error('❌ Error fetching references:', refError);
+          console.error('Error fetching references:', refError);
         }
       }
       
@@ -73,7 +67,7 @@ export default function RideDebugger() {
       });
       
     } catch (error) {
-      console.error('❌ Debug error:', error);
+      console.error(' Debug error:', error);
       setDebugInfo({
         rideExists: false,
         rideData: null,

@@ -134,7 +134,7 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
       const driversSnapshot = await getDocs(driversQuery);
       return !driversSnapshot.empty;
     } catch (error) {
-      console.error('❌ Error checking available drivers:', error);
+      console.error(' Error checking available drivers:', error);
       return false;
     }
   };

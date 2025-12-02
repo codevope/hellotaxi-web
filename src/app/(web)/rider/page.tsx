@@ -26,12 +26,6 @@ export default function RiderPage() {
   // Hook de notificaciones para el rider
   const riderNotifications = useRiderNotifications(appUser?.id);
 
-  console.log('🎯 [Rider Page] Estado de notificaciones:', {
-    hasPermission: riderNotifications.hasPermission,
-    audioEnabled: riderNotifications.audioEnabled,
-    isLoaded: riderNotifications.isLoaded,
-    riderId: appUser?.id
-  });
 
   if (loading || driverLoading) {
     return (
@@ -62,12 +56,11 @@ export default function RiderPage() {
     );
   }
 
-  // Check if user has complete profile (Google + Password + Phone)
+  // Check if user has complete profile (Google + Phone; contraseña opcional)
   const providerIds = user.providerData.map((p) => p.providerId);
   const hasGoogle = providerIds.includes("google.com");
-  const hasPassword = providerIds.includes("password");
   const hasPhoneInProfile = appUser?.phone && appUser.phone.trim().length > 0;
-  const isProfileComplete = hasGoogle && hasPassword && hasPhoneInProfile;
+  const isProfileComplete = hasGoogle && hasPhoneInProfile;
 
   if (!isProfileComplete) {
     return (
@@ -79,7 +72,8 @@ export default function RiderPage() {
               <CardTitle>Perfil Incompleto</CardTitle>
             </div>
             <CardDescription>
-              Para pedir un viaje necesitas completar tu perfil de seguridad:
+              Para pedir un viaje necesitas completar tu perfil de seguridad:<br />
+              <span className="text-xs text-gray-500">Solo necesitas vincular tu cuenta Google y registrar tu teléfono.</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -92,16 +86,6 @@ export default function RiderPage() {
                 )}
                 <span className={hasGoogle ? "text-green-700" : "text-gray-500"}>
                   Cuenta Google vinculada
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                {hasPassword ? (
-                  <div className="h-4 w-4 rounded-full bg-green-500" />
-                ) : (
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-                )}
-                <span className={hasPassword ? "text-green-700" : "text-gray-500"}>
-                  Contraseña configurada
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm">

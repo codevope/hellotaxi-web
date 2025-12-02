@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { SOSAlertProvider } from '@/components/providers/sos-alert-provider';
+import { DriverRequestsProvider } from '@/components/providers/driver-requests-provider';
+import { DriverActiveRideProvider } from '@/components/providers/driver-active-ride-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -102,8 +105,14 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background">
         <AuthProvider>
-          {children}
-          <Toaster />
+          <SOSAlertProvider>
+            <DriverRequestsProvider>
+              <DriverActiveRideProvider>
+                {children}
+                <Toaster />
+              </DriverActiveRideProvider>
+            </DriverRequestsProvider>
+          </SOSAlertProvider>
         </AuthProvider>
       </body>
     </html>

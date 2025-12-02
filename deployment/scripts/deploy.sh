@@ -20,16 +20,16 @@ WWW_IP=$(dig www.hellotaxi.pe +short | tail -n1)
 SERVER_IP=$(curl -s ifconfig.me)
 
 if [ "$HELLOTAXI_IP" != "$SERVER_IP" ]; then
-    echo "❌ Error: hellotaxi.pe ($HELLOTAXI_IP) no apunta a este servidor ($SERVER_IP)"
+    echo " Error: hellotaxi.pe ($HELLOTAXI_IP) no apunta a este servidor ($SERVER_IP)"
     exit 1
 fi
 
 if [ "$WWW_IP" != "$SERVER_IP" ]; then
-    echo "❌ Error: www.hellotaxi.pe ($WWW_IP) no apunta a este servidor ($SERVER_IP)"
+    echo " Error: www.hellotaxi.pe ($WWW_IP) no apunta a este servidor ($SERVER_IP)"
     exit 1
 fi
 
-echo "✅ DNS configurado correctamente"
+echo " DNS configurado correctamente"
 
 # 3. CONSTRUIR IMAGEN
 echo "🔨 Construyendo imagen de HelloTaxi..."
@@ -55,12 +55,12 @@ sleep 15
 # Verificar que el sitio responde
 echo "🔍 Verificando conectividad HTTP..."
 if ! curl -f -s http://hellotaxi.pe >/dev/null; then
-    echo "❌ El sitio no responde en HTTP"
+    echo " El sitio no responde en HTTP"
     docker logs nginx-temp --tail 20
     exit 1
 fi
 
-echo "✅ Sitio responde en HTTP"
+echo " Sitio responde en HTTP"
 
 # 6. GENERAR CERTIFICADOS SSL
 echo "🔐 Generando certificados SSL con Let's Encrypt..."
@@ -80,11 +80,11 @@ docker run --rm \
 
 # 7. VERIFICAR CERTIFICADOS
 if [ ! -f "ssl/live/hellotaxi.pe/fullchain.pem" ]; then
-    echo "❌ Error: No se generaron los certificados SSL"
+    echo " Error: No se generaron los certificados SSL"
     exit 1
 fi
 
-echo "✅ Certificados SSL generados correctamente"
+echo " Certificados SSL generados correctamente"
 
 # 8. DETENER NGINX TEMPORAL
 echo "🛑 Deteniendo nginx temporal..."
@@ -101,7 +101,7 @@ sleep 20
 
 # Verificar que todos los servicios están corriendo
 if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
-    echo "❌ Error: Algunos servicios no están corriendo"
+    echo " Error: Algunos servicios no están corriendo"
     docker-compose -f docker-compose.prod.yml logs
     exit 1
 fi
@@ -109,7 +109,7 @@ fi
 # Verificar HTTPS
 echo "🔍 Verificando HTTPS..."
 if curl -f -s -k https://hellotaxi.pe >/dev/null; then
-    echo "✅ HTTPS funciona correctamente"
+    echo " HTTPS funciona correctamente"
 else
     echo "⚠️ HTTPS puede estar configurándose aún..."
 fi
@@ -119,9 +119,9 @@ echo ""
 echo "🎉 ¡DEPLOYMENT COMPLETADO!"
 echo ""
 echo "🌐 Tu aplicación está disponible en:"
-echo "   ✅ https://hellotaxi.pe"
-echo "   ✅ https://www.hellotaxi.pe"
-echo "   ✅ http://hellotaxi.pe (redirige a HTTPS)"
+echo "    https://hellotaxi.pe"
+echo "    https://www.hellotaxi.pe"
+echo "    http://hellotaxi.pe (redirige a HTTPS)"
 echo ""
 echo "📊 Estado de servicios:"
 docker-compose -f docker-compose.prod.yml ps

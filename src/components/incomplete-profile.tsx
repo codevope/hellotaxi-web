@@ -49,10 +49,12 @@ export default function IncompleteProfile({ user, appUser, setAppUser }: Incompl
 
   const providerIds = user.providerData.map((p) => p.providerId);
   const hasGoogle = providerIds.includes('google.com');
+  // Contraseña ahora es opcional
   const hasPassword = providerIds.includes('password');
   const hasPhoneInProfile = appUser.phone && appUser.phone.trim().length > 0;
 
-  const isComplete = hasGoogle && hasPassword && hasPhoneInProfile;
+  // El perfil se considera completo solo con Google y teléfono
+  const isComplete = hasGoogle && hasPhoneInProfile;
 
   const handleGoogleLink = async () => {
     setIsLoading('google');
@@ -179,7 +181,8 @@ export default function IncompleteProfile({ user, appUser, setAppUser }: Incompl
       <CardHeader>
         <CardTitle className="text-center text-xl">Completa tu Perfil</CardTitle>
         <CardDescription className="text-center">
-          Para usar HelloTaxi necesitas: vincular Google + configurar contraseña + registrar teléfono.
+          Para usar HelloTaxi necesitas: vincular Google y registrar tu teléfono.<br />
+          <span className="text-xs text-gray-500">La contraseña es opcional y solo mejora tu seguridad.</span>
         </CardDescription>
       </CardHeader>
 
@@ -211,44 +214,42 @@ export default function IncompleteProfile({ user, appUser, setAppUser }: Incompl
           </div>
         )}
 
-        {/* Password Setup */}
-        {!hasPassword && (
-          <div className="space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Configurar Contraseña
-            </h4>
-            <Input
-              type="password"
-              placeholder="Crear contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Input
-              type="password"
-              placeholder="Confirmar contraseña"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-            <Button
-              onClick={handlePasswordSetup}
-              disabled={isLoading === 'password' || authLoading}
-              className="w-full"
-            >
-              {isLoading === 'password' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Configurando...
-                </>
-              ) : (
-                <>
-                  <Lock className="mr-2 h-4 w-4" />
-                  Configurar Contraseña
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+        {/* Password Setup (opcional) */}
+        <div className="space-y-3">
+          <h4 className="font-medium flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Configurar Contraseña <span className="text-xs text-gray-500">(opcional)</span>
+          </h4>
+          <Input
+            type="password"
+            placeholder="Crear contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <Button
+            onClick={handlePasswordSetup}
+            disabled={isLoading === 'password' || authLoading}
+            className="w-full"
+          >
+            {isLoading === 'password' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Configurando...
+              </>
+            ) : (
+              <>
+                <Lock className="mr-2 h-4 w-4" />
+                Configurar Contraseña
+              </>
+            )}
+          </Button>
+        </div>
 
         {/* Phone Number */}
         {!hasPhoneInProfile && (

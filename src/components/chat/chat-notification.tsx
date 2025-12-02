@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { User, Driver, ChatMessage } from '@/lib/types';
+import type { User, DriverWithVehicleInfo, ChatMessage } from '@/lib/types';
 
 interface ChatNotificationProps {
   message?: ChatMessage;
-  sender?: User | Driver;
+  sender?: User | DriverWithVehicleInfo;
   isVisible: boolean;
   onClose: () => void;
   onClick: () => void;
@@ -25,10 +25,19 @@ export function ChatNotification({
   duration = 5000
 }: ChatNotificationProps) {
   const [isAnimating, setIsAnimating] = useState(false);
+  const hasPlayedSoundRef = useRef(false);
 
   useEffect(() => {
     if (isVisible) {
       setIsAnimating(true);
+      
+      // Reproducir sonido SOLO la primera vez que se muestra
+      if (!hasPlayedSoundRef.current) {
+        const audio = new Audio('/sounds/msg.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log('Error playing notification sound:', err));
+        hasPlayedSoundRef.current = true;
+      }
       
       if (duration > 0) {
         const timer = setTimeout(() => {
@@ -39,8 +48,11 @@ export function ChatNotification({
       }
     } else {
       setIsAnimating(false);
+      // Resetear el flag cuando se oculta
+      hasPlayedSoundRef.current = false;
     }
-  }, [isVisible, duration, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible, duration]);
 
   if (!message || !sender) return null;
 
@@ -102,11 +114,11 @@ export function ChatNotification({
 export function useChatNotifications(isEnabled: boolean = true) {
   const [notification, setNotification] = useState<{
     message: ChatMessage;
-    sender: User | Driver;
+    sender: User | DriverWithVehicleInfo;
   } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  const showNotification = useCallback((message: ChatMessage, sender: User | Driver) => {
+  const showNotification = useCallback((message: ChatMessage, sender: User | DriverWithVehicleInfo) => {
     if (!isEnabled) return;
     
     setNotification({ message, sender });

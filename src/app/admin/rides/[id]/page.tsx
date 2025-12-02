@@ -87,25 +87,21 @@ export default function RideDetailsPage() {
         if (rideSnap.exists()) {
             const rawData = rideSnap.data();
             const rideData = { id: rideSnap.id, ...rawData } as Ride;
-            
-            console.log('🔍 Raw ride data:', rawData);
-            console.log('📋 Processed ride data:', rideData);
-            
+
             try {
               // Verificar pasajero (requerido)
               if (!rideData.passenger) {
-                console.error("❌ No passenger reference in ride");
+                console.error(" No passenger reference in ride");
                 return;
               }
               
               const passengerSnap = await getDoc(rideData.passenger);
               if (!passengerSnap.exists()) {
-                console.error("❌ Passenger document does not exist");
+                console.error(" Passenger document does not exist");
                 return;
               }
               
               const passengerData = { id: passengerSnap.id, ...passengerSnap.data() } as User;
-              console.log('👤 Passenger data loaded:', passengerData);
 
               // Verificar conductor (opcional)
               let enrichedDriver: (Driver & { name: string; avatarUrl: string; rating: number }) | null = null;
@@ -123,15 +119,14 @@ export default function RideDetailsPage() {
                       avatarUrl: driverUser.avatarUrl,
                       rating: driverUser.rating,
                     };
-                    console.log('🚗 Driver data loaded:', enrichedDriver);
                   } else {
-                    console.warn("⚠️ Driver user data not found");
+                    console.warn("Driver user data not found");
                   }
                 } else {
-                  console.warn("⚠️ Driver reference exists but document not found");
+                  console.warn("Driver reference exists but document not found");
                 }
               } else {
-                console.log("ℹ️ No driver assigned to this ride");
+                console.log("No driver assigned to this ride");
               }
 
               // Verificar vehículo (opcional)
@@ -140,12 +135,11 @@ export default function RideDetailsPage() {
                 const vehicleSnap = await getDoc(rideData.vehicle);
                 if (vehicleSnap.exists()) {
                   vehicleData = { id: vehicleSnap.id, ...vehicleSnap.data() } as Vehicle;
-                  console.log('🚙 Vehicle data loaded:', vehicleData);
                 } else {
-                  console.warn("⚠️ Vehicle reference exists but document not found");
+                  console.warn("Vehicle reference exists but document not found");
                 }
               } else {
-                console.log("ℹ️ No vehicle assigned to this ride");
+                console.log("No vehicle assigned to this ride");
               }
               
               // Crear el ride enriquecido
@@ -157,7 +151,6 @@ export default function RideDetailsPage() {
               } as EnrichedRide;
               
               setRide(enrichedRide);
-              console.log('✅ Enriched ride set:', enrichedRide);
 
               // Cargar reviews del conductor si existe
               if (enrichedDriver) {
@@ -166,17 +159,16 @@ export default function RideDetailsPage() {
                   const reviewsSnapshot = await getDocs(reviewsQuery);
                   const driverReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
                   setReviews(driverReviews);
-                  console.log('⭐ Reviews loaded:', driverReviews.length);
                 } catch (reviewError) {
-                  console.warn("⚠️ Error loading reviews:", reviewError);
+                  console.warn("Error loading reviews:", reviewError);
                 }
               }
               
             } catch (dataError) {
-              console.error("❌ Error processing ride data:", dataError);
+              console.error("Error processing ride data:", dataError);
             }
         } else {
-          console.error("❌ Ride document does not exist with ID:", id);
+          console.error("Ride document does not exist with ID:", id);
         }
       } catch (error) {
         console.error("Error fetching ride data:", error);

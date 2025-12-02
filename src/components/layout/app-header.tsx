@@ -219,6 +219,7 @@ export default function AppHeader() {
             <Button 
               onClick={() => router.push("/login")}
               size={isMobile ? "sm" : "default"}
+              className={isMobile ? "hidden" : ""}
             >
               Iniciar Sesión
             </Button>

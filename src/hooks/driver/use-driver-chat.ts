@@ -15,27 +15,27 @@ export function useDriverChat({ rideId, userId }: UseDriverChatParams) {
 
   useEffect(() => {
     if (!rideId) return;
+    
+ 
     const q = query(collection(db, 'rides', rideId, 'chatMessages'), orderBy('timestamp', 'asc'));
     const unsub = onSnapshot(q, snap => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage)));
+      const newMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
+
+      setMessages(newMessages);
     });
     return () => unsub();
   }, [rideId]);
 
   const sendMessage = useCallback(async (text: string) => {
-    console.log('sendMessage called:', { rideId, userId, text: text.trim() });
     if (!rideId || !userId || !text.trim()) {
-      console.log('sendMessage blocked:', { rideId: !!rideId, userId: !!userId, text: !!text.trim() });
       return;
     }
     try {
-      console.log('Sending message to:', `rides/${rideId}/chatMessages`);
       await addDoc(collection(db, 'rides', rideId, 'chatMessages'), {
         userId,
         text,
         timestamp: new Date().toISOString(),
       });
-      console.log('Message sent successfully');
     } catch (e) {
       console.error('Error sending message', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo enviar el mensaje.' });

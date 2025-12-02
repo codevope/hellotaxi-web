@@ -135,15 +135,18 @@ export function useAuth() {
     if (!auth.currentUser) throw new Error("No hay un usuario autenticado.");
     const credential = EmailAuthProvider.credential(auth.currentUser.email!, password);
     try {
-        await linkWithCredential(auth.currentUser, credential);
+      await linkWithCredential(auth.currentUser, credential);
+      // Guardar la contraseña en el perfil del usuario (Firestore)
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, { password });
     } catch (error: any) {
-        console.error("Error setting password", error);
-        if (error.code === 'auth/credential-already-in-use') {
-            throw new Error("Esta cuenta ya tiene una contraseña o está vinculada a otro usuario.");
-        }
-        throw error;
+      console.error("Error setting password", error);
+      if (error.code === 'auth/credential-already-in-use') {
+        throw new Error("Esta cuenta ya tiene una contraseña o está vinculada a otro usuario.");
+      }
+      throw error;
     }
-  };
+    };
 
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -294,7 +297,7 @@ export function useAuth() {
           driverRating: 5.0,
           vehicle: null,
         });
-        console.log('✅ Perfil de conductor creado');
+        console.log(' Perfil de conductor creado');
       }
       
       // Actualizar roles en users

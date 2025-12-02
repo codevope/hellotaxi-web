@@ -1,21 +1,43 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
+'use client';
+
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useDriverRideStore } from '@/store/driver-ride-store';
 import type { Ride, User, EnrichedDriver, Location } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 
 export interface EnrichedRide extends Omit<Ride, 'passenger' | 'driver'> {
   passenger: User;
   driver: EnrichedDriver;
 }
 
-interface UseDriverActiveRideParams {
-  driver?: EnrichedDriver | null;
-  setAvailability: (v: boolean) => void;
+interface DriverActiveRideContextType {
+  activeRide: EnrichedRide | null;
+  completedRideForRating: EnrichedRide | null;
+  setCompletedRideForRating: (ride: EnrichedRide | null) => void;
+  updateRideStatus: (ride: EnrichedRide, newStatus: 'arrived' | 'in-progress' | 'completed') => Promise<void>;
+  isCompletingRide: boolean;
+  driverLocation: Location | null;
 }
 
-export function useDriverActiveRide({ driver, setAvailability }: UseDriverActiveRideParams) {
+const DriverActiveRideContext = createContext<DriverActiveRideContextType | null>(null);
+
+export function useDriverActiveRideContext() {
+  const context = useContext(DriverActiveRideContext);
+  if (!context) {
+    throw new Error('useDriverActiveRideContext must be used within DriverActiveRideProvider');
+  }
+  return context;
+}
+
+interface DriverActiveRideProviderProps {
+  children: React.ReactNode;
+}
+
+export function DriverActiveRideProvider({ children }: DriverActiveRideProviderProps) {
+  const { driver } = useDriverAuth();
   const { activeRide, setActiveRide } = useDriverRideStore();
   const [completedRideForRating, setCompletedRideForRating] = useState<EnrichedRide | null>(null);
   const [isCompletingRide, setIsCompletingRide] = useState(false);
@@ -47,13 +69,13 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
           try {
             const driverRef = doc(db, 'drivers', driver.id);
             await updateDoc(driverRef, { location: newLocation });
-            setDriverLocation(newLocation); // Actualizar estado local
+            setDriverLocation(newLocation);
           } catch (error) {
-            console.error(' [DRIVER] Error actualizando ubicación:', error);
+            console.error(' [PROVIDER] Error actualizando ubicación:', error);
           }
         },
         (error) => {
-          console.error(' [DRIVER] Error obteniendo geolocalización:', error);
+          console.error(' [PROVIDER] Error obteniendo geolocalización:', error);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -73,27 +95,42 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
     };
   }, [driver, activeRide]);
 
-  // Listener principal para viajes activos
+  // 🎧 Listener principal para viajes activos con detección de cancelación
   useEffect(() => {
-    if (!driver) return;
-    const driverRef = doc(db, 'drivers', driver.id);
+    if (!driver) {
+      return;
+    }
 
-    const q = query(collection(db, 'rides'), where('driver', '==', driverRef), where('status', 'in', ['accepted','arrived','in-progress','completed']));
+    const driverRef = doc(db, 'drivers', driver.id);
+    
+    // Query para viajes activos (sin cancelled)
+    const q = query(
+      collection(db, 'rides'), 
+      where('driver', '==', driverRef), 
+      where('status', 'in', ['accepted', 'arrived', 'in-progress', 'completed'])
+    );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
 
-
+      // Buscar viaje activo (solo accepted, arrived, in-progress)
       if (!snapshot.empty) {
-        const rideDoc = snapshot.docs.find(d => d.data().status !== 'completed');
+        const rideDoc = snapshot.docs.find(d => 
+          ['accepted', 'arrived', 'in-progress'].includes(d.data().status)
+        );
 
 
         if (!rideDoc) {
           // Verificar si el viaje completado corresponde al activo anterior para iniciar rating
-          if (useDriverRideStore.getState().activeRide !== null) {
-            const completedRideDoc = snapshot.docs.find(d => d.data().status === 'completed' && d.id === useDriverRideStore.getState().activeRide?.id);
+          const currentActiveRide = useDriverRideStore.getState().activeRide;
+          if (currentActiveRide) {
+            const completedRideDoc = snapshot.docs.find(
+              d => d.data().status === 'completed' && d.id === currentActiveRide.id
+            );
+            
             if (completedRideDoc) {
               const rideData = { id: completedRideDoc.id, ...completedRideDoc.data() } as Ride;
               const passengerSnap = await getDoc(rideData.passenger);
+              
               if (passengerSnap.exists() && driver) {
                 setCompletedRideForRating({
                   ...(rideData as any),
@@ -102,7 +139,34 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
                 });
               }
             }
+            
+            
+            // Mostrar notificación de cancelación SOLO si no fue completado
+            if (currentActiveRide.status !== 'completed') {
+              toast({
+                title: 'Viaje Cancelado',
+                description: 'El pasajero canceló el viaje.',
+                duration: 6000,
+                variant: 'destructive',
+              });
+              
+              const audio = new Audio('/sounds/error.mp3');
+              audio.volume = 0.7;
+              audio.play().catch(e => console.error('Error sonido:', e));
+            }
+            
             setActiveRide(null);
+            
+            // Restaurar disponibilidad si estaba en un viaje
+            if (currentActiveRide.status !== 'completed') {
+              useDriverRideStore.getState().setAvailability(true);
+              
+              // Actualizar estado del conductor en Firestore
+              const driverRef = doc(db, 'drivers', driver.id);
+              updateDoc(driverRef, { status: 'available' }).catch(err => 
+                console.error('Error actualizando estado del conductor:', err)
+              );
+            }
           }
           return;
         }
@@ -119,32 +183,35 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
           }
         }
       } else {
-        if (useDriverRideStore.getState().activeRide !== null) {
-          setActiveRide(null);
+        const currentActiveRide = useDriverRideStore.getState().activeRide;
+        if (currentActiveRide) {
           setActiveRide(null);
         }
       }
     });
 
-    return () => unsubscribe();
-  }, [driver, setActiveRide]);
+    return () => {
+      unsubscribe();
+    };
+  }, [driver, setActiveRide, toast]);
+
+
 
   const updateRideStatus = useCallback(async (ride: EnrichedRide, newStatus: 'arrived' | 'in-progress' | 'completed') => {
-    setIsCompletingRide(true);
+   setIsCompletingRide(true);
     try {
       const rideRef = doc(db, 'rides', ride.id);
       const driverRef = doc(db, 'drivers', ride.driver.id);
       
       if (newStatus === 'completed') {
-        console.log(' [updateRideStatus] Completando viaje con batch...');
+
         const batch = writeBatch(db);
         batch.update(rideRef, { status: 'completed' });
         batch.update(driverRef, { status: 'available' });
         batch.update(doc(db, 'users', ride.passenger.id), { totalRides: increment(1) });
         await batch.commit();
-        console.log(' [updateRideStatus] Batch completado exitosamente');
         toast({ title: '¡Viaje Finalizado!', description: 'Ahora califica al pasajero.' });
-        setAvailability(true);
+        useDriverRideStore.getState().setAvailability(true);
       } else {
         await updateDoc(rideRef, { status: newStatus });
         
@@ -159,15 +226,14 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         }
       }
     } catch (e) {
-      console.error(' [updateRideStatus] Error updating ride status:', e);
+      console.error(' [PROVIDER] Error updating ride status:', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el estado del viaje.' });
     } finally {
       setIsCompletingRide(false);
-      console.log('🏁 [updateRideStatus] Proceso finalizado');
     }
-  }, [toast, setAvailability]);
+  }, [toast]);
 
-  return {
+  const contextValue: DriverActiveRideContextType = {
     activeRide,
     completedRideForRating,
     setCompletedRideForRating,
@@ -175,4 +241,10 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
     isCompletingRide,
     driverLocation,
   };
+
+  return (
+    <DriverActiveRideContext.Provider value={contextValue}>
+      {children}
+    </DriverActiveRideContext.Provider>
+  );
 }

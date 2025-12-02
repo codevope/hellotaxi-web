@@ -88,11 +88,7 @@ export default function ConfiguracionPage() {
       
       if (driver && isLoaded && (shouldTryDB || shouldTryLocal) && !hasAttemptedAutoReactivation && !hasTriedReactivation) {
         setHasAttemptedAutoReactivation(true);
-        console.log('🔄 Intentando reactivar audio automáticamente...', { 
-          fromDB: shouldTryDB, 
-          fromLocal: shouldTryLocal 
-        });
-        
+
         const reactivated = await tryReenableAudio();
         if (reactivated) {
           toast({

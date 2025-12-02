@@ -45,7 +45,6 @@ export default function ServiceWorkerProvider() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker registrado exitosamente:', registration);
           
           // Verificar actualizaciones
           registration.addEventListener('updatefound', () => {
@@ -119,7 +118,6 @@ export default function ServiceWorkerProvider() {
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        console.log('Usuario aceptó instalar la PWA');
         toast({
           title: 'Instalando...',
           description: 'HelloTaxi se está instalando en tu dispositivo.',
