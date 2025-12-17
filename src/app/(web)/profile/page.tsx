@@ -107,7 +107,13 @@ export default function DesktopProfilePage() {
   useEffect(() => {
     if (appUser) {
       setName(appUser.name || user?.displayName || "");
-      setPhone(appUser.phone || "");
+      // Mostrar el teléfono sin el prefijo +51 para que el usuario vea solo su número
+      const phoneToDisplay = appUser.phone 
+        ? appUser.phone.startsWith('+51') 
+          ? appUser.phone.substring(3) 
+          : appUser.phone
+        : "";
+      setPhone(phoneToDisplay);
       setAddress(appUser.address || "");
     }
   }, [appUser, user?.displayName]);
@@ -133,20 +139,28 @@ export default function DesktopProfilePage() {
       // Siempre actualizar en users (datos personales están ahí)
       const userRef = doc(db, "users", appUser.id);
 
+      // Procesar el teléfono: agregar prefijo +51 si no lo tiene
+      let processedPhone = phone.trim();
+      if (processedPhone && !processedPhone.startsWith('+51')) {
+        // Limpiar el teléfono de espacios y caracteres especiales
+        const cleanPhone = processedPhone.replace(/[\s\-\(\)]/g, '');
+        processedPhone = `+51${cleanPhone}`;
+      }
+
       const updateData = {
         name: name.trim(),
-        phone: phone.trim(),
+        phone: processedPhone,
         address: address.trim(),
       };
 
       // Verificar si el usuario ahora cumple con todos los requisitos para 'active'
       const providerIds = user.providerData.map((p) => p.providerId);
-      const hasPassword = providerIds.includes("password");
       const hasGoogle = providerIds.includes("google.com");
-      const hasPhone = phone.trim().length > 0;
+      const hasPhone = processedPhone.length > 0;
 
+      // Perfil completo: Google autenticación + teléfono (contraseña es opcional)
       const newStatus: "active" | "blocked" | "incomplete" =
-        hasPassword && hasGoogle && hasPhone ? "active" : "incomplete";
+        hasGoogle && hasPhone ? "active" : "incomplete";
 
       await updateDoc(userRef, {
         ...updateData,
@@ -387,14 +401,23 @@ export default function DesktopProfilePage() {
                   <Label htmlFor="phone" className="text-sm">
                     Teléfono
                   </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+51 987 654 321"
-                    className="mt-1"
-                  />
+                  <div className="relative mt-1">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      +51
+                    </div>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="987 654 321"
+                      className="pl-12"
+                      maxLength={11}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ingresa el número sin el código de país (9 dígitos)
+                  </p>
                 </div>
                 <div className="sm:col-span-2 md:col-span-1">
                   <Label htmlFor="address" className="text-sm">

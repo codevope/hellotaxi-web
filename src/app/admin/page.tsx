@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import AdminDashboard from '@/components/admin/dashboard';
+import AdminDashboard from '@/components/admin/dashboard/dashboard';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from 'lucide-react';

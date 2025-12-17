@@ -1,0 +1,143 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función helper para verificar si el usuario es admin
+    function isAdmin() {
+      return request.auth != null && 
+             (
+               // Nuevo formato: 'admin' en roles array
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                'admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles) ||
+               // Formato legacy: isAdmin = true
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+             );
+    }
+    
+    // Función helper para verificar si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Función helper para verificar si es el mismo usuario
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Colección de usuarios (pasajeros)
+    match /users/{userId} {
+      // Permitir lectura si es el propio usuario o un admin
+      allow read: if isAuthenticated();
+      
+      // Permitir crear su propio perfil al registrarse
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Permitir actualizar solo su propio perfil
+      allow update: if isOwner(userId) || isAdmin();
+      
+      // Solo admins pueden eliminar
+      allow delete: if isAdmin();
+    }
+
+    // Colección de conductores
+    match /drivers/{driverId} {
+      // Permitir lectura a usuarios autenticados
+      allow read: if isAuthenticated();
+      
+      // Permitir crear su propio perfil de conductor
+      allow create: if isAuthenticated() && isOwner(driverId);
+      
+      // Permitir actualizar solo su propio perfil o admin
+      allow update: if isOwner(driverId) || isAdmin();
+      
+      // Solo admins pueden eliminar
+      allow delete: if isAdmin();
+    }
+
+    // Colección de viajes
+    match /rides/{rideId} {
+      // Permitir lectura a usuarios autenticados involucrados en el viaje o admins
+      allow read: if isAuthenticated();
+      
+      // Permitir crear viajes a usuarios autenticados
+      allow create: if isAuthenticated();
+      
+      // Permitir actualizar a participantes del viaje o admins
+      allow update: if isAuthenticated() && (
+        resource.data.riderId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Solo admins pueden eliminar
+      allow delete: if isAdmin();
+      
+      // Subcolección de mensajes de chat
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated();
+      }
+      
+      // Subcolección de contraoferta
+      match /counterOffer/{offerId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Colección de notificaciones
+    match /notifications/{notificationId} {
+      // Solo el destinatario puede leer sus notificaciones
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Permitir crear notificaciones
+      allow create: if isAuthenticated();
+      
+      // Solo el destinatario puede actualizar (marcar como leída)
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Solo el destinatario puede eliminar sus notificaciones
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Colección de ratings/calificaciones
+    match /ratings/{ratingId} {
+      // Cualquier usuario autenticado puede leer ratings
+      allow read: if isAuthenticated();
+      
+      // Solo el calificador puede crear su rating
+      allow create: if isAuthenticated();
+      
+      // No se permiten actualizaciones de ratings
+      allow update: if false;
+      
+      // Solo admins pueden eliminar
+      allow delete: if isAdmin();
+    }
+
+    // Colección de configuración/settings
+    match /settings/{document} {
+      // Todos pueden leer settings públicas
+      allow read: if true;
+      
+      // Solo admins pueden modificar
+      allow write: if isAdmin();
+    }
+
+    // Colección de logs/auditoría (opcional)
+    match /logs/{logId} {
+      // Solo admins pueden leer logs
+      allow read: if isAdmin();
+      
+      // El sistema puede crear logs
+      allow create: if isAuthenticated();
+      
+      // No se permiten actualizaciones o eliminaciones
+      allow update, delete: if false;
+    }
+  }
+}

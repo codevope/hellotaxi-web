@@ -24,6 +24,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
+import { useDriverAvailabilityLocation } from "@/hooks/driver/use-driver-availability-location";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -80,14 +81,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogHeader,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useDriverRideStore } from "@/store/driver-ride-store";
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
 import { DriverStatePanel } from "@/components/driver/driver-state-panel";
@@ -135,6 +128,12 @@ function DriverPageContent() {
 
   const { user, driver, setDriver, loading } = useDriverAuth();
   const { toast } = useToast();
+
+  // Hook para guardar ubicación del conductor en Firebase (para que aparezca en admin dashboard)
+  useDriverAvailabilityLocation({ 
+    driverId: driver?.id, 
+    isAvailable: isAvailable && !activeRide 
+  });
 
   // Historial usando el hook correcto
   const { rides: allRides } = useDriverRideHistory(driver, 25);
@@ -525,7 +524,7 @@ function DriverPageContent() {
             {/* Panel Principal - Columna Izquierda */}
             <div className="lg:col-span-2 flex flex-col min-h-[50vh] lg:min-h-[60vh] rounded-xl overflow-hidden shadow-lg relative">
               <MapView
-                driverLocation={driverLocation}
+                driverLocation={activeRide ? driverLocation : null}
                 pickupLocation={
                   activeRide?.pickupLocation ? activeRide.pickupLocation : null
                 }
@@ -534,7 +533,7 @@ function DriverPageContent() {
                     ? activeRide.dropoffLocation
                     : null
                 }
-                interactive={false}
+                interactive={true}
               />
               {activeRide && (
                 <>
@@ -957,9 +956,9 @@ function DriverPageContent() {
                                 }
                                 className="text-xs w-fit"
                               >
-                                {driver.documentsStatus === 'approved' ? '✓ Aprobado' : 
-                                 driver.documentsStatus === 'pending' ? '⏳ Pendiente' : 
-                                 '✗ Rechazado'}
+                                {driver.documentsStatus === 'approved' ? 'Aprobado' : 
+                                 driver.documentsStatus === 'pending' ? 'Pendiente' : 
+                                 'Rechazado'}
                               </Badge>
                             </div>
                           </CardHeader>

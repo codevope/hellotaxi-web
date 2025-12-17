@@ -3,34 +3,35 @@
  */
 
 /**
- * Redondea un precio a centésimas (dos decimales)
+ * Redondea un precio a centésimas (dos decimales) al más cercano
  * Ejemplos:
- * - 3.246 → 3.24
- * - 3.918 → 3.91
- * - 3.955 → 3.95
- * - 5.689 → 5.68
+ * - 3.246 → 3.25
+ * - 3.918 → 3.92
+ * - 3.955 → 3.96
+ * - 5.689 → 5.69
  * 
  * @param price - El precio a redondear
- * @returns El precio redondeado a centésimas
+ * @returns El precio redondeado a centésimas al más cercano
  */
 export function roundToDecimal(price: number): number {
-  // Redondear a centésimas hacia abajo
-  return Math.floor(price * 100) / 100;
+  // Redondear a centésimas al más cercano
+  return Math.round(price * 100) / 100;
 }
 
 /**
- * Ajusta un precio al múltiplo de 0.10 más cercano hacia abajo
+ * Ajusta un precio al múltiplo de 0.10 más cercano
  * Ejemplos:
  * - 3.24 → 3.20
+ * - 3.25 → 3.30
  * - 3.91 → 3.90
- * - 5.68 → 5.60
- * - 7.25 → 7.20
+ * - 5.68 → 5.70
+ * - 7.25 → 7.30
  * 
  * @param price - El precio a ajustar
- * @returns El precio ajustado al múltiplo de 0.10
+ * @returns El precio ajustado al múltiplo de 0.10 más cercano
  */
 export function roundToTenCents(price: number): number {
-  return Math.floor(price * 10) / 10;
+  return Math.round(price * 10) / 10;
 }
 
 /**
@@ -70,19 +71,20 @@ export function decrementPrice(currentPrice: number, minPrice: number): number {
 
 /**
  * Normaliza un precio al sistema de HelloTaxi
- * - Redondea a centésimas (dos decimales)
- * - Asegura que sea múltiplo de 0.10 para facilitar incrementos/decrementos
+ * - Redondea directamente al múltiplo de 0.10 más cercano
+ * - Esto facilita incrementos/decrementos de 0.10
+ * 
+ * Ejemplos:
+ * - 15.67 → 15.70
+ * - 12.34 → 12.30
+ * - 8.95 → 9.00
  * 
  * @param price - El precio a normalizar
- * @returns El precio normalizado
+ * @returns El precio normalizado al decimal más cercano (múltiplo de 0.10)
  */
 export function normalizePrice(price: number): number {
-  // Primero redondeamos a centésimas
-  const rounded = roundToDecimal(price);
-  
-  // Luego ajustamos al múltiplo de 0.10 más cercano hacia abajo
-  // Esto facilita los incrementos/decrementos de 0.10
-  return roundToTenCents(rounded);
+  // Redondear directamente al múltiplo de 0.10 más cercano
+  return Math.round(price * 10) / 10;
 }
 
 /**

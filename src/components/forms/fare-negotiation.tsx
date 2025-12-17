@@ -8,16 +8,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, CircleDollarSign, ShieldX, MessageSquare, ThumbsUp, Info, List, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
-import type { FareBreakdown } from '@/lib/types';
+import type { FareBreakdown, Settings } from '@/lib/types';
 import type { RouteInfo } from '@/hooks/use-eta-calculator';
 import { Separator } from '@/components/ui/separator';
-
-const PASSENGER_NEGOTIATION_RANGE = 0.20; // Pasajero puede ofrecer hasta 20% menos
+import { getSettings } from '@/services/settings-service';
 
 type FareNegotiationProps = {
   routeInfo: RouteInfo;
   onNegotiationComplete: (finalFare: number, breakdown: FareBreakdown) => void;
   onCancel: () => void;
+  settings?: Settings;
 };
 
 
@@ -25,18 +25,34 @@ export default function FareNegotiation({
   routeInfo,
   onNegotiationComplete,
   onCancel,
+  settings,
 }: FareNegotiationProps) {
   const [status, setStatus] = useState<'negotiating' | 'processing' | 'counter-offer' | 'failed'>('negotiating');
+  const [negotiationRange, setNegotiationRange] = useState<number>(15);
   
   const estimatedFare = routeInfo.estimatedFare || 0;
   const breakdown = routeInfo.fareBreakdown;
   const couponDiscount = breakdown?.couponDiscount || 0;
 
+  // Cargar el rango de negociación desde settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (settings) {
+        setNegotiationRange(settings.negotiationRange);
+      } else {
+        const loadedSettings = await getSettings();
+        setNegotiationRange(loadedSettings.negotiationRange);
+      }
+    };
+    loadSettings();
+  }, [settings]);
+
   // La negociación se hace sobre la tarifa antes del descuento
   const baseFareForNegotiation = estimatedFare + couponDiscount;
 
-  // El pasajero negocia hacia abajo. El mínimo es un 20% menos. El máximo es la tarifa estimada.
-  const minFare = Math.max(1, Math.floor(baseFareForNegotiation * (1 - PASSENGER_NEGOTIATION_RANGE)));
+  // El pasajero negocia hacia abajo usando el rango configurado en Firebase
+  const passengerNegotiationRange = negotiationRange / 100;
+  const minFare = Math.max(1, Math.floor(baseFareForNegotiation * (1 - passengerNegotiationRange)));
   const maxFare = baseFareForNegotiation; // El máximo que puede proponer el pasajero es la tarifa original
   
   const [proposedFare, setProposedFare] = useState(maxFare); // La propuesta inicial es la tarifa completa
@@ -53,8 +69,8 @@ export default function FareNegotiation({
         const result = await negotiateFare({
             estimatedFare: baseFareForNegotiation,
             proposedFare,
-            minFare: Math.floor(baseFareForNegotiation * 0.9), // Mínimo absoluto del conductor (10% menos)
-            maxFare: Math.ceil(baseFareForNegotiation * 1.2),  // Máximo que el conductor esperaría (20% más)
+            minFare: Math.floor(baseFareForNegotiation * (1 - passengerNegotiationRange * 0.5)), // Mínimo absoluto del conductor (mitad del rango)
+            maxFare: Math.ceil(baseFareForNegotiation * (1 + passengerNegotiationRange)),  // Máximo usando el rango configurado
         });
 
         setDriverResponse(result);

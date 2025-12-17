@@ -6,33 +6,15 @@ import { useState, useEffect } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable } from '@/components/ui/data-table';
 import type { SpecialFareRule } from '@/lib/types';
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, MoreVertical } from 'lucide-react';
-import { format } from 'date-fns';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import SpecialFareRuleForm from '@/components/admin/special-fare-rule-form';
+import SpecialFareRuleForm from '@/components/admin/settings/special-fare-rule-form';
+import { createSpecialFareRulesColumns } from '@/components/admin/settings/special-fare-rules-columns';
 
 export default function AdminZonesPage() {
   const [rules, setRules] = useState<SpecialFareRule[]>([]);
@@ -86,6 +68,11 @@ export default function AdminZonesPage() {
       setSelectedRule(null);
   }
 
+  const columns = createSpecialFareRulesColumns({
+    onEdit: handleEditClick,
+    onDelete: handleDeleteRule,
+  });
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -112,62 +99,14 @@ export default function AdminZonesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Periodo</TableHead>
-                  <TableHead>Recargo</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell className="font-medium">{rule.name}</TableCell>
-                    <TableCell>{`${format(new Date(rule.startDate), 'dd/MM/yy')} - ${format(
-                      new Date(rule.endDate),
-                      'dd/MM/yy'
-                    )}`}</TableCell>
-                    <TableCell className="font-semibold text-primary">{rule.surcharge}%</TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => handleEditClick(rule)}>
-                                    Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                 <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
-                                            Eliminar
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción eliminará permanentemente la regla "{rule.name}".
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteRule(rule.id)}>Sí, eliminar</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={columns}
+              data={rules}
+              searchKey="name"
+              searchPlaceholder="Buscar por nombre del evento..."
+              pageSize={10}
+              entityName="regla de tarifa"
+            />
           )}
         </CardContent>
       </Card>

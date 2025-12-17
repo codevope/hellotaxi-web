@@ -1,7 +1,6 @@
-import SettingsForm from '@/components/admin/settings-form';
+import SettingsForm from '@/components/admin/settings/settings-form';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, CreditCard } from 'lucide-react';
+import { Tabs, TabsContent} from '@/components/ui/tabs';
 
 export default function AdminSettingsPage() {
   return (

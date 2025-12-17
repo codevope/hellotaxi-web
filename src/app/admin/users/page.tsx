@@ -1,11 +1,8 @@
-import AdminsTable from '@/components/admin/admins-table';
-import UsersTable from '@/components/admin/users-table';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import AdminsTable from '@/components/admin/dashboard/dashboard-table';
+import UsersTable from '@/components/admin/users/users-table';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { User, UserCheck } from 'lucide-react'
 
 export default function AdminUsersPage() {
   return (
@@ -20,8 +17,8 @@ export default function AdminUsersPage() {
       </div>
       <Tabs defaultValue="passengers">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="passengers">Pasajeros</TabsTrigger>
-          <TabsTrigger value="admins">Administradores</TabsTrigger>
+          <TabsTrigger value="passengers"><User className="mr-2 h-4 w-4" />Pasajeros</TabsTrigger>
+          <TabsTrigger value="admins"><UserCheck className="mr-2 h-4 w-4" />Administradores</TabsTrigger>
         </TabsList>
         <TabsContent value="passengers" className="mt-6">
           <UsersTable />

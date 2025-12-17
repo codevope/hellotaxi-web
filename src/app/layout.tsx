@@ -7,6 +7,7 @@ import { DriverActiveRideProvider } from '@/components/providers/driver-active-r
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: 'HelloTaxi - Servicio de Taxi',
   description: 'Tu servicio de taxi confiable con negociación de tarifa.',
   generator: 'Next.js',

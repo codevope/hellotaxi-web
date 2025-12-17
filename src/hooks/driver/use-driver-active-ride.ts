@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
+import { doc, collection, where, query, onSnapshot, getDoc, updateDoc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useDriverRideStore } from '@/store/driver-ride-store';
 import type { Ride, User, EnrichedDriver, Location } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useGeolocation } from '@/hooks/geolocation/use-geolocation';
+import { getSettings } from '@/services/settings-service';
 
 export interface EnrichedRide extends Omit<Ride, 'passenger' | 'driver'> {
   passenger: User;
@@ -20,10 +22,31 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
   const [completedRideForRating, setCompletedRideForRating] = useState<EnrichedRide | null>(null);
   const [isCompletingRide, setIsCompletingRide] = useState(false);
   const [driverLocation, setDriverLocation] = useState<Location | null>(null);
+  const [updateInterval, setUpdateInterval] = useState(15000); // Default 15 segundos en ms
   const { toast } = useToast();
   const locationUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLocationRef = useRef<Location | null>(null);
+  const geoRequestCountRef = useRef<number>(0);
+  const lastGeoRequestTimeRef = useRef<number>(0);
 
-  // 📍 Actualizar ubicación del conductor en Firestore cada 60 segundos
+  // Usar el hook mejorado de geolocalización con fallback automático
+  const { location: geoLocation, error: geoError, requestLocation } = useGeolocation();
+
+  // Cargar intervalo de actualización desde Firebase
+  useEffect(() => {
+    async function loadUpdateInterval() {
+      try {
+        const settings = await getSettings();
+        // Convertir de segundos a milisegundos
+        setUpdateInterval((settings.locationUpdateInterval || 15) * 1000);
+      } catch (error) {
+        console.error('[ACTIVE RIDE] Error loading location update interval:', error);
+      }
+    }
+    loadUpdateInterval();
+  }, []);
+
+  // 📍 Actualizar ubicación del conductor en Firestore durante viajes activos
   useEffect(() => {
     if (!driver || !activeRide) {
       // Limpiar intervalo si no hay conductor o viaje activo
@@ -31,39 +54,75 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         clearInterval(locationUpdateIntervalRef.current);
         locationUpdateIntervalRef.current = null;
       }
+      geoRequestCountRef.current = 0;
+      lastLocationRef.current = null;
       return;
     }
 
-    const updateDriverLocation = async () => {
-      if (!navigator.geolocation) return;
-      
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const newLocation: Location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          
-          try {
-            const driverRef = doc(db, 'drivers', driver.id);
-            await updateDoc(driverRef, { location: newLocation });
-            setDriverLocation(newLocation); // Actualizar estado local
-          } catch (error) {
-            console.error(' [DRIVER] Error actualizando ubicación:', error);
-          }
-        },
-        (error) => {
-          console.error(' [DRIVER] Error obteniendo geolocalización:', error);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
+    if (!navigator.geolocation) {
+      console.warn('[ACTIVE RIDE] Geolocation API no está disponible');
+      return;
+    }
+
+    const updateDriverLocationInFirebase = async () => {
+      if (!geoLocation) {
+        console.log('[ACTIVE RIDE] ⏳ Sin ubicación aún, esperando...');
+        return;
+      }
+
+      const newLocation: Location = {
+        lat: geoLocation.latitude,
+        lng: geoLocation.longitude,
+      };
+
+      // No actualizar si es la misma ubicación
+      if (lastLocationRef.current && 
+          lastLocationRef.current.lat === newLocation.lat &&
+          lastLocationRef.current.lng === newLocation.lng) {
+        console.log('[ACTIVE RIDE] 📍 Ubicación sin cambios, omitiendo actualización');
+        return;
+      }
+
+      try {
+        const driverRef = doc(db, 'drivers', driver.id);
+        await updateDoc(driverRef, { location: newLocation });
+        setDriverLocation(newLocation); // Actualizar estado local
+        lastLocationRef.current = newLocation;
+        console.log('[ACTIVE RIDE] ✅ Ubicación actualizada en Firebase:', newLocation);
+      } catch (error) {
+        console.error('[ACTIVE RIDE] ❌ Error actualizando ubicación:', error);
+      }
     };
 
-    // Actualizar inmediatamente
-    updateDriverLocation();
+    // Actualizar inmediatamente si tenemos ubicación
+    if (geoLocation) {
+      updateDriverLocationInFirebase();
+    }
 
-    // Configurar intervalo de 60 segundos (1 minuto)
-    locationUpdateIntervalRef.current = setInterval(updateDriverLocation, 60000);
+    // Configurar intervalo para actualizar periódicamente
+    // Pero evitar llamar requestLocation demasiado frecuentemente
+    locationUpdateIntervalRef.current = setInterval(() => {
+      // Actualizar ubicación existente en Firebase
+      updateDriverLocationInFirebase();
+      
+      // Solo pedir nueva ubicación cada 3 intervalos (para evitar timeouts)
+      geoRequestCountRef.current++;
+      if (geoRequestCountRef.current >= 3) {
+        const now = Date.now();
+        // Solo si pasaron al menos 45 segundos desde la última solicitud
+        if (now - lastGeoRequestTimeRef.current > 45000) {
+          console.log('[ACTIVE RIDE] 🔄 Solicitando ubicación fresca...');
+          lastGeoRequestTimeRef.current = now;
+          geoRequestCountRef.current = 0;
+          requestLocation();
+        }
+      }
+    }, updateInterval);
+
+    // Pedir ubicación inicial
+    console.log('[ACTIVE RIDE] 🔄 Solicitando ubicación inicial...');
+    lastGeoRequestTimeRef.current = Date.now();
+    requestLocation();
 
     return () => {
       if (locationUpdateIntervalRef.current) {
@@ -71,7 +130,7 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         locationUpdateIntervalRef.current = null;
       }
     };
-  }, [driver, activeRide]);
+  }, [driver, activeRide, geoLocation, requestLocation, updateInterval]);
 
   // Listener principal para viajes activos
   useEffect(() => {
@@ -121,7 +180,6 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
       } else {
         if (useDriverRideStore.getState().activeRide !== null) {
           setActiveRide(null);
-          setActiveRide(null);
         }
       }
     });
@@ -136,13 +194,13 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
       const driverRef = doc(db, 'drivers', ride.driver.id);
       
       if (newStatus === 'completed') {
-        console.log(' [updateRideStatus] Completando viaje con batch...');
+        console.log('[ACTIVE RIDE] Completando viaje con batch...');
         const batch = writeBatch(db);
         batch.update(rideRef, { status: 'completed' });
         batch.update(driverRef, { status: 'available' });
-        batch.update(doc(db, 'users', ride.passenger.id), { totalRides: increment(1) });
+        batch.update(doc(db, 'users', ride.passenger.id), { increment: 1 });
         await batch.commit();
-        console.log(' [updateRideStatus] Batch completado exitosamente');
+        console.log('[ACTIVE RIDE] Batch completado exitosamente');
         toast({ title: '¡Viaje Finalizado!', description: 'Ahora califica al pasajero.' });
         setAvailability(true);
       } else {
@@ -150,8 +208,8 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         
         // Mensajes específicos según el estado
         const statusMessages = {
-          'arrived': { title: ' Llegada Confirmada', description: 'Has marcado que llegaste al punto de recojo' },
-          'in-progress': { title: '🚗 Viaje Iniciado', description: 'El viaje ha comenzado oficialmente' }
+          'arrived': { title: 'Llegada Confirmada', description: 'Has marcado que llegaste al punto de recojo' },
+          'in-progress': { title: 'Viaje Iniciado', description: 'El viaje ha comenzado oficialmente' }
         };
         
         if (statusMessages[newStatus]) {
@@ -159,11 +217,11 @@ export function useDriverActiveRide({ driver, setAvailability }: UseDriverActive
         }
       }
     } catch (e) {
-      console.error(' [updateRideStatus] Error updating ride status:', e);
+      console.error('[ACTIVE RIDE] Error updating ride status:', e);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el estado del viaje.' });
     } finally {
       setIsCompletingRide(false);
-      console.log('🏁 [updateRideStatus] Proceso finalizado');
+      console.log('[ACTIVE RIDE] Proceso finalizado');
     }
   }, [toast, setAvailability]);
 

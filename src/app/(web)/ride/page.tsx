@@ -124,7 +124,7 @@ const RidePage = () => {
 
         {/* Patrón de cuadrícula animado */}
         <motion.div
-          className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"
+          className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-10"
           animate={{
             backgroundPosition: ["0% 0%", "100% 100%"],
           }}

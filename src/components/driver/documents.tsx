@@ -1,11 +1,10 @@
-
-
 'use client';
 
 import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileText, Upload, Car, User, Calendar, Eye, CheckCircle2, CalendarIcon } from 'lucide-react';
+import { Loader2, FileText, Upload, Car, User, Calendar, Eye, CheckCircle2, CalendarIcon, AlertCircle, Clock } from 'lucide-react';
 import type { DocumentName, DocumentStatus, EnrichedDriver } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -34,10 +33,21 @@ const docNameMap: Record<DocumentName, string> = {
     propertyCard: 'Tarjeta de Propiedad',
 };
 
-const individualDocStatusConfig: Record<DocumentStatus, { label: string; variant: 'default' | 'outline' | 'destructive' }> = {
-    approved: { label: 'Aprobado', variant: 'default' },
-    pending: { label: 'Pendiente', variant: 'outline' },
-    rejected: { label: 'Rechazado', variant: 'destructive' },
+const individualDocStatusConfig: Record<DocumentStatus, { label: string; variant: 'default' | 'outline' | 'destructive'; bgColor: string }> = {
+    approved: { label: 'Aprobado', variant: 'default', bgColor: 'bg-white border-emerald-200' },
+    pending: { label: 'Pendiente', variant: 'outline', bgColor: 'bg-white border-slate-200' },
+    rejected: { label: 'Rechazado', variant: 'destructive', bgColor: 'bg-white border-red-200' },
+};
+
+const parseDateString = (dateString: string): Date => {
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        return new Date(year, month, day);
+    }
+    return new Date(dateString);
 };
 
 export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsProps) {
@@ -54,7 +64,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleUploadClick = (docName: DocumentName) => {
-        // Bloquear si el conductor ya está aprobado
         if (driver.documentsStatus === 'approved') {
             toast({
                 variant: 'destructive',
@@ -65,7 +74,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         }
 
         setSelectedDoc(docName);
-        // Reset dates
         setExpiryDate('');
         setRegistrationDate('');
         fileInputRef.current?.click();
@@ -77,7 +85,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
 
         setSelectedFile(file);
         
-        // Pre-rellenar fechas existentes solo para documentos personales
         if (selectedDoc === 'dni' && driver.dniExpiry) {
             setExpiryDate(driver.dniExpiry.split('T')[0]);
         } else if (selectedDoc === 'license' && driver.licenseExpiry) {
@@ -85,7 +92,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         } else if (selectedDoc === 'backgroundCheck' && driver.backgroundCheckExpiry) {
             setExpiryDate(driver.backgroundCheckExpiry.split('T')[0]);
         }
-        // Las fechas del vehículo las ingresa el admin, no el conductor
 
         setUploadDialogOpen(true);
     };
@@ -97,19 +103,16 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         setUploadDialogOpen(false);
 
         try {
-            // Validar tipo de archivo
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             if (!allowedTypes.includes(selectedFile.type)) {
-                throw new Error('Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, WEBP) y PDF');
+                throw new Error('Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, WEBP)');
             }
 
-            // Validar tamaño (máximo 5MB)
             const maxSize = 5 * 1024 * 1024;
             if (selectedFile.size > maxSize) {
                 throw new Error('El archivo es demasiado grande. Tamaño máximo: 5MB');
             }
 
-            // Subir directamente a Firebase Storage desde el cliente
             const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
             const { storage } = await import('@/lib/firebase');
 
@@ -118,7 +121,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             const filename = `${selectedDoc}_${timestamp}.${extension}`;
             const storageRef = ref(storage, `drivers/${driver.id}/documents/${selectedDoc}/${filename}`);
 
-            // Subir archivo
             await uploadBytes(storageRef, selectedFile, {
                 contentType: selectedFile.type,
                 customMetadata: {
@@ -128,10 +130,8 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                 }
             });
 
-            // Obtener URL de descarga
             const documentUrl = await getDownloadURL(storageRef);
 
-            // Preparar updates para Firestore
             const driverRef = doc(db, 'drivers', driver.id);
             const updates: any = {
                 [`documentUrls.${selectedDoc}`]: documentUrl,
@@ -139,7 +139,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                 documentsStatus: 'pending'
             };
 
-            // Actualizar fechas según el documento
             if (selectedDoc === 'dni' && expiryDate) {
                 updates.dniExpiry = new Date(expiryDate).toISOString();
             } else if (selectedDoc === 'license' && expiryDate) {
@@ -148,13 +147,8 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                 updates.backgroundCheckExpiry = new Date(expiryDate).toISOString();
             }
 
-            // Las fechas del vehículo las ingresa el admin, no el conductor
-            // Removido: código para actualizar fechas del vehículo
-
-            // Actualizar conductor
             await updateDoc(driverRef, updates);
 
-            // Actualizar el estado local con la nueva URL
             const updatedDriver: EnrichedDriver = {
                 ...driver,
                 documentUrls: {
@@ -185,7 +179,7 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             onUpdate(updatedDriver);
 
             toast({
-                title: 'Documento Subido',
+                title: '✓ Documento Subido',
                 description: `Tu ${docNameMap[selectedDoc]} ha sido enviado para revisión.`,
             });
 
@@ -202,7 +196,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             setSelectedFile(null);
             setExpiryDate('');
             setRegistrationDate('');
-            // Limpiar el input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -217,12 +210,10 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
     };
 
     const needsDate = (docName: DocumentName): boolean => {
-        // Solo documentos personales necesitan fecha del conductor
         return ['dni', 'license', 'backgroundCheck'].includes(docName);
     };
 
     const handleEditDateClick = (docName: DocumentName) => {
-        // Solo permitir edición de fechas para documentos personales, bloqueado si está aprobado
         if (driver.documentsStatus === 'approved') {
             toast({
                 variant: 'destructive',
@@ -232,7 +223,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             return;
         }
 
-        // Las fechas de documentos del vehículo las ingresa el admin
         if (['insurance', 'technicalReview', 'propertyCard'].includes(docName)) {
             toast({
                 variant: 'default',
@@ -244,7 +234,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         
         setEditingDoc(docName);
         
-        // Pre-rellenar fecha existente solo para documentos personales
         if (docName === 'dni' && driver.dniExpiry) {
             setExpiryDate(driver.dniExpiry.split('T')[0]);
         } else if (docName === 'license' && driver.licenseExpiry) {
@@ -265,7 +254,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             const driverRef = doc(db, 'drivers', driver.id);
             const updates: any = {};
 
-            // Actualizar fechas según el documento
             if (editingDoc === 'dni' && expiryDate) {
                 updates.dniExpiry = new Date(expiryDate).toISOString();
             } else if (editingDoc === 'license' && expiryDate) {
@@ -274,15 +262,10 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                 updates.backgroundCheckExpiry = new Date(expiryDate).toISOString();
             }
 
-            // Las fechas del vehículo las ingresa el admin, no el conductor
-            // Solo actualizamos documentos personales
-
-            // Actualizar conductor si hay cambios
             if (Object.keys(updates).length > 0) {
                 await updateDoc(driverRef, updates);
             }
 
-            // Actualizar el estado local
             const updatedDriver = {
                 ...driver,
                 ...(editingDoc === 'dni' && expiryDate ? { dniExpiry: new Date(expiryDate).toISOString() } : {}),
@@ -294,7 +277,7 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             onUpdate(updatedDriver);
 
             toast({
-                title: 'Fecha actualizada',
+                title: '✓ Fecha actualizada',
                 description: `La fecha de ${docNameMap[editingDoc]} ha sido actualizada.`,
             });
 
@@ -314,7 +297,6 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
         }
     };
     
-    // Separating driver personal documents from vehicle documents
     const personalDocuments: { name: DocumentName; label: string; expiryDate?: string }[] = [
         { name: 'dni', label: 'DNI', expiryDate: driver.dniExpiry },
         { name: 'license', label: 'Licencia de Conducir', expiryDate: driver.licenseExpiry },
@@ -333,7 +315,7 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
-                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleFileChange}
             />
 
@@ -407,205 +389,187 @@ export default function DriverDocuments({ driver, onUpdate }: DriverDocumentsPro
             </Dialog>
 
             <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Mis Documentos Personales</CardTitle>
-                        <CardDescription>
-                            Mantén tus documentos personales actualizados para poder recibir viajes.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {personalDocuments.map(({ name, label, expiryDate }) => {
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Mis Documentos Personales</h2>
+                        <p className="text-sm text-slate-600">Mantén tus documentos actualizados para poder recibir viajes</p>
+                    </div>
+                    <div className="grid gap-4">
+                        {personalDocuments.map(({ name, label, expiryDate }, index) => {
                             const status = driver.documentStatus?.[name] || 'pending';
                             const documentUrl = driver.documentUrls?.[name];
                             const expiryInfo = expiryDate ? getDocumentStatus(expiryDate) : null;
-                            const isPdf = documentUrl?.endsWith('.pdf');
                             
                             return (
-                                <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
-                                    <CardHeader>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <CardTitle className="text-lg flex items-center gap-2 mb-2">
-                                                    <User className="h-5 w-5" />
-                                                    <span>{label}</span>
-                                                </CardTitle>
-                                                <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
-                                                    {individualDocStatusConfig[status].label}
-                                                </Badge>
-                                            </div>
-                                            {expiryDate ? (
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                                    <CardDescription className={cn("flex items-center gap-1.5", expiryInfo?.color)}>
-                                                        {expiryInfo?.icon}
-                                                        <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
-                                                    </CardDescription>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleEditDateClick(name)}
-                                                        className="h-6 px-2 text-xs w-fit"
-                                                    >
-                                                        <Calendar className="h-3 w-3 mr-1" />
-                                                        Editar
-                                                    </Button>
+                                <motion.div 
+                                    key={name}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                                >
+                                    <div className={cn(
+                                        "border rounded-lg p-5 transition-all hover:shadow-md",
+                                        individualDocStatusConfig[status].bgColor
+                                    )}>
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-slate-100 rounded-lg">
+                                                    <User className="h-5 w-5 text-slate-600" />
                                                 </div>
-                                            ) : (
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-900">{label}</h3>
+                                                    <Badge variant={individualDocStatusConfig[status].variant} className="text-xs mt-1">
+                                                        {individualDocStatusConfig[status].label}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {expiryDate && (
+                                            <div className="mb-4 p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center gap-2">
+                                                {expiryInfo?.icon}
+                                                <span className="text-xs text-slate-700">
+                                                    {expiryInfo?.label} • Vence: <span className="font-semibold">{format(parseDateString(expiryDate), 'dd/MM/yyyy')}</span>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            {expiryDate && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => handleEditDateClick(name)}
-                                                    className="w-fit"
+                                                    className="text-xs"
                                                 >
                                                     <Calendar className="h-3 w-3 mr-1" />
-                                                    Agregar fecha de vencimiento
+                                                    Editar fecha
+                                                </Button>
+                                            )}
+                                            {!expiryDate && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEditDateClick(name)}
+                                                    className="text-xs"
+                                                >
+                                                    <Calendar className="h-3 w-3 mr-1" />
+                                                    Agregar fecha
+                                                </Button>
+                                            )}
+                                            <Button 
+                                                size="sm"
+                                                onClick={() => handleUploadClick(name)}
+                                                disabled={isUploading === name}
+                                                className="text-xs"
+                                            >
+                                                {isUploading === name ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Upload className="mr-1 h-3 w-3" />}
+                                                {documentUrl ? 'Actualizar' : 'Subir'}
+                                            </Button>
+                                            {documentUrl && (
+                                                <Button variant="ghost" size="sm" asChild className="text-xs">
+                                                    <Link href={documentUrl} target="_blank">
+                                                        <Eye className="h-3 w-3 mr-1" />
+                                                        Ver
+                                                    </Link>
                                                 </Button>
                                             )}
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {documentUrl && (
-                                            <div className="border rounded-lg p-4 bg-muted/50">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium flex items-center gap-2">
-                                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                        Documento actual
-                                                    </span>
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={documentUrl} target="_blank" className="flex items-center gap-1">
-                                                            <Eye className="h-3 w-3" />
-                                                            Ver
-                                                        </Link>
-                                                    </Button>
-                                                </div>
-                                                {!isPdf && (
-                                                    <div className="relative h-32 w-full rounded-md overflow-hidden bg-muted">
-                                                        <Image
-                                                            src={documentUrl}
-                                                            alt={label}
-                                                            fill
-                                                            className="object-contain"
-                                                        />
-                                                    </div>
-                                                )}
-                                                {isPdf && (
-                                                    <div className="flex items-center gap-2 p-3 bg-background rounded-md">
-                                                        <FileText className="h-8 w-8 text-red-500" />
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">Documento PDF</p>
-                                                            <p className="text-xs text-muted-foreground">Haz clic en "Ver" para abrir</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        <Button 
-                                            className="w-full sm:w-auto"
-                                            onClick={() => handleUploadClick(name)}
-                                            disabled={isUploading === name}
-                                        >
-                                            {isUploading === name ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                            {documentUrl ? 'Actualizar Documento' : 'Subir Documento'}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </motion.div>
                             )
                         })}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Documentos de Mi Vehículo</CardTitle>
-                        <CardDescription>
-                            {driver.vehicle ? (
-                                <>Estos son los documentos asociados al vehículo con placa <Badge variant="secondary">{driver.vehicle.licensePlate}</Badge>.</>
-                            ) : (
-                                <>Sube los documentos de tu vehículo. El administrador los revisará y asignará el vehículo correspondiente.</>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Documentos de Mi Vehículo</h2>
+                            {driver.vehicle && (
+                                <Badge variant="secondary" className="ml-auto">{driver.vehicle.licensePlate}</Badge>
                             )}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                         {vehicleDocuments.map(({ name, label, expiryDate, registrationDate }) => {
+                        </div>
+                        <p className="text-sm text-slate-600">
+                            {driver.vehicle 
+                                ? 'Estos son los documentos asociados a tu vehículo' 
+                                : 'Sube los documentos de tu vehículo. El administrador los revisará y asignará el vehículo correspondiente.'}
+                        </p>
+                    </div>
+                    <div className="grid gap-4">
+                        {vehicleDocuments.map(({ name, label, expiryDate, registrationDate }, index) => {
                             const status = driver.documentStatus?.[name] || 'pending';
                             const documentUrl = driver.documentUrls?.[name];
                             const expiryInfo = expiryDate ? getDocumentStatus(expiryDate) : null;
-                            const isPdf = documentUrl?.endsWith('.pdf');
                             
                             return (
-                                <Card key={name} className={cn(status === 'rejected' && "border-destructive bg-destructive/5")}>
-                                    <CardHeader>
-                                        <div className="space-y-2">
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <Car className="h-5 w-5" />
-                                                <span>{label}</span>
-                                            </CardTitle>
-                                            <Badge variant={individualDocStatusConfig[status].variant} className="text-xs w-fit">
-                                                {individualDocStatusConfig[status].label}
-                                            </Badge>
-                                            {expiryDate && (
-                                                <CardDescription className={cn("flex items-center gap-1.5 pt-1", expiryInfo?.color)}>
-                                                    {expiryInfo?.icon}
-                                                    <span className="text-xs sm:text-sm">{expiryInfo?.label} (Vence: {format(new Date(expiryDate), 'dd/MM/yyyy')})</span>
-                                                </CardDescription>
-                                            )}
-                                            {registrationDate && (
-                                                <CardDescription className="flex items-center gap-1.5 pt-1">
-                                                    <CalendarIcon className="h-3 w-3" />
-                                                    <span className="text-xs sm:text-sm">Registrado: {format(new Date(registrationDate), 'dd/MM/yyyy')}</span>
-                                                </CardDescription>
-                                            )}
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {documentUrl && (
-                                            <div className="border rounded-lg p-4 bg-muted/50">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium flex items-center gap-2">
-                                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                        Documento actual
-                                                    </span>
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={documentUrl} target="_blank" className="flex items-center gap-1">
-                                                            <Eye className="h-3 w-3" />
-                                                            Ver
-                                                        </Link>
-                                                    </Button>
+                                <motion.div 
+                                    key={name}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                                >
+                                    <div className={cn(
+                                        "border rounded-lg p-5 transition-all hover:shadow-md",
+                                        individualDocStatusConfig[status].bgColor
+                                    )}>
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-slate-100 rounded-lg">
+                                                    <Car className="h-5 w-5 text-slate-600" />
                                                 </div>
-                                                {!isPdf && (
-                                                    <div className="relative h-32 w-full rounded-md overflow-hidden bg-muted">
-                                                        <Image
-                                                            src={documentUrl}
-                                                            alt={label}
-                                                            fill
-                                                            className="object-contain"
-                                                        />
-                                                    </div>
-                                                )}
-                                                {isPdf && (
-                                                    <div className="flex items-center gap-2 p-3 bg-background rounded-md">
-                                                        <FileText className="h-8 w-8 text-red-500" />
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">Documento PDF</p>
-                                                            <p className="text-xs text-muted-foreground">Haz clic en "Ver" para abrir</p>
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-900">{label}</h3>
+                                                    <Badge variant={individualDocStatusConfig[status].variant} className="text-xs mt-1">
+                                                        {individualDocStatusConfig[status].label}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {expiryDate && (
+                                            <div className="mb-2 p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center gap-2">
+                                                {expiryInfo?.icon}
+                                                <span className="text-xs text-slate-700">
+                                                    {expiryInfo?.label} • Vence: <span className="font-semibold">{format(parseDateString(expiryDate), 'dd/MM/yyyy')}</span>
+                                                </span>
                                             </div>
                                         )}
-                                        <Button 
-                                            className="w-full sm:w-auto"
-                                            onClick={() => handleUploadClick(name)}
-                                            disabled={isUploading === name}
-                                        >
-                                            {isUploading === name ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                            {documentUrl ? 'Actualizar Documento' : 'Subir Documento'}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+
+                                        {registrationDate && (
+                                            <div className="mb-4 p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center gap-2">
+                                                <CalendarIcon className="h-4 w-4 text-slate-600" />
+                                                <span className="text-xs text-slate-700">
+                                                    Registrado: <span className="font-semibold">{format(parseDateString(registrationDate), 'dd/MM/yyyy')}</span>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            <Button 
+                                                size="sm"
+                                                onClick={() => handleUploadClick(name)}
+                                                disabled={isUploading === name}
+                                                className="text-xs"
+                                            >
+                                                {isUploading === name ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Upload className="mr-1 h-3 w-3" />}
+                                                {documentUrl ? 'Actualizar' : 'Subir'}
+                                            </Button>
+                                            {documentUrl && (
+                                                <Button variant="ghost" size="sm" asChild className="text-xs">
+                                                    <Link href={documentUrl} target="_blank">
+                                                        <Eye className="h-3 w-3 mr-1" />
+                                                        Ver
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
                             )
                         })}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
 
             {/* Dialog para editar fecha */}

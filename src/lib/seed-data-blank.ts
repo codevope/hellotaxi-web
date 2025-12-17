@@ -197,15 +197,15 @@ export const peakTimeRules: PeakTimeRule[] = [
 export const settings: Omit<Settings, 'id' | 'serviceTypes' | 'cancellationReasons' | 'specialFareRules' | 'peakTimeRules'> = {
     baseFare: 3.5,
     perKmFare: 1.0,
-    perMinuteFare: 0.20,
+    perMinuteFare: 0.50,
     negotiationRange: 15, // en porcentaje
-    locationUpdateInterval: 15, // en segundos
-    mapCenterLat: -12.08, 
-    mapCenterLng: -77.05, 
-    membershipFeeEconomy: 40,
-    membershipFeeComfort: 50,
-    membershipFeeExclusive: 60,
-    commissionPercentageEconomy: 15,
+    locationUpdateInterval: 60, // en segundos
+    mapCenterLat: -6.768328, 
+    mapCenterLng: -79.848569, 
+    membershipFeeEconomy: 15,
+    membershipFeeComfort: 20,
+    membershipFeeExclusive: 25,
+    commissionPercentageEconomy: 10,
     commissionPercentageComfort: 15,
-    commissionPercentageExclusive: 15,
+    commissionPercentageExclusive: 20,
 };

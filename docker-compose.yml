@@ -40,7 +40,7 @@ services:
       - ./ssl:/etc/letsencrypt
       - ./webroot:/var/www/html
     # Primera vez: obtener certificados
-    command: certonly --webroot --webroot-path=/var/www/html --email admin@hellotaxi.pe --agree-tos --no-eff-email -d hellotaxi.pe -d www.hellotaxi.pe
+    command: certonly --webroot --webroot-path=/var/www/html --email hellotaxi70@gmail.com --agree-tos --no-eff-email -d hellotaxi.pe -d www.hellotaxi.pe
     networks:
       - hellotaxi-network
 

@@ -9,7 +9,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MapView from "@/components/maps/map-view";
 import RideRequestForm from "@/components/forms/ride-request-form";
-import RideHistory from "@/components/ride-history";
+import RideHistory from "@/components/ride/ride-history";
 import { SearchingRideStatus } from "@/components/ride/searching-ride-status";
 import { AssignedDriverCard } from "@/components/ride/assigned-driver-card";
 import { CounterOfferCard } from "@/components/ride/counter-offer-card";
@@ -284,6 +284,8 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
         );
 
       if (activeRides.length === 0) {
+        // Solo resetear si no estamos en proceso de rating
+        // Evita mostrar mensajes de cancelación después de completar el viaje
         if (useRideStore.getState().status !== "rating") {
           resetRide();
         }
@@ -332,6 +334,16 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
               }
             }
           }
+          break;
+
+        case "cancelled":
+          // Mostrar mensaje de cancelación y resetear
+          toast({
+            title: "Viaje Cancelado",
+            description: "El viaje ha sido cancelado",
+            variant: "destructive"
+          });
+          resetRide();
           break;
       }
     });
@@ -576,7 +588,7 @@ export default function RiderDesktopView({ notifications }: RiderDesktopViewProp
             driverLocation={driverLocation}
             pickupLocation={pickupLocation}
             dropoffLocation={dropoffLocation}
-            availableDrivers={availableDrivers}
+            availableDrivers={status === 'searching' ? availableDrivers : []}
           />
 
           <Sheet open={isSupportChatOpen} onOpenChange={toggleSupportChat}>

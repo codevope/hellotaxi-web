@@ -73,10 +73,10 @@ const formSchema = z.object({
 });
 
 const paymentMethodIcons: Record<Exclude<PaymentMethod, 'card'>, React.ReactNode> = {
-  cash: <Image src="/img/cash.webp" alt="Efectivo" width={40} height={40} className="object-contain h-10" />,
-  yape: <Image src="/img/yape.png" alt="Yape" width={80} height={40} className="object-contain h-10" />,
-  plin: <Image src="/img/plin.png" alt="Plin" width={80} height={40} className="object-contain h-10" />,
-};
+  cash: <Image src="/img/cash.webp" alt="Efectivo" width={50} height={50} className="object-contain" />,
+  yape: <Image src="/img/yape.png" alt="Yape" width={50} height={50} className="object-contain" />,
+  plin: <Image src="/img/plin.png" alt="Plin" width={50} height={50} className="object-contain" />,
+}
 
 const serviceTypeIcons: Record<ServiceType, React.ReactNode> = {
   economy: <Car className="h-8 w-8 text-[#2E4CA6]" />,
@@ -173,6 +173,13 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
 
   const onSubmit = async () => {
     if (!pickupLocation || !dropoffLocation || !user) return;
+    console.log('[FARE CALC] Iniciando cálculo de ruta:', {
+      pickup: pickupLocation,
+      dropoff: dropoffLocation,
+      serviceType: form.getValues('serviceType'),
+      couponCode: form.getValues('couponCode')
+    });
+    
     const route = await calculateRoute(
       pickupLocation,
       dropoffLocation,
@@ -181,15 +188,41 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
         couponCode: form.getValues('couponCode') || undefined
       }
     );
+    
+    console.log('[FARE CALC] Resultado del cálculo:', {
+      route,
+      estimatedFare: route?.estimatedFare,
+      fareBreakdown: route?.fareBreakdown
+    });
+    
     if (route && route.fareBreakdown) {
       setRouteInfo(route);
       setCustomFare(null); // Reset custom fare when recalculating
       setStatus('confirmed');
+    } else {
+      console.error('[FARE CALC] No se pudo calcular la ruta o falta fareBreakdown');
+      toast({
+        variant: 'destructive',
+        title: 'Error al calcular ruta',
+        description: 'No se pudo calcular la ruta del viaje. Por favor, verifica las ubicaciones.',
+      });
     }
   };
 
   async function handleCreateRide(fare: number, breakdown: FareBreakdown) {
     if (!user) return;
+    
+    // Validar que la tarifa sea mayor a 0
+    if (!fare || fare <= 0) {
+      console.error('[FARE ERROR] Tarifa inválida:', { fare, breakdown });
+      toast({
+        variant: 'destructive',
+        title: 'Error al calcular tarifa',
+        description: 'No se pudo calcular la tarifa del viaje. Por favor, intenta de nuevo.',
+      });
+      return;
+    }
+    
     const hasAvailableDrivers = await checkAvailableDrivers();
     if (!hasAvailableDrivers) {
       toast({
@@ -311,8 +344,8 @@ export default function RideRequestForm({ onRideCreated }: RideRequestFormProps)
               <PriceSelector
                 originalPrice={routeInfo.estimatedFare || 0}
                 onPriceChange={setCustomFare}
-                maxIncrease={15}
-                maxDecrease={15}
+                maxIncrease={appSettings?.negotiationRange || 15}
+                maxDecrease={appSettings?.negotiationRange || 15}
                 step={0.10}
               />
             </div>

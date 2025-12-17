@@ -32,6 +32,8 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
   // Ref para trackear el último estado de cada viaje
   const lastRideStatus = useRef<{ [rideId: string]: string }>({});
+  // Ref para prevenir notificaciones duplicadas (debounce)
+  const lastNotificationTime = useRef<{ [key: string]: number }>({});
 
   const { audioEnabled, enableAudio, playNotificationSound } = useNotificationSound();
   const { toast } = useToast();
@@ -164,6 +166,17 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     newStatus: string,
     rideData: any
   ) => {
+    // Prevenir notificaciones duplicadas con debounce de 2 segundos
+    const notificationKey = `${rideData.id}-${newStatus}`;
+    const now = Date.now();
+    const lastTime = lastNotificationTime.current[notificationKey] || 0;
+    
+    if (now - lastTime < 2000) {
+      console.log(`[Rider] Notificación ignorada (debounce): ${notificationKey}`);
+      return;
+    }
+    
+    lastNotificationTime.current[notificationKey] = now;
 
     let title = '';
     let message = '';

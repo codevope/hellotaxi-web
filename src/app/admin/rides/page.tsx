@@ -1,5 +1,5 @@
 
-import RidesTable from '@/components/admin/rides-table';
+import RidesTable from '@/components/admin/rides/rides-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminRidesPage() {

@@ -1,5 +1,5 @@
-import PromotionsForm from '@/components/admin/promotions-form';
-import PromotionsTable from '@/components/admin/promotions-table';
+import PromotionsForm from '@/components/admin/promotions/promotions-form';
+import PromotionsTable from '@/components/admin/promotions/promotions-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminPromotionsPage() {

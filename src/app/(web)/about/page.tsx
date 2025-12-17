@@ -28,7 +28,7 @@ export default function AboutPage() {
             className="absolute inset-0 z-0 object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6]/80 via-[#0477BF]/70 to-[#049DD9]/60 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6]/70 via-[#0477BF]/70 to-[#049DD9]/70 z-10"></div>
           <div className="relative z-20 p-4 flex flex-col items-center">
             <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4 text-white drop-shadow-lg">
               Revolucionando la Forma en que Te Mueves
@@ -115,22 +115,22 @@ export default function AboutPage() {
                   <div className="mx-auto bg-gradient-to-br from-[#0477BF] to-[#2E4CA6] text-white rounded-full p-4 w-fit mb-4">
                     <Briefcase className="h-10 w-10" />
                   </div>
-                  <CardTitle className="text-[#2E4CA6] text-xl">Membresía Mensual</CardTitle>
+                  <CardTitle className="text-[#2E4CA6] text-xl">Membresía Semanal</CardTitle>
                   <CardDescription className="text-[#0477BF]">Maximiza tus ganancias</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 mb-4">
                     <div className="flex justify-between items-center p-3 bg-gradient-to-r from-[#F2F2F2] to-white rounded-lg">
                       <span className="font-semibold text-[#2E4CA6]">Económico:</span>
-                      <span className="text-[#0477BF] font-bold">S/40 al mes</span>
+                      <span className="text-[#0477BF] font-bold">S/15 - S/20</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gradient-to-r from-[#F2F2F2] to-white rounded-lg">
                       <span className="font-semibold text-[#2E4CA6]">Confort:</span>
-                      <span className="text-[#0477BF] font-bold">S/50 al mes</span>
+                      <span className="text-[#0477BF] font-bold">S/20 - S/25</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gradient-to-r from-[#F2F2F2] to-white rounded-lg">
                       <span className="font-semibold text-[#2E4CA6]">Exclusivo:</span>
-                      <span className="text-[#0477BF] font-bold">S/60 al mes</span>
+                      <span className="text-[#0477BF] font-bold">S/30 - S/35</span>
                     </div>
                   </div>
                   <p className="text-[#0477BF] text-center">

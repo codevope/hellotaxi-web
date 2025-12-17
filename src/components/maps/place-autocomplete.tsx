@@ -26,54 +26,55 @@ const PlaceAutocomplete = ({
   isPickup = false,
 }: PlaceAutocompleteProps) => {
   const [inputValue, setInputValue] = useState(defaultValue);
-  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   const places = useMapsLibrary('places');
   const geocoding = useMapsLibrary('geocoding');
-  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const geocoder = useRef<google.maps.Geocoder | null>(null);
 
 
   useEffect(() => {
-    if (!places || !geocoding) return;
+    if (!geocoding) return;
 
-    if (!autocompleteService.current) {
-      autocompleteService.current = new places.AutocompleteService();
-    }
     if (!geocoder.current) {
       geocoder.current = new geocoding.Geocoder();
     }
-  }, [places, geocoding]);
+  }, [geocoding]);
 
   useEffect(() => {
     setInputValue(defaultValue);
   }, [defaultValue]);
 
 
-  const fetchSuggestions = useCallback((input: string) => {
-    if (!autocompleteService.current || input.length < 3) {
+  const fetchSuggestions = useCallback(async (input: string) => {
+    if (!places || input.length < 3) {
       setSuggestions([]);
       return;
     }
     setLoading(true);
-    autocompleteService.current.getPlacePredictions(
-      { 
+    
+    try {
+      // Nueva API: AutocompleteSuggestion.fetchAutocompleteSuggestions
+      const request: google.maps.places.FetchAutocompleteSuggestionsRequest = {
         input,
-        componentRestrictions: { country: 'pe' }, // Restringir a Perú
-      },
-      (predictions, status) => {
-        setLoading(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setSuggestions(predictions);
-          setShowSuggestions(true);
-        } else {
-          setSuggestions([]);
-        }
-      }
-    );
-  }, []);
+        includedRegionCodes: ['pe'], // Restringir a Perú
+        language: 'es',
+      };
+      
+      const { suggestions: autocompleteSuggestions } = 
+        await places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      
+      setSuggestions(autocompleteSuggestions);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error fetching autocomplete suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [places]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -81,13 +82,20 @@ const PlaceAutocomplete = ({
     fetchSuggestions(value);
   };
   
-  const handleSelect = (prediction: google.maps.places.AutocompletePrediction) => {
-    if (!geocoder.current) return;
+  const handleSelect = async (suggestion: google.maps.places.AutocompleteSuggestion) => {
+    if (!suggestion.placePrediction) return;
     
-    setInputValue(prediction.description);
+    const placePrediction = suggestion.placePrediction;
+    setInputValue(placePrediction.text.toString());
     setShowSuggestions(false);
 
-    geocoder.current.geocode({ placeId: prediction.place_id }, (results, status) => {
+    // Usar Geocoder para obtener las coordenadas del placeId
+    if (!geocoder.current || !placePrediction.placeId) {
+      console.error('Geocoder not initialized or missing placeId');
+      return;
+    }
+
+    geocoder.current.geocode({ placeId: placePrediction.placeId }, (results, status) => {
       if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
         const place = results[0];
         const location = place.geometry?.location;
@@ -95,9 +103,11 @@ const PlaceAutocomplete = ({
           onPlaceSelect({
             lat: location.lat(),
             lng: location.lng(),
-            address: prediction.description,
+            address: place.formatted_address || placePrediction.text.toString(),
           });
         }
+      } else {
+        console.error('Geocoding failed:', status);
       }
     });
   };
@@ -134,13 +144,13 @@ const PlaceAutocomplete = ({
                     </div>
                 ) : (
                     <ul className="py-1">
-                        {suggestions.map((s) => (
+                        {suggestions.map((s, index) => (
                             <li
-                                key={s.place_id}
+                                key={s.placePrediction?.placeId || `suggestion-${index}`}
                                 className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
                                 onMouseDown={() => handleSelect(s)} // Use onMouseDown to prevent blur event from firing first
                             >
-                                {s.description}
+                                {s.placePrediction?.text.toString()}
                             </li>
                         ))}
                          {suggestions.length === 0 && inputValue.length > 2 && (

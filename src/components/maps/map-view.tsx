@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, Children, isValidElement } from 'react';
 import { useGeolocation } from '@/hooks/geolocation/use-geolocation';
-import type { Ride, Location, Driver } from '@/lib/types';
+import type { Ride, Location, EnrichedDriver, Driver } from '@/lib/types';
 import {
   GoogleMapsProvider,
   InteractiveMap,
@@ -13,13 +13,14 @@ import {
 } from '.';
 import { GeocodingService } from '@/services/geocoding-service';
 import { useToast } from '@/hooks/use-toast';
+import { getSettings } from '@/services/settings-service';
 
 interface MapViewProps {
   onLocationSelect?: (location: Location, type: 'pickup' | 'dropoff') => void;
   pickupLocation: Location | null;
   dropoffLocation: Location | null;
   driverLocation?: Location | null;
-  availableDrivers?: Driver[];
+  availableDrivers?: (EnrichedDriver | Driver)[];
   className?: string;
   height?: string;
   interactive?: boolean;
@@ -42,13 +43,37 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
   const { location: userLocation, requestLocation, loading } = useGeolocation();
   const { toast } = useToast();
   
-  const [mapCenter, setMapCenter] = useState<Location>(initialMapCenter || { lat: -12.046374, lng: -77.042793 }); // Default to Lima
+  const [mapCenter, setMapCenter] = useState<Location>({ lat: -6.7713, lng: -79.8442 }); // Temporal default
   const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
 
+  // Cargar coordenadas desde Firebase
   useEffect(() => {
-    if(initialMapCenter) {
+    const loadMapCenter = async () => {
+      try {
+        const settings = await getSettings();
+        const defaultCenter = {
+          lat: settings.mapCenterLat,
+          lng: settings.mapCenterLng,
+        };
+        
+        if (!initialMapCenter && !userLocation) {
+          setMapCenter(defaultCenter);
+        }
+      } catch (error) {
+        console.error('Error loading map center from settings:', error);
+      }
+    };
+    
+    loadMapCenter();
+  }, []);
+
+  useEffect(() => {
+    // SOLO pedir ubicación si es interactivo y no tenemos ubicación del usuario
+    // Para admin (non-interactive), usar mapCenter de Firebase settings
+    if (initialMapCenter) {
       setMapCenter(initialMapCenter);
-    } else if (!userLocation && !loading) {
+    } else if (interactive && !userLocation && !loading) {
+      // Solo pedir ubicación si es un mapa interactivo (rider, driver, etc)
       requestLocation();
     } else if (userLocation) {
       setMapCenter({
@@ -56,7 +81,7 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
         lng: userLocation.longitude,
       });
     }
-  }, [userLocation, loading, requestLocation, initialMapCenter]);
+  }, [userLocation, loading, requestLocation, initialMapCenter, interactive]);
 
   useEffect(() => {
     if(pickupLocation && !dropoffLocation) {
@@ -127,7 +152,7 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
           zoom={14}
           onMapClick={interactive ? handleMapClick : undefined}
         >
-          {userPos && !driverLocation && (
+          {userPos && (
             <MapMarker
               position={userPos}
               type="user"
@@ -168,12 +193,13 @@ const MapView: React.FC<MapViewProps> & { Marker: typeof MapMarker } = ({
           {/* 🚗 Mostrar conductores disponibles (solo si no hay conductor asignado) */}
           {!driverLocation && availableDrivers.map((driver) => {
             if (!driver.location) return null;
+            const driverName = 'name' in driver ? driver.name : 'Conductor';
             return (
               <MapMarker
                 key={driver.id}
                 position={driver.location}
                 type="available-driver"
-                title={driver.name}
+                title={driverName}
               />
             );
           })}

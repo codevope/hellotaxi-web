@@ -1,4 +1,4 @@
-import DriversTable from '@/components/admin/drivers-table';
+import DriversTable from '@/components/admin/drivers/drivers-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminDriversPage() {

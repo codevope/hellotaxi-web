@@ -1,4 +1,4 @@
-import SosTable from '@/components/admin/sos-table';
+import SosTable from '@/components/admin/sos/sos-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminSosPage() {

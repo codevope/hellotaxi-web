@@ -142,6 +142,15 @@ export function useETACalculator(): UseETACalculatorReturn {
       const rideDate = new Date();
       const peakTime = rideDate.getHours() >= 16 && rideDate.getHours() <= 19;
 
+      console.log('[FARE CALC] Parámetros para cálculo de tarifa:', {
+        distanceKm,
+        durationMinutes,
+        peakTime,
+        serviceType: options.serviceType,
+        rideDate: rideDate.toISOString(),
+        couponCode: options.couponCode
+      });
+
       const fareResult = await estimateRideFareDeterministic({
         distanceKm,
         durationMinutes,
@@ -149,6 +158,13 @@ export function useETACalculator(): UseETACalculatorReturn {
         serviceType: options.serviceType,
         rideDate: rideDate.toISOString(),
         couponCode: options.couponCode
+      });
+      
+      console.log('[FARE CALC] Resultado de estimateRideFareDeterministic:', {
+        fareResult,
+        estimatedFare: fareResult?.estimatedFare,
+        breakdown: fareResult?.breakdown,
+        fullObject: JSON.stringify(fareResult, null, 2)
       });
 
       const trafficCondition = getTrafficCondition(durationSecondsWithTraffic, durationSecondsBaseline);

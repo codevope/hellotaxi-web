@@ -35,6 +35,9 @@ import {
   Clock,
   Phone,
   MapPin,
+  Edit,
+  Check,
+  X as XIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +47,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Image from "next/image";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -74,6 +87,7 @@ import {
   getDocs,
   DocumentReference,
   deleteField,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getDocumentStatus } from "@/lib/document-status";
@@ -105,7 +119,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { driverRidesColumns } from "@/components/admin/driver-rides-columns";
+import { driverRidesColumns } from "@/components/admin/drivers/driver-rides-columns";
 
 const statusConfig: Record<
   Driver["status"],
@@ -146,7 +160,7 @@ const documentStatusConfig: Record<
 
 const paymentModelConfig: Record<PaymentModel, string> = {
   commission: "Comisión por Viaje",
-  membership: "Membresía Mensual",
+  membership: "Membresía Semanal",
 };
 
 const getMembershipStatus = (
@@ -180,6 +194,19 @@ type EnrichedDriver = Omit<Driver, "vehicle"> & {
   avatarUrl: string;
   phone: string;
   rating: number;
+};
+
+// Helper function para parsear fechas en formato YYYY-MM-DD sin problemas de zona horaria
+const parseDateString = (dateString: string): Date => {
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1; // Los meses en JS son 0-indexed
+    const day = parseInt(parts[2]);
+    return new Date(year, month, day);
+  }
+  // Fallback para otros formatos
+  return new Date(dateString);
 };
 
 export default function DriverDetailsPage() {
@@ -219,7 +246,7 @@ export default function DriverDetailsPage() {
   // Payment model fields state
   const [commissionPercentage, setCommissionPercentage] = useState<number>(15); // Default 15%
   const [membershipPrice, setMembershipPrice] = useState<number>(0);
-  const [membershipDuration, setMembershipDuration] = useState<"monthly" | "annual">("monthly");
+  const [membershipDuration, setMembershipDuration] = useState<"weekly" | "monthly" | "annual">("monthly");
   const [membershipStartDate, setMembershipStartDate] = useState<string>("");
 
   // Document viewer state
@@ -238,6 +265,16 @@ export default function DriverDetailsPage() {
 
   // Payment history state - ahora cargamos desde Firestore
   const [paymentHistory, setPaymentHistory] = useState<MembershipPayment[]>([]);
+  const [isRecalculateDialogOpen, setIsRecalculateDialogOpen] = useState(false);
+  const [recalculatePreview, setRecalculatePreview] = useState<{
+    toDelete: number;
+    toKeep: number;
+    lastPaidDate?: string;
+  } | null>(null);
+
+  // State for editing driver name
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
   useEffect(() => {
     if (typeof id !== "string") return;
@@ -684,7 +721,10 @@ export default function DriverDetailsPage() {
           const expiryDate = new Date(startDate);
           const nextDue = new Date(startDate);
           
-          if (membershipDuration === "monthly") {
+          if (membershipDuration === "weekly") {
+            expiryDate.setDate(expiryDate.getDate() + 7);
+            nextDue.setDate(nextDue.getDate() + 7);
+          } else if (membershipDuration === "monthly") {
             expiryDate.setMonth(expiryDate.getMonth() + 1);
             nextDue.setMonth(nextDue.getMonth() + 1);
           } else if (membershipDuration === "annual") {
@@ -923,7 +963,9 @@ export default function DriverDetailsPage() {
       const currentDue = new Date(driver.nextPaymentDue);
       const nextDue = new Date(currentDue);
       
-      if (driver.membershipDuration === "monthly") {
+      if (driver.membershipDuration === "weekly") {
+        nextDue.setDate(nextDue.getDate() + 7);
+      } else if (driver.membershipDuration === "monthly") {
         nextDue.setMonth(nextDue.getMonth() + 1);
       } else if (driver.membershipDuration === "annual") {
         nextDue.setFullYear(nextDue.getFullYear() + 1);
@@ -1040,7 +1082,9 @@ export default function DriverDetailsPage() {
         const startDate = new Date(year, month - 1, day); // month es 0-indexed
         const endDate = new Date(startDate);
         
-        if (driverData.membershipDuration === 'monthly') {
+        if (driverData.membershipDuration === 'weekly') {
+          endDate.setDate(endDate.getDate() + 7);
+        } else if (driverData.membershipDuration === 'monthly') {
           endDate.setMonth(endDate.getMonth() + 1);
         } else {
           endDate.setFullYear(endDate.getFullYear() + 1);
@@ -1093,7 +1137,9 @@ export default function DriverDetailsPage() {
           const nextPeriodStart = new Date(lastPayment.periodEnd);
           const nextDueDate = new Date(nextPeriodStart);
           
-          if (driverData.membershipDuration === 'monthly') {
+          if (driverData.membershipDuration === 'weekly') {
+            nextDueDate.setDate(nextDueDate.getDate() + 7);
+          } else if (driverData.membershipDuration === 'monthly') {
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
           } else {
             nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
@@ -1140,6 +1186,161 @@ export default function DriverDetailsPage() {
     await generatePaymentPeriod(driver, driver.vehicle);
   };
 
+  const handleOpenRecalculateDialog = async () => {
+    if (!driver) return;
+
+    // Calcular preview de cambios
+    const paymentsQuery = query(
+      collection(db, "membershipPayments"),
+      where("driverId", "==", driver.id)
+    );
+    const paymentsSnap = await getDocs(paymentsQuery);
+    
+    const toDelete = paymentsSnap.docs.filter(doc => {
+      const payment = doc.data() as MembershipPayment;
+      return payment.status !== 'paid';
+    }).length;
+
+    const paidPayments = paymentsSnap.docs
+      .map(doc => doc.data() as MembershipPayment)
+      .filter(p => p.status === 'paid')
+      .sort((a, b) => new Date(b.paidDate || b.dueDate).getTime() - new Date(a.paidDate || a.dueDate).getTime());
+
+    setRecalculatePreview({
+      toDelete,
+      toKeep: paidPayments.length,
+      lastPaidDate: paidPayments[0]?.paidDate || paidPayments[0]?.dueDate,
+    });
+
+    setIsRecalculateDialogOpen(true);
+  };
+
+  const handleRecalculatePaymentHistory = async () => {
+    if (!driver || !driver.vehicle || !driver.membershipStartDate) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "El conductor debe tener fecha de inicio de membresía configurada.",
+      });
+      setIsRecalculateDialogOpen(false);
+      return;
+    }
+
+    setIsUpdating(true);
+    setIsRecalculateDialogOpen(false);
+    try {
+      // 1. Eliminar todos los pagos pendientes y vencidos
+      const paymentsQuery = query(
+        collection(db, "membershipPayments"),
+        where("driverId", "==", driver.id)
+      );
+      const paymentsSnap = await getDocs(paymentsQuery);
+
+      // Eliminar pagos que no estén pagados
+      const deletePromises = paymentsSnap.docs
+        .filter(doc => {
+          const payment = doc.data() as MembershipPayment;
+          return payment.status !== 'paid';
+        })
+        .map(doc => deleteDoc(doc.ref));
+
+      await Promise.all(deletePromises);
+
+      // 2. Buscar el último pago pagado para continuar desde ahí
+      const paidPayments = paymentsSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as MembershipPayment))
+        .filter(p => p.status === 'paid')
+        .sort((a, b) => new Date(b.paidDate || b.dueDate).getTime() - new Date(a.paidDate || a.dueDate).getTime());
+
+      const lastPaidPayment = paidPayments[0];
+
+      // 3. Recalcular el siguiente periodo basado en la duración actual
+      const driverRef = doc(db, "drivers", driver.id);
+      
+      if (lastPaidPayment) {
+        // Si hay pagos previos, calcular desde el último periodo pagado
+        const nextStart = new Date(lastPaidPayment.periodEnd);
+        const nextDue = new Date(nextStart);
+
+        if (membershipDuration === 'weekly') {
+          nextDue.setDate(nextDue.getDate() + 7);
+        } else if (membershipDuration === 'monthly') {
+          nextDue.setMonth(nextDue.getMonth() + 1);
+        } else {
+          nextDue.setFullYear(nextDue.getFullYear() + 1);
+        }
+
+        await updateDoc(driverRef, {
+          nextPaymentDue: nextDue.toISOString(),
+          membershipExpiryDate: nextDue.toISOString(),
+        });
+      } else {
+        // Si no hay pagos previos, usar la fecha de inicio configurada
+        const startDate = new Date(driver.membershipStartDate);
+        const nextDue = new Date(startDate);
+
+        if (membershipDuration === 'weekly') {
+          nextDue.setDate(nextDue.getDate() + 7);
+        } else if (membershipDuration === 'monthly') {
+          nextDue.setMonth(nextDue.getMonth() + 1);
+        } else {
+          nextDue.setFullYear(nextDue.getFullYear() + 1);
+        }
+
+        await updateDoc(driverRef, {
+          nextPaymentDue: nextDue.toISOString(),
+          membershipExpiryDate: nextDue.toISOString(),
+        });
+      }
+
+      // 4. Generar el nuevo período con la duración correcta
+      await generateNextPaymentPeriod();
+
+      // 5. Recargar el historial actualizado
+      const updatedPayments = await getDocs(paymentsQuery);
+      const payments = updatedPayments.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as MembershipPayment));
+      payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      setPaymentHistory(payments);
+
+      const durationLabel = membershipDuration === 'weekly' ? 'Semanal' : membershipDuration === 'monthly' ? 'Mensual' : 'Anual';
+      
+      toast({
+        title: "Historial Recalculado",
+        description: (
+          <div className="space-y-1">
+            <p>• {deletePromises.length} pagos eliminados (pendientes/vencidos)</p>
+            <p>• {paidPayments.length} pagos conservados (completados)</p>
+            <p>• Nueva duración: {durationLabel}</p>
+            {lastPaidPayment && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Próximo pago: {format(new Date(lastPaidPayment.periodEnd), 'dd MMM yyyy', { locale: es })}
+              </p>
+            )}
+          </div>
+        ),
+      });
+
+      // Recargar datos del driver
+      const driverSnap = await getDoc(driverRef);
+      if (driverSnap.exists()) {
+        const updatedDriver = { ...driver, ...driverSnap.data() };
+        setDriver(updatedDriver as EnrichedDriver);
+      }
+    } catch (error) {
+      console.error("Error recalculando historial:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo recalcular el historial de pagos.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handlePauseMembership = async () => {
     if (!driver) return;
 
@@ -1184,6 +1385,40 @@ export default function DriverDetailsPage() {
     }
   };
 
+  const handleSaveDriverName = async () => {
+    if (!driver || !editedName.trim()) return;
+
+    setIsUpdating(true);
+    try {
+      const userRef = doc(db, "users", driver.userId);
+      await updateDoc(userRef, {
+        name: editedName.trim(),
+      });
+
+      // Actualizar estado local
+      setDriver({
+        ...driver,
+        name: editedName.trim(),
+      });
+
+      setIsEditingName(false);
+
+      toast({
+        title: "Nombre actualizado",
+        description: "El nombre del conductor ha sido actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error("Error updating driver name:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el nombre del conductor.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleSaveVehicleDocDate = async () => {
     if (!driver?.vehicle || !editDateDialog.docName) return;
 
@@ -1192,15 +1427,19 @@ export default function DriverDetailsPage() {
       const vehicleRef = doc(db, "vehicles", driver.vehicle.id);
       const updates: Partial<Vehicle> = {};
 
+      // Convertir la fecha a ISO sin hora para evitar problemas de zona horaria
+      // El input type="date" ya devuelve formato YYYY-MM-DD, lo guardamos tal cual
+      const dateToSave = editDateDialog.currentDate; // Ya está en formato YYYY-MM-DD
+
       if (editDateDialog.docName === "insurance") {
-        updates.insuranceExpiry = editDateDialog.currentDate;
-        setInsuranceExpiry(editDateDialog.currentDate);
+        updates.insuranceExpiry = dateToSave;
+        setInsuranceExpiry(dateToSave);
       } else if (editDateDialog.docName === "technicalReview") {
-        updates.technicalReviewExpiry = editDateDialog.currentDate;
-        setTechnicalReviewExpiry(editDateDialog.currentDate);
+        updates.technicalReviewExpiry = dateToSave;
+        setTechnicalReviewExpiry(dateToSave);
       } else if (editDateDialog.docName === "propertyCard") {
-        updates.propertyCardRegistrationDate = editDateDialog.currentDate;
-        setPropertyCardRegistrationDate(editDateDialog.currentDate);
+        updates.propertyCardRegistrationDate = dateToSave;
+        setPropertyCardRegistrationDate(dateToSave);
       }
 
       await updateDoc(vehicleRef, updates);
@@ -1322,7 +1561,58 @@ export default function DriverDetailsPage() {
                 <AvatarImage src={driver.avatarUrl} alt={driver.name} />
                 <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
               </Avatar>
-              <CardTitle>{driver.name}</CardTitle>
+              {isEditingName ? (
+                <div className="flex items-center gap-2 w-full">
+                  <Input
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveDriverName();
+                      if (e.key === 'Escape') {
+                        setIsEditingName(false);
+                        setEditedName(driver.name);
+                      }
+                    }}
+                    className="text-center"
+                    autoFocus
+                    disabled={isUpdating}
+                  />
+                  <Button
+                    size="icon"
+                    variant="link"
+                    onClick={handleSaveDriverName}
+                    disabled={isUpdating || !editedName.trim()}
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="link"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setEditedName(driver.name);
+                    }}
+                    disabled={isUpdating}
+                  >
+                    <XIcon className="h-4 w-4 text-red-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CardTitle>{driver.name}</CardTitle>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditedName(driver.name);
+                      setIsEditingName(true);
+                    }}
+                    className="h-8 w-8"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 <span>{driver.rating.toFixed(1)} de calificación</span>
@@ -1509,7 +1799,7 @@ export default function DriverDetailsPage() {
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Guardar Info- del Vehículo
+                      Guardar info del vehículo
                     </>
                   )}
                 </Button>
@@ -1582,7 +1872,7 @@ export default function DriverDetailsPage() {
                             >
                               {statusInfo.icon}
                               <span>
-                                {statusInfo.label} (Vence: {docDetail.expiryDate && !isNaN(new Date(docDetail.expiryDate).getTime()) ? format(new Date(docDetail.expiryDate), "dd/MM/yyyy") : "Fecha inválida"})
+                                {statusInfo.label} (Vence: {docDetail.expiryDate ? format(parseDateString(docDetail.expiryDate), "dd/MM/yyyy") : "Fecha inválida"})
                               </span>
                             </div>
                           ) : (
@@ -1685,24 +1975,15 @@ export default function DriverDetailsPage() {
                             >
                               {statusInfo.icon}
                               <span>
-                                {statusInfo.label} (Vence:{" "}
-                                {docDetail.expiryDate && !isNaN(new Date(docDetail.expiryDate).getTime()) ? format(
-                                  new Date(docDetail.expiryDate!),
-                                  "dd/MM/yyyy"
-                                ) : "Fecha inválida"}
-                                )
+                                {statusInfo.label} (Vence: {docDetail.expiryDate ? format(parseDateString(docDetail.expiryDate), "dd/MM/yyyy") : "Fecha inválida"})
                               </span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5 text-sm ml-7 text-muted-foreground">
                               <CalendarCheck className="h-4 w-4" />
-                              {docDetail.registrationDate && !isNaN(new Date(docDetail.registrationDate).getTime()) ? (
+                              {docDetail.registrationDate ? (
                                 <span>
-                                  Registrado:{" "}
-                                  {format(
-                                    new Date(docDetail.registrationDate),
-                                    "dd/MM/yyyy"
-                                  )}
+                                  Registrado: {format(parseDateString(docDetail.registrationDate!), "dd/MM/yyyy")}
                                 </span>
                               ) : (
                                 <span>Fecha no registrada</span>
@@ -1845,7 +2126,7 @@ export default function DriverDetailsPage() {
                             Comisión por Viaje
                           </SelectItem>
                           <SelectItem value="membership">
-                            Membresía Mensual
+                            Membresía
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -1994,7 +2275,7 @@ export default function DriverDetailsPage() {
                           </div>
 
                           <p className="text-xs text-muted-foreground">
-                            Precio mensual que pagará este conductor específicamente
+                            Precio semanal que pagará este conductor específicamente
                           </p>
                         </div>
 
@@ -2014,7 +2295,9 @@ export default function DriverDetailsPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="weekly">Semanal</SelectItem>
                                 <SelectItem value="monthly">Mensual</SelectItem>
+                                <SelectItem value="annual">Anual</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -2032,11 +2315,47 @@ export default function DriverDetailsPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Botón para recalcular historial si se cambió la duración */}
+                        {driver?.membershipStartDate && paymentHistory.length > 0 && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div className="space-y-2 flex-1">
+                                <p className="text-sm font-medium text-amber-900">
+                                  ¿Configuraste mal la duración?
+                                </p>
+                                <p className="text-xs text-amber-700">
+                                  Si cambiaste la duración de la membresía (por ejemplo, de semanal a mensual), usa este botón para:
+                                </p>
+                                <ul className="text-xs text-amber-700 list-disc list-inside space-y-1">
+                                  <li>Eliminar pagos pendientes/vencidos incorrectos</li>
+                                  <li>Mantener los pagos ya realizados</li>
+                                  <li>Generar el siguiente periodo con la duración correcta</li>
+                                </ul>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleOpenRecalculateDialog}
+                                  disabled={isUpdating}
+                                  className="mt-2 border-amber-300 text-amber-700 hover:bg-amber-400"
+                                >
+                                  {isUpdating ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                  )}
+                                  Recalcular Historial de Pagos
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-4 border-t space-y-3">
+                  <div className="pt-4 flex gap-3 border-t">
                     <Button
                       onClick={handleSaveChanges}
                       disabled={isUpdating}
@@ -2237,7 +2556,7 @@ export default function DriverDetailsPage() {
                         Este conductor está en modo <span className="font-semibold">Comisión por Viaje</span>
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        El historial de pagos solo está disponible para conductores con membresía mensual.
+                        El historial de pagos solo está disponible para conductores con membresía semanal.
                       </p>
                     </div>
                   )}
@@ -2274,6 +2593,72 @@ export default function DriverDetailsPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Diálogo de confirmación para recalcular historial de pagos */}
+      <AlertDialog open={isRecalculateDialogOpen} onOpenChange={setIsRecalculateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              ¿Confirmar Recálculo de Historial?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Esta acción eliminará los pagos pendientes/vencidos y generará nuevos períodos con la duración <strong>{membershipDuration === 'weekly' ? 'Semanal' : membershipDuration === 'monthly' ? 'Mensual' : 'Anual'}</strong>.
+                </p>
+                
+                {recalculatePreview && (
+                  <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
+                    <div className="font-semibold text-foreground mb-2">Vista Previa de Cambios:</div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Pagos a eliminar:</span>
+                      <Badge variant="destructive" className="font-mono">
+                        {recalculatePreview.toDelete}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Pagos a conservar:</span>
+                      <Badge variant="default" className="font-mono bg-green-500">
+                        {recalculatePreview.toKeep}
+                      </Badge>
+                    </div>
+
+                    {recalculatePreview.lastPaidDate && (
+                      <div className="pt-2 mt-2 border-t border-border">
+                        <span className="text-xs text-muted-foreground">
+                          Último pago registrado: {format(new Date(recalculatePreview.lastPaidDate), 'dd MMM yyyy HH:mm', { locale: es })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-800">
+                    <strong>Nota:</strong> Los pagos ya completados no se verán afectados. Solo se eliminarán pagos pendientes o vencidos generados con la duración incorrecta.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdating}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRecalculatePaymentHistory}
+              disabled={isUpdating}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar Recálculo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog para ver documento */}
       <Dialog
@@ -2316,9 +2701,8 @@ export default function DriverDetailsPage() {
                         date =
                           driver.vehicle?.propertyCardRegistrationDate || "";
 
-                      return date
-                        ? format(new Date(date), "dd/MMM/yyyy", { locale: es })
-                        : "No especificada";
+                      if (!date) return "No especificada";
+                      return format(parseDateString(date), "dd/MMM/yyyy", { locale: es });
                     })()}
                   </p>
                 </div>
@@ -2326,41 +2710,17 @@ export default function DriverDetailsPage() {
 
               {/* Vista previa del documento */}
               <div className="border rounded-lg p-4">
-                {selectedDocument.url.endsWith(".pdf") ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
-                      <FileCheck className="h-8 w-8 text-red-500" />
-                      <div>
-                        <p className="font-medium">Documento PDF</p>
-                        <p className="text-sm text-muted-foreground">
-                          Los PDFs se abren en una nueva pestaña
-                        </p>
-                      </div>
-                    </div>
-                    <Button asChild className="w-full">
-                      <a
-                        href={selectedDocument.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Abrir PDF en nueva pestaña
-                      </a>
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className="relative w-full"
-                    style={{ minHeight: "400px" }}
-                  >
-                    <Image
-                      src={selectedDocument.url}
-                      alt={docNameMap[selectedDocument.name]}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                )}
+                <div
+                  className="relative w-full"
+                  style={{ minHeight: "400px" }}
+                >
+                  <Image
+                    src={selectedDocument.url}
+                    alt={docNameMap[selectedDocument.name]}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
               </div>
             </div>
           )}

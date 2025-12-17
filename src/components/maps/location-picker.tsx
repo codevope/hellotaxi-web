@@ -79,10 +79,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   useEffect(() => {
     if (error) {
+      // Mapear códigos de error a mensajes descriptivos
+      const errorMessages: Record<number, string> = {
+        1: 'Permiso denegado: Habilita el acceso a la ubicación en la configuración de tu navegador.',
+        2: 'Posición no disponible: Asegúrate de tener conexión de datos o GPS activo.',
+        3: 'Timeout: La solicitud de ubicación tardó demasiado. Intenta nuevamente.',
+      };
+
+      const userMessage = errorMessages[error.code] || 'No pudimos obtener tu ubicación actual.';
+
       toast({
         variant: 'destructive',
         title: 'Ubicación no disponible',
-        description: 'No pudimos obtener tu ubicación actual. Asegúrate de tener los permisos activados.',
+        description: userMessage,
       });
     }
   }, [error, toast]);

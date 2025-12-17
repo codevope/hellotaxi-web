@@ -17,6 +17,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,9 @@ export function IncomingRideRequest({
                 </div>
                 Nueva Solicitud
               </SheetTitle>
+              <SheetDescription className="sr-only">
+                Detalles de la solicitud de viaje entrante
+              </SheetDescription>
               <Badge 
                 variant="secondary" 
                 className={`px-3 py-1 text-lg font-bold ${

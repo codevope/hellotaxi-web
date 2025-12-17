@@ -1,4 +1,4 @@
-import CancellationsTable from '@/components/admin/cancellations-table';
+import CancellationsTable from '@/components/admin/cancellations/cancellations-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminCancellationsPage() {

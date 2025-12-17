@@ -5,7 +5,7 @@ import type { DocumentReference } from 'firebase/firestore';
 export type ServiceType = 'economy' | 'comfort' | 'exclusive';
 export type PaymentModel = 'commission' | 'membership';
 export type MembershipStatus = 'active' | 'pending' | 'expired';
-export type MembershipDuration = 'monthly' | 'annual';
+export type MembershipDuration = 'weekly' | 'monthly' | 'annual';
 export type PaymentStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
 export type PaymentMethod = 'cash' | 'yape' | 'plin';
 export type UserRole = 'rider' | 'driver' | 'admin';
@@ -77,7 +77,7 @@ export interface Driver {
   commissionPercentage?: number; // Porcentaje de comisión (ej: 15 para 15%)
   // Campos de membresía
   membershipPricing?: MembershipPricing; // Precios por tipo de servicio
-  membershipDuration?: MembershipDuration; // Duración: mensual o anual
+  membershipDuration?: MembershipDuration; // Duración: semanal o anual
   membershipStartDate?: string; // ISO Date string - fecha de inicio de membresía
   membershipPausedDate?: string; // ISO Date string - fecha cuando se pausa la membresía
   lastPaymentDate?: string; // ISO Date string - última fecha de pago de membresía

@@ -12,7 +12,7 @@ export default function DriverPage() {
     <>
         {/* Hero Section */}
         <section className="relative h-[35vh] flex items-center justify-center text-center">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6]/80 via-[#0477BF]/70 to-[#049DD9]/60 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2E4CA6] via-[#0477BF] to-[#049DD9] z-10"></div>
           <div className="relative z-20 p-4 flex flex-col items-center">
             <h1 className="text-3xl md:text-5xl font-bold font-headline mb-4 text-white drop-shadow-lg">
               Gana Dinero a Tu Manera
@@ -49,7 +49,7 @@ export default function DriverPage() {
                 <CardContent className="text-center">
                   <p className="text-[#0477BF]">
                     Elige si prefieres un modelo de comisión por viaje o una
-                    membresía mensual fija. Sin tarifas ocultas.
+                    membresía semanal fija. Sin tarifas ocultas.
                   </p>
                 </CardContent>
               </Card>

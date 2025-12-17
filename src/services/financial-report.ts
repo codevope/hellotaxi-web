@@ -74,7 +74,7 @@ export async function generateFinancialReport(startDate?: Date, endDate?: Date):
     let commissionBasedEarnings = 0;
     let membershipBasedEarnings = 0;
 
-    // Para reporte mensual - sin prorrateo, usamos tarifas fijas mensuales
+    // Para reporte semanal - sin prorrateo, usamos tarifas fijas semanales
 
     for (const driverId of driverIds) {
         try {
@@ -121,22 +121,22 @@ export async function generateFinancialReport(startDate?: Date, endDate?: Date):
                 effectiveCommissionRate = commissionRate;
                 commissionBasedEarnings += platformEarnings;
             } else if (driverData.paymentModel === 'membership' && vehicleData) {
-                // Reporte mensual: usar tarifa fija mensual sin prorrateo
-                let monthlyFee = 0;
+                // Reporte semanal: usar tarifa fija semanal sin prorrateo
+                let weeklyFee = 0;
                 switch (vehicleData.serviceType) {
                     case 'economy':
-                        monthlyFee = settings.membershipFeeEconomy;
+                        weeklyFee = settings.membershipFeeEconomy;
                         break;
                     case 'comfort':
-                        monthlyFee = settings.membershipFeeComfort;
+                        weeklyFee = settings.membershipFeeComfort;
                         break;
                     case 'exclusive':
-                        monthlyFee = settings.membershipFeeExclusive;
+                        weeklyFee = settings.membershipFeeExclusive;
                         break;
                 }
                 
-                // Usar tarifa mensual completa
-                membershipFeeApplied = monthlyFee;
+                // Usar tarifa semanal completa
+                membershipFeeApplied = weeklyFee;
                 platformEarnings = membershipFeeApplied;
                 // Para membresías, la tasa efectiva es 0 ya que es un costo fijo, no porcentual
                 effectiveCommissionRate = 0;

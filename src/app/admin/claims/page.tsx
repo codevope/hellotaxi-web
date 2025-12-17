@@ -1,4 +1,4 @@
-import ClaimsTable from '@/components/admin/claims-table';
+import ClaimsTable from '@/components/admin/claims/claims-table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function AdminClaimsPage() {

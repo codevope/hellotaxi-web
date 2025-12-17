@@ -7,6 +7,7 @@ import { useDriverRideStore } from '@/store/driver-ride-store';
 import type { Ride, User, EnrichedDriver, Location } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
+import { getSettings } from '@/services/settings-service';
 
 export interface EnrichedRide extends Omit<Ride, 'passenger' | 'driver'> {
   passenger: User;
@@ -42,8 +43,23 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
   const [completedRideForRating, setCompletedRideForRating] = useState<EnrichedRide | null>(null);
   const [isCompletingRide, setIsCompletingRide] = useState(false);
   const [driverLocation, setDriverLocation] = useState<Location | null>(null);
+  const [updateInterval, setUpdateInterval] = useState(15000); // Default 15 segundos en ms
   const { toast } = useToast();
   const locationUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cargar intervalo de actualización desde Firebase
+  useEffect(() => {
+    async function loadUpdateInterval() {
+      try {
+        const settings = await getSettings();
+        // Convertir de segundos a milisegundos
+        setUpdateInterval((settings.locationUpdateInterval || 15) * 1000);
+      } catch (error) {
+        console.error('Error loading location update interval:', error);
+      }
+    }
+    loadUpdateInterval();
+  }, []);
 
   // 📍 Actualizar ubicación del conductor en Firestore cada 60 segundos
   useEffect(() => {
@@ -84,8 +100,8 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
     // Actualizar inmediatamente
     updateDriverLocation();
 
-    // Configurar intervalo de 60 segundos (1 minuto)
-    locationUpdateIntervalRef.current = setInterval(updateDriverLocation, 60000);
+    // Configurar intervalo usando el valor de Firebase (en milisegundos)
+    locationUpdateIntervalRef.current = setInterval(updateDriverLocation, updateInterval);
 
     return () => {
       if (locationUpdateIntervalRef.current) {
@@ -93,7 +109,7 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
         locationUpdateIntervalRef.current = null;
       }
     };
-  }, [driver, activeRide]);
+  }, [driver, activeRide, updateInterval]);
 
   // 🎧 Listener principal para viajes activos con detección de cancelación
   useEffect(() => {
@@ -128,6 +144,7 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
             );
             
             if (completedRideDoc) {
+              // Viaje completado - mostrar para rating
               const rideData = { id: completedRideDoc.id, ...completedRideDoc.data() } as Ride;
               const passengerSnap = await getDoc(rideData.passenger);
               
@@ -138,11 +155,9 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
                   passenger: passengerSnap.data() as User,
                 });
               }
-            }
-            
-            
-            // Mostrar notificación de cancelación SOLO si no fue completado
-            if (currentActiveRide.status !== 'completed') {
+              setActiveRide(null);
+            } else {
+              // No hay viaje completado - fue cancelado
               toast({
                 title: 'Viaje Cancelado',
                 description: 'El pasajero canceló el viaje.',
@@ -153,12 +168,10 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
               const audio = new Audio('/sounds/error.mp3');
               audio.volume = 0.7;
               audio.play().catch(e => console.error('Error sonido:', e));
-            }
-            
-            setActiveRide(null);
-            
-            // Restaurar disponibilidad si estaba en un viaje
-            if (currentActiveRide.status !== 'completed') {
+              
+              setActiveRide(null);
+              
+              // Restaurar disponibilidad
               useDriverRideStore.getState().setAvailability(true);
               
               // Actualizar estado del conductor en Firestore

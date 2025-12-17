@@ -125,6 +125,16 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate
         dni: 'approved',
         propertyCard: 'approved',
     },
+    documentUrls: {
+        license: '',
+        insurance: '',
+        technicalReview: '',
+        backgroundCheck: '',
+        dni: '',
+        propertyCard: ''
+    },
+    totalRidesAsDriver: 0,
+    driverRating: 4.8,
     location: { id: 'loc-juan', ...driverLocations['juan-perez'] }
   },
   {
@@ -147,6 +157,16 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate
         dni: 'approved',
         propertyCard: 'approved',
     },
+    documentUrls: {
+        license: '',
+        insurance: '',
+        technicalReview: '',
+        backgroundCheck: '',
+        dni: '',
+        propertyCard: ''
+    },
+    totalRidesAsDriver: 0,
+    driverRating: 4.9,
     location: { id: 'loc-maria', ...driverLocations['maria-rodriguez'] }
   },
   {
@@ -169,6 +189,16 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate
         dni: 'pending',
         propertyCard: 'pending'
     },
+    documentUrls: {
+        license: '',
+        insurance: '',
+        technicalReview: '',
+        backgroundCheck: '',
+        dni: '',
+        propertyCard: ''
+    },
+    totalRidesAsDriver: 0,
+    driverRating: 4.7,
     location: { id: 'loc-carlos', ...driverLocations['carlos-gomez'] }
   },
    {
@@ -191,6 +221,16 @@ export const drivers: (Omit<Driver, 'id' | 'vehicle' | 'userId'> & {licensePlate
         dni: 'rejected',
         propertyCard: 'approved'
     },
+    documentUrls: {
+        license: '',
+        insurance: '',
+        technicalReview: '',
+        backgroundCheck: '',
+        dni: '',
+        propertyCard: ''
+    },
+    totalRidesAsDriver: 0,
+    driverRating: 5.0,
     location: { id: 'loc-ana', ...driverLocations['ana-torres'] }
   },
 ];
@@ -278,7 +318,7 @@ export const users: (Omit<User, 'id'>)[] = [
         address: 'Av. Larco 123, Miraflores',
         status: 'active',
         // Legacy fields
-        role: 'passenger',
+        role: 'rider' as any,
         isAdmin: false,
         totalRides: 25,
     },
@@ -294,7 +334,7 @@ export const users: (Omit<User, 'id'>)[] = [
         address: 'Calle Las Begonias 456, San Isidro',
         status: 'active',
         // Legacy fields
-        role: 'passenger',
+        role: 'rider' as any,
         isAdmin: false,
         totalRides: 12,
     },
@@ -310,7 +350,7 @@ export const users: (Omit<User, 'id'>)[] = [
         address: 'Av. Pardo 789, Miraflores',
         status: 'active',
         // Legacy fields
-        role: 'passenger',
+        role: 'rider' as any,
         isAdmin: false,
         totalRides: 5,
     }

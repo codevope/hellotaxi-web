@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Star, Loader2 } from 'lucide-react';
-import type { Driver, User } from '@/lib/types';
+import type { EnrichedDriver, User, DriverWithVehicleInfo } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 interface RatingFormProps {
-    userToRate: Driver | User;
+    userToRate: EnrichedDriver | User | DriverWithVehicleInfo;
     isDriver: boolean; // True si el usuario a calificar es un conductor
     onSubmit: (rating: number, comment: string) => void;
     isSubmitting: boolean;

@@ -58,8 +58,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable } from '@/components/ui/data-table';
-import { columns as rideHistoryColumnsDefinition } from '@/components/admin/rides-table-columns';
-import ProfileValidationStatus from '@/components/profile-validation-status';
+import { columns as rideHistoryColumnsDefinition } from '@/components/admin/rides/rides-table-columns';
+import ProfileValidationStatus from '@/components/profile/profile-validation-status';
 import Link from 'next/link';
 
 type EnrichedRide = Omit<Ride, "driver" | "passenger" | "vehicle"> & {
@@ -115,7 +115,13 @@ export default function UserDetailsPage() {
           const userData = { id: userSnap.id, ...userSnap.data() } as User;
           setUser(userData);
           setName(userData.name);
-          setPhone(userData.phone || '');
+          // Mostrar el teléfono sin el prefijo +51 para que se vea solo el número
+          const phoneToDisplay = userData.phone
+            ? userData.phone.startsWith('+51')
+              ? userData.phone.substring(3)
+              : userData.phone
+            : '';
+          setPhone(phoneToDisplay);
           setAddress(userData.address || '');
 
           const ridesQuery = query(
@@ -176,8 +182,18 @@ export default function UserDetailsPage() {
     setIsUpdating(true);
     const userRef = doc(db, 'users', user.id);
     try {
-      await updateDoc(userRef, { isAdmin: true });
-      setUser({ ...user, isAdmin: true });
+      // Agregar 'admin' al array de roles si no existe
+      const updatedRoles = user.roles || [];
+      if (!updatedRoles.includes('admin')) {
+        updatedRoles.push('admin');
+      }
+      
+      await updateDoc(userRef, { 
+        roles: updatedRoles,
+        isAdmin: true // Mantener campo legacy para compatibilidad
+      });
+      
+      setUser({ ...user, roles: updatedRoles, isAdmin: true });
       toast({
         title: '¡Usuario ahora es Administrador!',
         description: `${user.name} ha sido promovido a administrador.`,
@@ -199,12 +215,20 @@ export default function UserDetailsPage() {
     setIsUpdating(true);
     const userRef = doc(db, 'users', user.id);
     try {
+      // Procesar el teléfono: agregar prefijo +51 si no lo tiene
+      let processedPhone = phone.trim();
+      if (processedPhone && !processedPhone.startsWith('+51')) {
+        // Limpiar el teléfono de espacios y caracteres especiales
+        const cleanPhone = processedPhone.replace(/[\s\-\(\)]/g, '');
+        processedPhone = `+51${cleanPhone}`;
+      }
+
       await updateDoc(userRef, {
         name: name,
-        phone: phone,
+        phone: processedPhone,
         address: address,
       });
-      setUser({ ...user, name, phone, address });
+      setUser({ ...user, name, phone: processedPhone, address });
       toast({
         title: '¡Perfil Actualizado!',
         description: 'Los datos del usuario han sido actualizados.',
@@ -322,12 +346,24 @@ export default function UserDetailsPage() {
                 </div>
                 <div>
                   <Label htmlFor="phone">Teléfono</Label>
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={isUpdating}
-                  />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                      +51
+                    </div>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="987 654 321"
+                      className="pl-12"
+                      disabled={isUpdating}
+                      maxLength={11}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ingresa el número sin el código de país (9 dígitos)
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="address">Dirección</Label>
@@ -393,7 +429,7 @@ export default function UserDetailsPage() {
                 </div>
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-3xl font-bold capitalize">
-                    {user.status || 'active'}
+                    {user.status == 'active' ? 'Activo' : user.status === 'blocked' ? 'Bloqueado' : 'Incompleto'}
                   </p>
                   <p className="text-sm text-muted-foreground">Estado</p>
                 </div>

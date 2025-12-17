@@ -3,15 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import FinancialReportTable from '@/components/admin/financial-report-table';
-import { Loader2, BarChart as BarChartIcon, DollarSign, Wallet, TrendingUp, Users, Car, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import FinancialReportTable from '@/components/admin/finance/financial-report-table';
+import { Loader2, BarChart as BarChartIcon, DollarSign, Wallet, Users, Car, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { generateFinancialReport, type FinancialReportRow, type FinancialSummary } from '@/services/financial-report';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { generateFinancialReport, type FinancialReportRow, type FinancialSummary } from '@/services/financial-report';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { useToast } from '@/hooks/use-toast';
 
 
 const chartConfig = {
@@ -85,7 +84,7 @@ export default function AdminFinancePage() {
             <h1 className="text-2xl font-bold sm:text-3xl font-headline">
                 Reporte Financiero - {getMonthName(selectedMonth)} {selectedYear}
             </h1>
-            <p className="text-muted-foreground">Análisis mensual de ingresos de la plataforma y rendimiento de conductores.</p>
+            <p className="text-muted-foreground">Análisis semanal de ingresos de la plataforma y rendimiento de conductores.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -138,12 +137,11 @@ export default function AdminFinancePage() {
                     {loading ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">Cargando...</div>
                         </div>
                     ) : (
                         <div className="text-2xl font-bold">S/{totalPlatformEarnings.toFixed(2)}</div>
                     )}
-                    <p className="text-xs text-muted-foreground">Comisiones + membresías mensuales</p>
+                    <p className="text-xs text-muted-foreground">Comisiones + membresías semanales</p>
                 </CardContent>
             </Card>
             <Card>
@@ -155,7 +153,6 @@ export default function AdminFinancePage() {
                     {loading ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">...</div>
                         </div>
                     ) : (
                         <div className="text-2xl font-bold">S/{totalFaresGenerated.toFixed(2)}</div>
@@ -172,7 +169,6 @@ export default function AdminFinancePage() {
                     {loading ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">...</div>
                         </div>
                     ) : (
                         <div className="text-2xl font-bold">{totalRides}</div>
@@ -189,7 +185,6 @@ export default function AdminFinancePage() {
                     {loading ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">...</div>
                         </div>
                     ) : (
                         <div className="text-2xl font-bold">{activeDrivers}</div>
@@ -209,12 +204,11 @@ export default function AdminFinancePage() {
                     {loading ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <div className="text-2xl font-bold">...</div>
                         </div>
                     ) : (
-                        <div className="text-2xl font-bold">S/{(summary?.membershipBasedEarnings || 0).toFixed(2)}</div>
+                        <div className="text-5xl font-bold">S/{(summary?.membershipBasedEarnings || 0).toFixed(2)}</div>
                     )}
-                    <p className="text-xs text-muted-foreground">Tarifas mensuales fijas</p>
+                    <p className="text-xs text-muted-foreground">Tarifas semanales fijas</p>
                 </CardContent>
             </Card>
              <Card className="lg:col-span-1">

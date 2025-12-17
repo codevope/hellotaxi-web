@@ -42,12 +42,21 @@ const estimateRideFareDeterministicFlow = ai.defineFlow(
     outputSchema: EstimateRideFareOutputSchema,
   },
   async (input) => {
+    console.log('[GENKIT FLOW] Input recibido:', input);
+    
     // Get settings from Firestore
     const settings = await getSettings();
+    console.log('[GENKIT FLOW] Settings obtenidos:', {
+      baseFare: settings.baseFare,
+      perKmFare: settings.perKmFare,
+      perMinuteFare: settings.perMinuteFare,
+      serviceTypes: settings.serviceTypes
+    });
 
     // Get the service multiplier
     const serviceMultiplier =
       settings.serviceTypes.find((s) => s.id === input.serviceType)?.multiplier || 1;
+    console.log('[GENKIT FLOW] Service multiplier:', serviceMultiplier);
 
     // Calculate base costs
     const baseFare = settings.baseFare;
@@ -116,6 +125,19 @@ const estimateRideFareDeterministicFlow = ai.defineFlow(
     // Redondea a décimas y ajusta a múltiplos de 0.50
     const normalizedTotal = normalizePrice(total);
 
+    console.log('[GENKIT FLOW] Cálculos finales:', {
+      baseFare,
+      distanceCost,
+      durationCost,
+      serviceCost,
+      peakSurcharge,
+      specialDaySurcharge,
+      couponDiscount,
+      subtotal,
+      total,
+      normalizedTotal
+    });
+
     const breakdown: FareBreakdown = {
       baseFare: roundToDecimal(baseFare),
       distanceCost: roundToDecimal(distanceCost),
@@ -128,6 +150,11 @@ const estimateRideFareDeterministicFlow = ai.defineFlow(
       subtotal: roundToDecimal(subtotal),
       total: normalizedTotal,
     };
+
+    console.log('[GENKIT FLOW] Resultado final:', {
+      estimatedFare: normalizedTotal,
+      breakdown
+    });
 
     return {
       estimatedFare: normalizedTotal,

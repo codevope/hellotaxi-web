@@ -204,12 +204,9 @@ export const useNotificationSound = (soundPath: string = '/sounds/taxi.mp3') => 
     }
 
     try {
-      // Si el audio ya está reproduciéndose, detenerlo primero y esperar
+      // Si el audio ya está reproduciéndose, reiniciarlo
       if (!notificationAudio.paused) {
-        notificationAudio.pause();
         notificationAudio.currentTime = 0;
-        // Pequeño delay para asegurar que pause() se complete
-        await new Promise(resolve => setTimeout(resolve, 50));
       }
       
       // Configurar opciones
