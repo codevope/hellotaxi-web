@@ -17,15 +17,23 @@ import {
   getDoc,
   updateDoc,
   DocumentReference,
+  query,
+  where,
 } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import type { SOSAlert, Driver, User as AppUser } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { sosAlertsColumns, type EnrichedSOSAlert } from "./sos-columns";
 
-async function getSosAlerts(): Promise<EnrichedSOSAlert[]> {
+async function getSosAlerts(statusFilter: "all" | "pending" | "attended" = "pending"): Promise<EnrichedSOSAlert[]> {
   const alertsCol = collection(db, "sosAlerts");
-  const alertSnapshot = await getDocs(alertsCol);
+  
+  // Crear query con filtro de estado si no es "all"
+  const alertQuery = statusFilter === "all" 
+    ? alertsCol 
+    : query(alertsCol, where("status", "==", statusFilter));
+  
+  const alertSnapshot = await getDocs(alertQuery);
   const alertsList = alertSnapshot.docs.map(
     (docSnap) => {
       const data = docSnap.data();
@@ -91,16 +99,18 @@ export default function SosTable() {
   const [alerts, setAlerts] = useState<EnrichedSOSAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "attended">("pending");
   const { toast } = useToast();
 
-  // Cargar alertas iniciales
+  // Cargar alertas iniciales y cuando cambie el filtro
   useEffect(() => {
     loadAlerts();
-  }, []);
+  }, [statusFilter]);
 
   async function loadAlerts() {
+    setLoading(true);
     try {
-      const fetchedAlerts = await getSosAlerts();
+      const fetchedAlerts = await getSosAlerts(statusFilter);
       setAlerts(fetchedAlerts);
       setLoading(false);
     } catch (error) {
@@ -110,18 +120,22 @@ export default function SosTable() {
   }
 
   const handleUpdateStatus = async (alertId: string) => {
-
-
     setUpdatingId(alertId);
     try {
       const alertRef = doc(db, "sosAlerts", alertId);
       await updateDoc(alertRef, { status: "attended" });
       
-      setAlerts((prevAlerts) =>
-        prevAlerts.map((alert) =>
-          alert.id === alertId ? { ...alert, status: "attended" } : alert
-        )
-      );
+      // Si estamos viendo solo "pending", remover la alerta de la lista
+      // Si estamos viendo "all", actualizar el estado
+      if (statusFilter === "pending") {
+        setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== alertId));
+      } else {
+        setAlerts((prevAlerts) =>
+          prevAlerts.map((alert) =>
+            alert.id === alertId ? { ...alert, status: "attended" } : alert
+          )
+        );
+      }
       
       toast({
         title: "Alerta Atendida",
@@ -163,11 +177,42 @@ export default function SosTable() {
       <CardHeader>
         <CardTitle>Historial de Alertas SOS</CardTitle>
         <CardDescription>
-          Registro de todas las alertas de emergencia activadas durante los
-          viajes.
+          Registro de todas las alertas de emergencia activadas durante los viajes.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex gap-2">
+          <button
+            onClick={() => setStatusFilter("pending")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              statusFilter === "pending"
+                ? "bg-red-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            }`}
+          >
+            Pendientes
+          </button>
+          <button
+            onClick={() => setStatusFilter("attended")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              statusFilter === "attended"
+                ? "bg-green-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            }`}
+          >
+            Atendidas
+          </button>
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              statusFilter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            }`}
+          >
+            Todas
+          </button>
+        </div>
         <DataTable
           columns={sosAlertsColumns(handleUpdateStatus, updatingId)}
           data={alerts}
