@@ -37,7 +37,7 @@ docker build -t hellotaxi-web .
 
 # 4. INICIAR APLICACIÓN SIN SSL
 echo "🚀 Iniciando aplicación (sin SSL)..."
-docker compose -f docker-compose.prod.yml up -d hellotaxi-web
+docker compose -f docker-compose.yml up -d hellotaxi-web
 
 # 5. NGINX TEMPORAL PARA OBTENER SSL
 echo "🌐 Configurando nginx temporal..."
@@ -93,16 +93,16 @@ docker rm nginx-temp
 
 # 9. INICIAR SERVICIOS COMPLETOS CON SSL
 echo "🚀 Iniciando servicios completos con SSL..."
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml up -d
 
 # 10. VERIFICAR DEPLOYMENT
 echo "⏳ Verificando deployment..."
 sleep 20
 
 # Verificar que todos los servicios están corriendo
-if ! docker compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+if ! docker compose -f docker-compose.yml ps | grep -q "Up"; then
     echo "❌ Error: Algunos servicios no están corriendo"
-    docker compose -f docker-compose.prod.yml logs
+    docker compose -f docker-compose.yml logs
     exit 1
 fi
 
@@ -124,12 +124,12 @@ echo "    https://www.hellotaxi.pe"
 echo "    http://hellotaxi.pe (redirige a HTTPS)"
 echo ""
 echo "📊 Estado de servicios:"
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.yml ps
 echo ""
 echo "🔧 Comandos útiles:"
-echo "   Ver logs: docker compose -f docker-compose.prod.yml logs -f"
-echo "   Reiniciar: docker compose -f docker-compose.prod.yml restart"
-echo "   Detener: docker compose -f docker-compose.prod.yml down"
+echo "   Ver logs: docker compose -f docker-compose.yml logs -f"
+echo "   Reiniciar: docker compose -f docker-compose.yml restart"
+echo "   Detener: docker compose -f docker-compose.yml down"
 echo ""
 echo "🔄 Los certificados SSL se renovarán automáticamente cada 90 días"
 echo "✨ ¡HelloTaxi está listo para usar!"
