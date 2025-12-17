@@ -19,7 +19,7 @@ import type {
   ChatMessage,
   CancellationReason,
 } from "@/lib/types";
-import type { RiderNotificationHook } from "@/hooks/use-rider-notifications";
+import type { RiderNotificationHook } from "@/hooks/rider/use-rider-notifications";
 import {
   History,
   Car,
@@ -42,7 +42,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch";
 import {
   Sheet,
   SheetContent,

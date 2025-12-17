@@ -159,14 +159,14 @@ export const coupons: Omit<Coupon, 'id'>[] = [];
 // ================================================================= //
 export const serviceTypes: ServiceTypeConfig[] = [
   { id: 'economy', name: 'Económico', description: 'Vehículos estándar para el día a día', multiplier: 1.0 },
-  { id: 'comfort', name: 'Confort', description: 'Vehículos más nuevos y espaciosos', multiplier: 1.3 },
-  { id: 'exclusive', name: 'Exclusivo', description: 'La mejor flota y los mejores conductores', multiplier: 1.8 },
+  { id: 'comfort', name: 'Confort', description: 'Vehículos más nuevos y espaciosos', multiplier: 1.25 },
+  { id: 'exclusive', name: 'Exclusivo', description: 'La mejor flota y los mejores conductores', multiplier: 1.5 },
 ];
 
 export const specialFareRules: Omit<SpecialFareRule, 'id'>[] = [
-    { name: 'Fiestas Patrias', startDate: new Date(new Date().getFullYear(), 6, 28).toISOString(), endDate: new Date(new Date().getFullYear(), 6, 29).toISOString(), surcharge: 50 },
-    { name: 'Navidad', startDate: new Date(new Date().getFullYear(), 11, 24).toISOString(), endDate: new Date(new Date().getFullYear(), 11, 25).toISOString(), surcharge: 75 },
-    { name: 'Año Nuevo', startDate: new Date(new Date().getFullYear(), 11, 31).toISOString(), endDate: new Date(new Date().getFullYear() + 1, 0, 1).toISOString(), surcharge: 100 },
+    { name: 'Fiestas Patrias', startDate: new Date(new Date().getFullYear(), 6, 28).toISOString(), endDate: new Date(new Date().getFullYear(), 6, 29).toISOString(), surcharge: 5 },
+    { name: 'Navidad', startDate: new Date(new Date().getFullYear(), 11, 24).toISOString(), endDate: new Date(new Date().getFullYear(), 11, 25).toISOString(), surcharge: 5 },
+    { name: 'Año Nuevo', startDate: new Date(new Date().getFullYear(), 11, 31).toISOString(), endDate: new Date(new Date().getFullYear() + 1, 0, 1).toISOString(), surcharge: 5 },
 ]
 
 export const cancellationReasons: CancellationReason[] = [
@@ -185,9 +185,9 @@ export const cancellationReasons: CancellationReason[] = [
 ];
 
 export const peakTimeRules: PeakTimeRule[] = [
-    { id: 'peak1', name: 'Hora Punta Mañana', startTime: '07:00', endTime: '09:00', surcharge: 20 },
-    { id: 'peak2', name: 'Hora Punta Tarde', startTime: '17:00', endTime: '20:00', surcharge: 25 },
-    { id: 'peak3', name: 'Horario Nocturno', startTime: '23:00', endTime: '05:00', surcharge: 35 },
+    { id: 'peak1', name: 'Hora Punta Mañana', startTime: '07:00', endTime: '09:00', surcharge: 5 },
+    { id: 'peak2', name: 'Hora Punta Tarde', startTime: '17:00', endTime: '20:00', surcharge: 5 },
+    { id: 'peak3', name: 'Horario Nocturno', startTime: '23:00', endTime: '05:00', surcharge: 10 },
 ];
 
 

@@ -1,14 +1,5 @@
 "use client";
 
-/**
- * Perfil de Usuario - Vista Desktop
- *
- * Características:
- * - Layout de 2 columnas
- * - Información más detallada
- * - Estadísticas expandidas
- */
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";

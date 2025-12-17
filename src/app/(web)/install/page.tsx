@@ -4,19 +4,15 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Smartphone,
   Download,
   Zap,
   Bell,
-  MapPin,
   Share,
   Chrome,
   Plus,
-  ArrowDown,
   CheckCircle,
   Wifi,
-  Battery,
-  Signal,
+  Battery
 } from "lucide-react";
 import Link from "next/link";
 import { usePWA } from "@/hooks/use-pwa.mode";

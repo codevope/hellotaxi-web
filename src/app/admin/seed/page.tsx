@@ -5,8 +5,8 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Database, AlertTriangle, Trash2, Sparkles, Settings2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { seedDatabase, clearCollections } from '@/services/seed-db';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,

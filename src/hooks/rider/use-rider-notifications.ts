@@ -10,8 +10,8 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useNotificationSound } from './use-notification-sound';
-import { useToast } from './use-toast';
+import { useNotificationSound } from '../use-notification-sound';
+import { useToast } from '../use-toast';
 
 export interface RiderNotificationHook {
   hasPermission: boolean;

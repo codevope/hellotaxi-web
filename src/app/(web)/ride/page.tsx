@@ -1,14 +1,12 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowRight,
   Clock,
   Shield,
-  Star,
   Wallet,
   MapPin,
   Navigation,
@@ -16,16 +14,14 @@ import {
   Car,
   Zap,
   Award,
-  TrendingUp,
   Sparkles,
   CircleDollarSign,
   Gauge,
   UserCheck,
 } from "lucide-react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import { useRouter } from "next/navigation";

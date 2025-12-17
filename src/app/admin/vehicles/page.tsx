@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Car, Wrench } from 'lucide-react';
-import VehiclesTable from '@/components/admin/vehicles/vehicles-table';
 import VehicleModelsManager from '@/components/admin/vehicles/vehicle-models-manager';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import VehiclesTable from '@/components/admin/vehicles/vehicles-table';
+import { Car, Wrench } from 'lucide-react';
 
 export default function AdminVehiclesPage() {
   return (

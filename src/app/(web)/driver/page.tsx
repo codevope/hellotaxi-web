@@ -5,8 +5,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardFooter,
+  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,46 +18,29 @@ import {
   Siren,
   Volume2,
   UserIcon,
-  History,
-  FileText,
-  Wrench,
+  FileText
 } from "lucide-react";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
 import { useDriverAvailabilityLocation } from "@/hooks/driver/use-driver-availability-location";
+import { useDriverRequestsContext } from "@/components/providers/driver-requests-provider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useDriverRequestsContext } from "@/components/providers/driver-requests-provider";
 import type {
   Ride,
   User,
   EnrichedDriver,
 } from "@/lib/types";
 
-// Import the type from the store file
-type DriverActiveRide = Omit<Ride, "passenger" | "driver"> & {
-  passenger: User;
-  driver: EnrichedDriver;
-};
-import { useEffect, useState, useCallback, useRef } from "react";
-import { collection, doc, updateDoc, addDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+
+import { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import RatingForm from "@/components/forms/rating-form";
-import { processRating } from "@/ai/flows/process-rating";
-import MapView from "@/components/maps/map-view";
+import { collection, doc, updateDoc, addDoc } from "firebase/firestore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DriverDocuments from "@/components/driver/documents";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { processRating } from "@/ai/flows/process-rating";
+import MapView from "@/components/maps/map-view";
+import { db } from "@/lib/firebase";
 // simulación ahora gestionada dentro de useDriverActiveRide
 import { useDriverActiveRideContext } from "@/components/providers/driver-active-ride-provider";
 import {
@@ -92,23 +74,13 @@ import { AudioEnabler } from "@/components/pwa/audio-enabler";
 import DriverSOSAlerts from "@/components/driver/sos-alerts";
 import { useChatNotifications, ChatNotification } from "@/components/chat/chat-notification";
 
-type EnrichedRide = Omit<Ride, "passenger" | "driver"> & {
-  passenger: User;
-  driver: EnrichedDriver;
-};
 
 function DriverPageContent() {
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "config";
   const [activeTab, setActiveTab] = useState(tabFromUrl);
-  const [isDriverAvailable, setIsDriverAvailable] = useState(true);
-  const [notificationSettings, setNotificationSettings] = useState({
-    enableSounds: true,
-    enableVibration: true,
-  });
   const [isRideSheetOpen, setIsRideSheetOpen] = useState(false);
   const [hasUserClosedSheet, setHasUserClosedSheet] = useState(false);
-  const router = useRouter();
 
   // Sincronizar activeTab con los parámetros de la URL
   useEffect(() => {
@@ -121,9 +93,7 @@ function DriverPageContent() {
     activeRide,
     isCountering,
     setAvailability,
-    setIncomingRequest,
-    setActiveRide,
-    setIsCountering,
+    setActiveRide
   } = useDriverRideStore();
 
   const { user, driver, setDriver, loading } = useDriverAuth();
@@ -140,7 +110,6 @@ function DriverPageContent() {
   const [isRatingSubmitting, setIsRatingSubmitting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDriverChatOpen, setIsDriverChatOpen] = useState(false);
-  const [rejectedRideIds, setRejectedRideIds] = useState<string[]>([]);
   const isFirstChatLoad = useRef(true);
   const previousMessageCount = useRef(0);
 
@@ -165,10 +134,7 @@ function DriverPageContent() {
     requestNotificationPermission,
     updateNotificationPermissions,
     shouldAttemptReactivation,
-    testNotification,
     isLoaded,
-    playSound,
-    isSecureContext,
     canUseNotifications,
   } = useDriverNotificationsSafe(driver);
 

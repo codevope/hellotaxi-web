@@ -425,7 +425,7 @@ export default function AdminDashboard({
                                 : "default"
                             }
                           >
-                            {ride.status}
+                            {ride.status === "completed" ? "Completado" : ride.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

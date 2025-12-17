@@ -2,9 +2,9 @@
 'use server';
 
 import { collection, getDocs, doc, getDoc, query, where, Timestamp, DocumentReference } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Driver, Ride, Settings, Vehicle } from '@/lib/types';
+import type { Driver, Ride, Vehicle } from '@/lib/types';
 import { getSettings } from './settings-service';
+import { db } from '@/lib/firebase';
 
 export interface FinancialReportRow {
     driverId: string;

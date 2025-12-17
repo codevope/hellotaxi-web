@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/layout/app-header';
 import { useAuth } from '@/hooks/auth/use-auth';
 import {
   Card,

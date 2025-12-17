@@ -1,11 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Briefcase, TrendingUp, ShieldCheck, CheckCircle, Bell, Users, Wallet, HelpCircle, Car, MapPin, Clock, Star } from 'lucide-react';
-import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Briefcase, TrendingUp, ShieldCheck, CheckCircle, Wallet, Car, MapPin } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function DriverPage() {
   return (

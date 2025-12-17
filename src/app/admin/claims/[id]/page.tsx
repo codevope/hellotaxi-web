@@ -16,12 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
-  Calendar,
   Car,
-  CircleDollarSign,
   Loader2,
   User as UserIcon,
-  ShieldAlert,
   Save,
   Sparkles,
 } from 'lucide-react';

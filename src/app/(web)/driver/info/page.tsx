@@ -1,15 +1,15 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { doc, updateDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   Settings,
@@ -39,9 +39,7 @@ export default function ConfiguracionPage() {
     tryReenableAudio, 
     requestNotificationPermission, 
     updateNotificationPermissions, 
-    shouldAttemptReactivation, 
-    testNotification, 
-    testCancellationNotification,
+    shouldAttemptReactivation,
     isLoaded, 
     playSound, 
     isSecureContext, 

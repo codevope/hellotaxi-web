@@ -16,16 +16,10 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   Loader2,
-  Mail,
   Calendar,
-  BarChart,
   Star,
-  Hash,
-  Home,
-  Phone,
   ShieldPlus,
   Save,
-  MoreVertical,
 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { User, Ride, FirebaseUser, Driver, Vehicle } from '@/lib/types';

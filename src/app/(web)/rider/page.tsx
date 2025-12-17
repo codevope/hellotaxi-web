@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useDriverAuth } from "@/hooks/auth/use-driver-auth";
-import { useRiderNotifications } from "@/hooks/use-rider-notifications";
+import { useRiderNotifications } from "@/hooks/rider/use-rider-notifications";
 import {
   Card,
   CardContent,
@@ -20,7 +19,6 @@ import RiderView from "./components/rider-view";
 
 export default function RiderPage() {
   const { user, appUser, loading } = useAuth();
-  const router = useRouter();
   const { isDriver, loading: driverLoading } = useDriverAuth();
 
   // Hook de notificaciones para el rider

@@ -231,7 +231,7 @@ export function DriverActiveRideProvider({ children }: DriverActiveRideProviderP
         // Mensajes específicos según el estado
         const statusMessages = {
           'arrived': { title: ' Llegada Confirmada', description: 'Has marcado que llegaste al punto de recojo' },
-          'in-progress': { title: '🚗 Viaje Iniciado', description: 'El viaje ha comenzado oficialmente' }
+          'in-progress': { title: 'Viaje Iniciado', description: 'El viaje ha comenzado oficialmente' }
         };
         
         if (statusMessages[newStatus]) {

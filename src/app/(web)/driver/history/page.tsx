@@ -1,13 +1,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { History, Loader2 } from "lucide-react";
-import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
 import { useDriverRideHistory } from "@/hooks/driver/use-driver-ride-history";
+import { useDriverAuth } from '@/hooks/auth/use-driver-auth';
+import { Skeleton } from "@/components/ui/skeleton";
+import { History, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { es } from "date-fns/locale";
+import { format } from "date-fns";
 import {
   ColumnDef,
   flexRender,

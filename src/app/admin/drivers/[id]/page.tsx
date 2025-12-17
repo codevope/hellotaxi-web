@@ -31,10 +31,8 @@ import {
   Calendar,
   CalendarCheck,
   Eye,
-  FileCheck,
   Clock,
   Phone,
-  MapPin,
   Edit,
   Check,
   X as XIcon,
@@ -63,7 +61,6 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Driver,
-  MembershipStatus,
   PaymentModel,
   MembershipDuration,
   Ride,
@@ -594,37 +591,48 @@ export default function DriverDetailsPage() {
   const handleSaveChanges = async () => {
     if (!driver) return;
     
-    // Validar que los campos del vehículo estén completos
-    if (!vehicleBrand || !vehicleModel || !licensePlate || !vehicleColor) {
-      toast({
-        variant: "destructive",
-        title: "Campos Incompletos",
-        description: "Por favor complete todos los campos del vehículo (marca, modelo, placa, color).",
-      });
-      return;
-    }
-    
     setIsUpdating(true);
 
     try {
-      // Validate unique license plate
-      const q = query(
-        collection(db, "vehicles"),
-        where("licensePlate", "==", licensePlate.toUpperCase())
-      );
-      const querySnapshot = await getDocs(q);
-      const otherVehicle = querySnapshot.docs.find(
-        (d) => d.id !== driver.vehicle?.id
-      );
-      if (otherVehicle) {
-        toast({
-          variant: "destructive",
-          title: "Placa Duplicada",
-          description:
-            "Esta placa ya está registrada en el sistema para otro vehículo.",
-        });
-        setIsUpdating(false);
-        return;
+      // Solo validar vehículo si hay datos del vehículo para actualizar
+      const hasVehicleData = vehicleBrand || vehicleModel || licensePlate || vehicleColor;
+      
+      if (hasVehicleData) {
+        // Validar que los campos del vehículo estén completos
+        if (!vehicleBrand || !vehicleModel || !licensePlate || !vehicleColor) {
+          toast({
+            variant: "destructive",
+            title: "Campos Incompletos",
+            description: "Por favor complete todos los campos del vehículo (marca, modelo, placa, color).",
+          });
+          setIsUpdating(false);
+          return;
+        }
+        
+        // Solo validar placa duplicada si la placa ha cambiado
+        const currentPlate = driver.vehicle?.licensePlate?.toUpperCase() || '';
+        const newPlate = licensePlate.toUpperCase();
+        const plateHasChanged = currentPlate !== newPlate;
+        
+        if (plateHasChanged) {
+          const q = query(
+            collection(db, "vehicles"),
+            where("licensePlate", "==", newPlate)
+          );
+          const querySnapshot = await getDocs(q);
+          const otherVehicle = querySnapshot.docs.find(
+            (d) => d.id !== driver.vehicle?.id
+          );
+          if (otherVehicle) {
+            toast({
+              variant: "destructive",
+              title: "Placa Duplicada",
+              description: "Esta placa ya está registrada en el sistema para otro vehículo.",
+            });
+            setIsUpdating(false);
+            return;
+          }
+        }
       }
 
       const driverRef = doc(db, "drivers", driver.id);
@@ -651,10 +659,9 @@ export default function DriverDetailsPage() {
         driverUpdates.membershipPausedDate = new Date().toISOString();
       }
 
-      // Si cambia de comisión a membresía (reactivación), generar nuevo período
-      const isReactivating = driver.paymentModel === 'commission' && paymentModel === 'membership';
-      if (isReactivating) {
-        // La fecha de inicio será la nueva membershipStartDate configurada
+      // Si el modelo es membresía (nueva o reactivación), asegurar que no esté pausada
+      if (paymentModel === 'membership') {
+        // Eliminar membershipPausedDate para indicar que está activa
         driverUpdates.membershipPausedDate = deleteField() as any;
       }
 
@@ -744,50 +751,56 @@ export default function DriverDetailsPage() {
         }
       });
 
-      let vehicleRef: DocumentReference;
-      let updatedVehicle: Vehicle;
+      let vehicleRef: DocumentReference | undefined;
+      let updatedVehicle: Vehicle | null = null;
 
-      // Si no existe vehículo, crear uno nuevo
-      if (!driver.vehicle) {
-        const newVehicleData = {
-          brand: vehicleBrand,
-          model: vehicleModel,
-          licensePlate: licensePlate.toUpperCase(),
-          year: vehicleYear,
-          color: vehicleColor,
-          serviceType: serviceType,
-          status: "active" as const,
-          insuranceExpiry: "",
-          technicalReviewExpiry: "",
-          propertyCardRegistrationDate: "",
-          driverId: driver.id,
-        };
+      // Solo actualizar vehículo si hay datos del vehículo
+      if (hasVehicleData) {
+        // Si no existe vehículo, crear uno nuevo
+        if (!driver.vehicle) {
+          const newVehicleData = {
+            brand: vehicleBrand,
+            model: vehicleModel,
+            licensePlate: licensePlate.toUpperCase(),
+            year: vehicleYear,
+            color: vehicleColor,
+            serviceType: serviceType,
+            status: "active" as const,
+            insuranceExpiry: "",
+            technicalReviewExpiry: "",
+            propertyCardRegistrationDate: "",
+            driverId: driver.id,
+          };
 
-        // Crear nuevo documento de vehículo
-        const vehiclesCollectionRef = collection(db, "vehicles");
-        const newVehicleRef = doc(vehiclesCollectionRef);
-        await setDoc(newVehicleRef, newVehicleData);
-        
-        // Actualizar la referencia del vehículo en el driver
-        driverUpdates.vehicle = newVehicleRef;
-        
-        vehicleRef = newVehicleRef;
-        updatedVehicle = { id: newVehicleRef.id, ...newVehicleData };
+          // Crear nuevo documento de vehículo
+          const vehiclesCollectionRef = collection(db, "vehicles");
+          const newVehicleRef = doc(vehiclesCollectionRef);
+          await setDoc(newVehicleRef, newVehicleData);
+          
+          // Actualizar la referencia del vehículo en el driver
+          driverUpdates.vehicle = newVehicleRef;
+          
+          vehicleRef = newVehicleRef;
+          updatedVehicle = { id: newVehicleRef.id, ...newVehicleData };
+        } else {
+          // Si existe vehículo, actualizarlo
+          vehicleRef = doc(db, "vehicles", driver.vehicle.id);
+          
+          const vehicleUpdates: Partial<Vehicle> = {
+            brand: vehicleBrand,
+            model: vehicleModel,
+            licensePlate: licensePlate.toUpperCase(),
+            year: vehicleYear,
+            color: vehicleColor,
+            serviceType: serviceType,
+          };
+
+          await updateDoc(vehicleRef, vehicleUpdates);
+          updatedVehicle = { ...driver.vehicle, ...vehicleUpdates };
+        }
       } else {
-        // Si existe vehículo, actualizarlo
-        vehicleRef = doc(db, "vehicles", driver.vehicle.id);
-        
-        const vehicleUpdates: Partial<Vehicle> = {
-          brand: vehicleBrand,
-          model: vehicleModel,
-          licensePlate: licensePlate.toUpperCase(),
-          year: vehicleYear,
-          color: vehicleColor,
-          serviceType: serviceType,
-        };
-
-        await updateDoc(vehicleRef, vehicleUpdates);
-        updatedVehicle = { ...driver.vehicle, ...vehicleUpdates };
+        // No hay datos de vehículo para actualizar, mantener el vehículo actual
+        updatedVehicle = driver.vehicle || null;
       }
 
       // Guardar cambios del driver
@@ -797,28 +810,27 @@ export default function DriverDetailsPage() {
       const updatedDriver = {
         ...driver,
         ...driverUpdates,
-        vehicle: updatedVehicle,
+        vehicle: updatedVehicle || null,
       };
-      setDriver(updatedDriver);
+      setDriver(updatedDriver as EnrichedDriver);
       setDocumentsStatus(finalDocumentsStatus);
       
-      // Actualizar los campos del formulario con los datos guardados
-      setVehicleBrand(updatedVehicle.brand);
-      setVehicleModel(updatedVehicle.model);
-      setLicensePlate(updatedVehicle.licensePlate);
-      setVehicleYear(updatedVehicle.year);
-      setVehicleColor(updatedVehicle.color);
-      setServiceType(updatedVehicle.serviceType);
-      setInsuranceExpiry(updatedVehicle.insuranceExpiry || "");
-      setTechnicalReviewExpiry(updatedVehicle.technicalReviewExpiry || "");
-      setPropertyCardRegistrationDate(updatedVehicle.propertyCardRegistrationDate || "");
-
-      // Actualizar estado local del driver con los nuevos datos
-      setDriver(updatedDriver);
+      // Actualizar los campos del formulario con los datos guardados si se actualizó el vehículo
+      if (updatedVehicle && hasVehicleData) {
+        setVehicleBrand(updatedVehicle.brand);
+        setVehicleModel(updatedVehicle.model);
+        setLicensePlate(updatedVehicle.licensePlate);
+        setVehicleYear(updatedVehicle.year);
+        setVehicleColor(updatedVehicle.color);
+        setServiceType(updatedVehicle.serviceType);
+        setInsuranceExpiry(updatedVehicle.insuranceExpiry || "");
+        setTechnicalReviewExpiry(updatedVehicle.technicalReviewExpiry || "");
+        setPropertyCardRegistrationDate(updatedVehicle.propertyCardRegistrationDate || "");
+      }
 
       // Si se configuró membresía, generar el primer período de pago si no existe
       if (paymentModel === 'membership' && membershipStartDate && updatedVehicle) {
-        await generatePaymentPeriod(updatedDriver, updatedVehicle);
+        await generatePaymentPeriod(updatedDriver as EnrichedDriver, updatedVehicle);
       }
 
       toast({
@@ -1062,56 +1074,72 @@ export default function DriverDetailsPage() {
   };
 
   const generatePaymentPeriod = async (driverData: EnrichedDriver, vehicleData: Vehicle) => {
-    if (!driverData || !vehicleData || !driverData.membershipStartDate) {
-
+    if (!driverData || !vehicleData || !driverData.membershipStartDate || !driverData.membershipDuration) {
+      console.log('[generatePaymentPeriod] Datos insuficientes:', { 
+        hasDriver: !!driverData, 
+        hasVehicle: !!vehicleData, 
+        hasStartDate: !!driverData?.membershipStartDate,
+        hasDuration: !!driverData?.membershipDuration
+      });
       return;
     }
 
     try {
-      // Buscar el último período generado
+      // Buscar períodos ya existentes
       const paymentsQuery = query(
         collection(db, "membershipPayments"),
         where("driverId", "==", driverData.id)
       );
       const paymentsSnap = await getDocs(paymentsQuery);
       
-      if (paymentsSnap.empty && driverData.membershipStartDate) {
-        // Si no hay pagos, crear el primero
-        // Parsear la fecha manualmente para evitar problemas de zona horaria
+      const serviceType = vehicleData.serviceType || 'economy';
+      const now = new Date();
+
+      if (paymentsSnap.empty) {
+        // NO HAY PAGOS - Generar todos los períodos desde fecha de inicio hasta hoy
         const [year, month, day] = driverData.membershipStartDate.split('-').map(Number);
-        const startDate = new Date(year, month - 1, day); // month es 0-indexed
-        const endDate = new Date(startDate);
-        
-        if (driverData.membershipDuration === 'weekly') {
-          endDate.setDate(endDate.getDate() + 7);
-        } else if (driverData.membershipDuration === 'monthly') {
-          endDate.setMonth(endDate.getMonth() + 1);
-        } else {
-          endDate.setFullYear(endDate.getFullYear() + 1);
+        let currentStart = new Date(year, month - 1, day);
+        const paymentsToCreate = [];
+
+        while (currentStart < now) {
+          const currentEnd = new Date(currentStart);
+          
+          if (driverData.membershipDuration === 'weekly') {
+            currentEnd.setDate(currentEnd.getDate() + 7);
+          } else if (driverData.membershipDuration === 'monthly') {
+            currentEnd.setMonth(currentEnd.getMonth() + 1);
+          } else {
+            currentEnd.setFullYear(currentEnd.getFullYear() + 1);
+          }
+
+          const dueDate = new Date(currentEnd);
+          const amount = driverData.membershipPricing?.[serviceType] || 
+                        (serviceType === 'economy' ? settings?.membershipFeeEconomy :
+                         serviceType === 'comfort' ? settings?.membershipFeeComfort :
+                         settings?.membershipFeeExclusive) || 0;
+
+          paymentsToCreate.push({
+            driverId: driverData.id,
+            amount,
+            dueDate: dueDate.toISOString(),
+            periodStart: currentStart.toISOString(),
+            periodEnd: currentEnd.toISOString(),
+            status: now > dueDate ? 'overdue' : 'pending',
+            serviceType,
+            createdAt: new Date().toISOString(),
+          });
+
+          // Avanzar al siguiente período
+          currentStart = new Date(currentEnd);
         }
-        
-        // La fecha de vencimiento es el mismo día que termina el período
-        const dueDate = new Date(endDate);
 
-        const serviceType = vehicleData.serviceType;
-        const amount = driverData.membershipPricing?.[serviceType] || 
-                      (serviceType === 'economy' ? settings?.membershipFeeEconomy :
-                       serviceType === 'comfort' ? settings?.membershipFeeComfort :
-                       settings?.membershipFeeExclusive) || 0;
+        console.log(`[generatePaymentPeriod] Creando ${paymentsToCreate.length} períodos`);
 
-        const newPayment: Omit<MembershipPayment, 'id'> = {
-          driverId: driverData.id,
-          amount,
-          dueDate: dueDate.toISOString(),
-          periodStart: startDate.toISOString(),
-          periodEnd: endDate.toISOString(),
-          status: new Date() > dueDate ? 'overdue' : 'pending',
-          serviceType,
-          createdAt: new Date().toISOString(),
-        };
-
-        const newPaymentRef = doc(collection(db, "membershipPayments"));
-        await setDoc(newPaymentRef, newPayment);
+        // Crear todos los pagos
+        for (const payment of paymentsToCreate) {
+          const newPaymentRef = doc(collection(db, "membershipPayments"));
+          await setDoc(newPaymentRef, payment);
+        }
         
         // Recargar historial
         const updatedPayments = await getDocs(paymentsQuery);
@@ -1122,48 +1150,58 @@ export default function DriverDetailsPage() {
         payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
         setPaymentHistory(payments);
       } else {
-        // Verificar si necesitamos generar el siguiente período
+        // YA HAY PAGOS - Verificar si faltan períodos entre el último y hoy
         const payments = paymentsSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         } as MembershipPayment));
         
-        payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+        payments.sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime());
         const lastPayment = payments[0];
-        const now = new Date();
 
-        // Si el último pago ya venció, generar el siguiente
-        if (lastPayment && new Date(lastPayment.dueDate) < now) {
-          const nextPeriodStart = new Date(lastPayment.periodEnd);
-          const nextDueDate = new Date(nextPeriodStart);
+        // Generar todos los períodos faltantes desde el último hasta hoy
+        let currentStart = new Date(lastPayment.periodEnd);
+        const paymentsToCreate = [];
+
+        while (currentStart < now) {
+          const currentEnd = new Date(currentStart);
           
           if (driverData.membershipDuration === 'weekly') {
-            nextDueDate.setDate(nextDueDate.getDate() + 7);
+            currentEnd.setDate(currentEnd.getDate() + 7);
           } else if (driverData.membershipDuration === 'monthly') {
-            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+            currentEnd.setMonth(currentEnd.getMonth() + 1);
           } else {
-            nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
+            currentEnd.setFullYear(currentEnd.getFullYear() + 1);
           }
 
-          const serviceType = vehicleData.serviceType;
+          const dueDate = new Date(currentEnd);
           const amount = driverData.membershipPricing?.[serviceType] || 
                         (serviceType === 'economy' ? settings?.membershipFeeEconomy :
                          serviceType === 'comfort' ? settings?.membershipFeeComfort :
                          settings?.membershipFeeExclusive) || 0;
 
-          const newPayment: Omit<MembershipPayment, 'id'> = {
+          paymentsToCreate.push({
             driverId: driverData.id,
             amount,
-            dueDate: nextDueDate.toISOString(),
-            periodStart: nextPeriodStart.toISOString(),
-            periodEnd: nextDueDate.toISOString(),
-            status: 'overdue',
+            dueDate: dueDate.toISOString(),
+            periodStart: currentStart.toISOString(),
+            periodEnd: currentEnd.toISOString(),
+            status: now > dueDate ? 'overdue' : 'pending',
             serviceType,
             createdAt: new Date().toISOString(),
-          };
+          });
 
-          const newPaymentRef = doc(collection(db, "membershipPayments"));
-          await setDoc(newPaymentRef, newPayment);
+          // Avanzar al siguiente período
+          currentStart = new Date(currentEnd);
+        }
+
+        if (paymentsToCreate.length > 0) {
+          console.log(`[generatePaymentPeriod] Generando ${paymentsToCreate.length} períodos faltantes`);
+          
+          for (const payment of paymentsToCreate) {
+            const newPaymentRef = doc(collection(db, "membershipPayments"));
+            await setDoc(newPaymentRef, payment);
+          }
 
           // Recargar historial
           const updatedPayments = await getDocs(paymentsQuery);
@@ -1176,7 +1214,7 @@ export default function DriverDetailsPage() {
         }
       }
     } catch (error) {
-      console.error(" Error generating payment period:", error);
+      console.error("Error generating payment period:", error);
     }
   };
 
@@ -1382,6 +1420,196 @@ export default function DriverDetailsPage() {
         title: "Error",
         description: "No se pudo pausar la membresía correctamente.",
       });
+    }
+  };
+
+  const handleReactivateMembership = async () => {
+    if (!driver || !driver.vehicle) return;
+
+    setIsUpdating(true);
+    try {
+      const driverRef = doc(db, "drivers", driver.id);
+      
+      // Eliminar membershipPausedDate para reactivar
+      await updateDoc(driverRef, {
+        membershipPausedDate: deleteField(),
+      });
+
+      // Actualizar estado local
+      const updatedDriver = { ...driver };
+      delete updatedDriver.membershipPausedDate;
+      setDriver(updatedDriver as EnrichedDriver);
+
+      // Generar nuevo período de pago
+      await generatePaymentPeriod(updatedDriver as EnrichedDriver, driver.vehicle);
+
+      toast({
+        title: "Membresía reactivada",
+        description: "La membresía ha sido reactivada exitosamente.",
+      });
+
+      // Recargar historial de pagos
+      const paymentsQuery = query(
+        collection(db, "membershipPayments"),
+        where("driverId", "==", driver.id)
+      );
+      const paymentsSnap = await getDocs(paymentsQuery);
+      const payments = paymentsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as MembershipPayment));
+      payments.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      setPaymentHistory(payments);
+    } catch (error) {
+      console.error(" Error reactivando membresía:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo reactivar la membresía.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleSaveMembership = async () => {
+    // Validar campos requeridos
+    if (!driver || !driver.vehicle) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debe asignar un vehículo antes de configurar membresía.",
+      });
+      return;
+    }
+
+    if (paymentModel === 'membership' && !membershipStartDate) {
+      toast({
+        variant: "destructive",
+        title: "Fecha Requerida",
+        description: "Debe seleccionar una fecha de inicio para la membresía.",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const driverRef = doc(db, "drivers", driver.id);
+      const vehicleServiceType = driver.vehicle.serviceType || 'economy';
+      const driverUpdates: Partial<Driver> = {
+        paymentModel: paymentModel,
+      };
+
+      // CASO 1: Cambio de MEMBRESÍA a COMISIÓN
+      if (driver.paymentModel === 'membership' && paymentModel === 'commission') {
+        // Cancelar pagos pendientes
+        await handlePauseMembership();
+        // Marcar como pausada
+        driverUpdates.membershipPausedDate = new Date().toISOString();
+        
+        // Configurar comisión
+        const defaultCommission = 
+          vehicleServiceType === 'economy' ? settings?.commissionPercentageEconomy :
+          vehicleServiceType === 'comfort' ? settings?.commissionPercentageComfort :
+          settings?.commissionPercentageExclusive;
+        
+        if (commissionPercentage !== defaultCommission) {
+          driverUpdates.commissionPercentage = commissionPercentage;
+        } else {
+          driverUpdates.commissionPercentage = deleteField() as any;
+        }
+      }
+      // CASO 2: Configurar o actualizar MEMBRESÍA (nueva, reactivar, o cambiar duración)
+      else if (paymentModel === 'membership') {
+        // SIEMPRE eliminar membershipPausedDate para que quede ACTIVA
+        driverUpdates.membershipPausedDate = deleteField() as any;
+
+        // Configurar precio personalizado o usar default
+        const defaultPrice = 
+          vehicleServiceType === 'economy' ? settings?.membershipFeeEconomy :
+          vehicleServiceType === 'comfort' ? settings?.membershipFeeComfort :
+          settings?.membershipFeeExclusive;
+        
+        if (membershipPrice !== defaultPrice) {
+          driverUpdates.membershipPricing = {
+            economy: vehicleServiceType === 'economy' ? membershipPrice : 
+                     (driver.membershipPricing?.economy || settings?.membershipFeeEconomy || 0),
+            comfort: vehicleServiceType === 'comfort' ? membershipPrice : 
+                     (driver.membershipPricing?.comfort || settings?.membershipFeeComfort || 0),
+            exclusive: vehicleServiceType === 'exclusive' ? membershipPrice : 
+                       (driver.membershipPricing?.exclusive || settings?.membershipFeeExclusive || 0),
+          };
+        } else {
+          driverUpdates.membershipPricing = deleteField() as any;
+        }
+        
+        driverUpdates.membershipDuration = membershipDuration;
+        driverUpdates.membershipStartDate = membershipStartDate;
+        
+        // Calcular fechas de vencimiento
+        const startDate = new Date(membershipStartDate);
+        const expiryDate = new Date(startDate);
+        const nextDue = new Date(startDate);
+        
+        if (membershipDuration === "weekly") {
+          expiryDate.setDate(expiryDate.getDate() + 7);
+          nextDue.setDate(nextDue.getDate() + 7);
+        } else if (membershipDuration === "monthly") {
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+          nextDue.setMonth(nextDue.getMonth() + 1);
+        } else if (membershipDuration === "annual") {
+          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+          nextDue.setFullYear(nextDue.getFullYear() + 1);
+        }
+        
+        driverUpdates.membershipExpiryDate = expiryDate.toISOString();
+        driverUpdates.nextPaymentDue = nextDue.toISOString();
+      }
+      // CASO 3: Solo actualizar COMISIÓN (ya era comisión)
+      else if (paymentModel === "commission") {
+        const defaultCommission = 
+          vehicleServiceType === 'economy' ? settings?.commissionPercentageEconomy :
+          vehicleServiceType === 'comfort' ? settings?.commissionPercentageComfort :
+          settings?.commissionPercentageExclusive;
+        
+        if (commissionPercentage !== defaultCommission) {
+          driverUpdates.commissionPercentage = commissionPercentage;
+        } else {
+          driverUpdates.commissionPercentage = deleteField() as any;
+        }
+      }
+
+      // Guardar cambios en Firebase
+      await updateDoc(driverRef, driverUpdates);
+
+      // Actualizar estado local
+      const updatedDriver = { ...driver, ...driverUpdates };
+      // Asegurar que membershipPausedDate se elimine del estado local si se configuró membresía
+      if (paymentModel === 'membership') {
+        delete (updatedDriver as any).membershipPausedDate;
+      }
+      setDriver(updatedDriver as EnrichedDriver);
+
+      // Generar primer período de pago si es membresía
+      if (paymentModel === 'membership' && membershipStartDate && driver.vehicle) {
+        await generatePaymentPeriod(updatedDriver as EnrichedDriver, driver.vehicle);
+      }
+
+      toast({
+        title: "✓ Configuración Guardada",
+        description: paymentModel === 'membership' 
+          ? "Membresía activa. El primer pago ha sido generado."
+          : "Modelo de comisión configurado correctamente.",
+      });
+    } catch (error) {
+      console.error("Error actualizando configuración de pago:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo guardar la configuración: " + (error as Error).message,
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -2357,7 +2585,7 @@ export default function DriverDetailsPage() {
 
                   <div className="pt-4 flex gap-3 border-t">
                     <Button
-                      onClick={handleSaveChanges}
+                      onClick={handleSaveMembership}
                       disabled={isUpdating}
                       className="w-full"
                       size="lg"
@@ -2377,11 +2605,25 @@ export default function DriverDetailsPage() {
                     
                     {paymentModel === 'membership' && driver?.vehicle && driver?.membershipStartDate && (
                       driver?.membershipPausedDate ? (
-                        <div className="space-y-2">
-                          <p className="text-xs text-muted-foreground text-center">
-                            Para reactivar, actualiza la fecha de inicio y guarda los cambios
-                          </p>
-                        </div>
+                        <Button
+                          onClick={handleReactivateMembership}
+                          disabled={isUpdating}
+                          variant="outline"
+                          className="w-full border-green-300 text-green-700 hover:text-green-600 hover:bg-green-50"
+                          size="lg"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Procesando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Reactivar Membresía
+                            </>
+                          )}
+                        </Button>
                       ) : (
                         <Button
                           onClick={handlePauseMembership}
