@@ -21,8 +21,8 @@ export default function RiderPage() {
   const { user, appUser, loading } = useAuth();
   const { isDriver, loading: driverLoading } = useDriverAuth();
 
-  // Hook de notificaciones para el rider
-  const riderNotifications = useRiderNotifications(appUser?.id);
+  // Hook de notificaciones para el rider - solo se ejecuta si hay appUser
+  const riderNotifications = useRiderNotifications(appUser?.id || undefined);
 
 
   if (loading || driverLoading) {

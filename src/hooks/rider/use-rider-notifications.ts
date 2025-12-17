@@ -260,16 +260,18 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
 
   // Escuchar cambios en los viajes del rider
   useEffect(() => {
-    if (!riderId || !isLoaded) {
+    if (!riderId || !isLoaded || riderId.trim() === '') {
+      console.log('[Rider] No se puede iniciar listener: riderId no válido', { riderId, isLoaded });
       return;
     }
 
-    // Query para viajes activos del rider (incluir todos los estados relevantes)
-    const ridesQuery = query(
-      collection(db, 'rides'),
-      where('passenger', '==', doc(db, 'users', riderId)),
-      where('status', 'in', ['accepted', 'arrived', 'in-progress', 'completed'])
-    );
+    try {
+      // Query para viajes activos del rider (incluir todos los estados relevantes)
+      const ridesQuery = query(
+        collection(db, 'rides'),
+        where('passenger', '==', doc(db, 'users', riderId)),
+        where('status', 'in', ['accepted', 'arrived', 'in-progress', 'completed'])
+      );
 
     const unsubscribe = onSnapshot(ridesQuery, async (snapshot) => {
 
@@ -303,6 +305,9 @@ export function useRiderNotifications(riderId: string | undefined): RiderNotific
     return () => {
       unsubscribe();
     };
+    } catch (error) {
+      console.error('[Rider] Error al crear listener de viajes:', error);
+    }
   }, [riderId, isLoaded, handleDriverStatusChange]);
 
   // Función de prueba

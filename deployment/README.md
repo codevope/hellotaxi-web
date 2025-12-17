@@ -74,17 +74,17 @@ El sistema incluye:
 
 ### Verificar servicios:
 ```bash
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.yml ps
 ```
 
 ### Ver logs:
 ```bash
-docker-compose -f docker-compose.prod.yml logs -f
+docker-compose -f docker-compose.yml logs -f
 ```
 
 ### Verificar SSL:
 ```bash
-docker-compose -f docker-compose.prod.yml exec certbot certbot certificates
+docker-compose -f docker-compose.yml exec certbot certbot certificates
 ```
 
 ## 🔄 Actualizaciones
