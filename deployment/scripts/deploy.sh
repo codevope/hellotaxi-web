@@ -70,7 +70,7 @@ docker run --rm \
   certbot/certbot certonly \
   --webroot \
   --webroot-path=/var/www/html \
-  --email admin@hellotaxi.pe \
+  --email hellotaxi70@gmail.com \
   --agree-tos \
   --no-eff-email \
   --non-interactive \
