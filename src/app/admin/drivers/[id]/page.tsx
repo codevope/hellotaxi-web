@@ -655,7 +655,8 @@ export default function DriverDetailsPage() {
 
       // Si cambia de membresía a comisión, cancelar pagos pendientes
       if (driver.paymentModel === 'membership' && paymentModel === 'commission') {
-        await handlePauseMembership();
+        // Al cambiar a comisión, pausamos y CANCELAMOS los pagos pendientes
+        await handlePauseMembership(true);
         driverUpdates.membershipPausedDate = new Date().toISOString();
       }
 
@@ -1073,7 +1074,7 @@ export default function DriverDetailsPage() {
     }
   };
 
-  const generatePaymentPeriod = async (driverData: EnrichedDriver, vehicleData: Vehicle) => {
+  const generatePaymentPeriod = async (driverData: EnrichedDriver, vehicleData: Vehicle, opts?: { fromDate?: string }) => {
     if (!driverData || !vehicleData || !driverData.membershipStartDate || !driverData.membershipDuration) {
       console.log('[generatePaymentPeriod] Datos insuficientes:', { 
         hasDriver: !!driverData, 
@@ -1081,6 +1082,12 @@ export default function DriverDetailsPage() {
         hasStartDate: !!driverData?.membershipStartDate,
         hasDuration: !!driverData?.membershipDuration
       });
+      return;
+    }
+
+    // No generar nuevos períodos si la membresía está pausada (salvo que se pase fromDate explicitamente)
+    if (driverData.membershipPausedDate && !opts?.fromDate) {
+      console.log('[generatePaymentPeriod] Membresía pausada, no se generan períodos.');
       return;
     }
 
@@ -1096,51 +1103,39 @@ export default function DriverDetailsPage() {
       const now = new Date();
 
       if (paymentsSnap.empty) {
-        // NO HAY PAGOS - Generar todos los períodos desde fecha de inicio hasta hoy
+        // NO HAY PAGOS - Crear solo el primer período (inicial), incluso si la fecha de inicio es futura.
         const [year, month, day] = driverData.membershipStartDate.split('-').map(Number);
-        let currentStart = new Date(year, month - 1, day);
-        const paymentsToCreate = [];
+        const periodStart = new Date(year, month - 1, day);
+        const periodEnd = new Date(periodStart);
 
-        while (currentStart < now) {
-          const currentEnd = new Date(currentStart);
-          
-          if (driverData.membershipDuration === 'weekly') {
-            currentEnd.setDate(currentEnd.getDate() + 7);
-          } else if (driverData.membershipDuration === 'monthly') {
-            currentEnd.setMonth(currentEnd.getMonth() + 1);
-          } else {
-            currentEnd.setFullYear(currentEnd.getFullYear() + 1);
-          }
-
-          const dueDate = new Date(currentEnd);
-          const amount = driverData.membershipPricing?.[serviceType] || 
-                        (serviceType === 'economy' ? settings?.membershipFeeEconomy :
-                         serviceType === 'comfort' ? settings?.membershipFeeComfort :
-                         settings?.membershipFeeExclusive) || 0;
-
-          paymentsToCreate.push({
-            driverId: driverData.id,
-            amount,
-            dueDate: dueDate.toISOString(),
-            periodStart: currentStart.toISOString(),
-            periodEnd: currentEnd.toISOString(),
-            status: now > dueDate ? 'overdue' : 'pending',
-            serviceType,
-            createdAt: new Date().toISOString(),
-          });
-
-          // Avanzar al siguiente período
-          currentStart = new Date(currentEnd);
+        if (driverData.membershipDuration === 'weekly') {
+          periodEnd.setDate(periodEnd.getDate() + 7);
+        } else if (driverData.membershipDuration === 'monthly') {
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+        } else {
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
         }
 
-        console.log(`[generatePaymentPeriod] Creando ${paymentsToCreate.length} períodos`);
+        const dueDate = new Date(periodEnd);
+        const amount = driverData.membershipPricing?.[serviceType] || 
+                      (serviceType === 'economy' ? settings?.membershipFeeEconomy :
+                       serviceType === 'comfort' ? settings?.membershipFeeComfort :
+                       settings?.membershipFeeExclusive) || 0;
 
-        // Crear todos los pagos
-        for (const payment of paymentsToCreate) {
-          const newPaymentRef = doc(collection(db, "membershipPayments"));
-          await setDoc(newPaymentRef, payment);
-        }
-        
+        const payment = {
+          driverId: driverData.id,
+          amount,
+          dueDate: dueDate.toISOString(),
+          periodStart: periodStart.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          status: now > dueDate ? 'overdue' : 'pending',
+          serviceType,
+          createdAt: new Date().toISOString(),
+        } as const;
+
+        const newPaymentRef = doc(collection(db, "membershipPayments"));
+        await setDoc(newPaymentRef, payment);
+
         // Recargar historial
         const updatedPayments = await getDocs(paymentsQuery);
         const payments = updatedPayments.docs.map(doc => ({
@@ -1159,11 +1154,52 @@ export default function DriverDetailsPage() {
         payments.sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime());
         const lastPayment = payments[0];
 
-        // Generar todos los períodos faltantes desde el último hasta hoy
-        let currentStart = new Date(lastPayment.periodEnd);
-        const paymentsToCreate = [];
+        // Si se especifica `fromDate` (reactivación), crear a partir de esa fecha
+        if (opts?.fromDate) {
+          const requestedStart = new Date(opts.fromDate);
 
-        while (currentStart < now) {
+          // Evitar duplicados: si ya existe un pago que inicia en la misma fecha, no crear
+          const exists = payments.some(p => new Date(p.periodStart).getTime() === requestedStart.getTime());
+          if (!exists) {
+            const periodStart = requestedStart;
+            const periodEnd = new Date(periodStart);
+
+            if (driverData.membershipDuration === 'weekly') {
+              periodEnd.setDate(periodEnd.getDate() + 7);
+            } else if (driverData.membershipDuration === 'monthly') {
+              periodEnd.setMonth(periodEnd.getMonth() + 1);
+            } else {
+              periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+            }
+
+            const dueDate = new Date(periodEnd);
+            const amount = driverData.membershipPricing?.[serviceType] || 
+                          (serviceType === 'economy' ? settings?.membershipFeeEconomy :
+                           serviceType === 'comfort' ? settings?.membershipFeeComfort :
+                           settings?.membershipFeeExclusive) || 0;
+
+            const newPayment = {
+              driverId: driverData.id,
+              amount,
+              dueDate: dueDate.toISOString(),
+              periodStart: periodStart.toISOString(),
+              periodEnd: periodEnd.toISOString(),
+              status: now > dueDate ? 'overdue' : 'pending',
+              serviceType,
+              createdAt: new Date().toISOString(),
+            } as const;
+
+            const newPaymentRef = doc(collection(db, "membershipPayments"));
+            await setDoc(newPaymentRef, newPayment);
+          } else {
+            console.log('[generatePaymentPeriod] Período ya existe para fromDate, no se crea duplicate');
+          }
+        } else {
+          // Generar todos los períodos faltantes desde el último hasta hoy
+          let currentStart = new Date(lastPayment.periodEnd);
+          const paymentsToCreate: Array<any> = [];
+
+          while (currentStart < now) {
           const currentEnd = new Date(currentStart);
           
           if (driverData.membershipDuration === 'weekly') {
@@ -1195,7 +1231,7 @@ export default function DriverDetailsPage() {
           currentStart = new Date(currentEnd);
         }
 
-        if (paymentsToCreate.length > 0) {
+          if (paymentsToCreate.length > 0) {
           console.log(`[generatePaymentPeriod] Generando ${paymentsToCreate.length} períodos faltantes`);
           
           for (const payment of paymentsToCreate) {
@@ -1211,6 +1247,7 @@ export default function DriverDetailsPage() {
           } as MembershipPayment));
           updatedPaymentsList.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
           setPaymentHistory(updatedPaymentsList);
+          }
         }
       }
     } catch (error) {
@@ -1218,10 +1255,96 @@ export default function DriverDetailsPage() {
     }
   };
 
-  // Función wrapper para mantener compatibilidad
+  // Generar únicamente el siguiente período (usado cuando se registra un pago)
   const generateNextPaymentPeriod = async () => {
     if (!driver || !driver.vehicle) return;
-    await generatePaymentPeriod(driver, driver.vehicle);
+
+    // No generar el siguiente período si la membresía está pausada
+    if (driver.membershipPausedDate) {
+      console.warn('[generateNextPaymentPeriod] Membresía pausada, abortando generación del siguiente período');
+      return;
+    }
+
+    try {
+      const paymentsQuery = query(
+        collection(db, "membershipPayments"),
+        where("driverId", "==", driver.id)
+      );
+      const paymentsSnap = await getDocs(paymentsQuery);
+
+      const serviceType = driver.vehicle.serviceType || 'economy';
+
+      if (paymentsSnap.empty) {
+        // Si por alguna razón no hay pagos, crear el primer período (fallback)
+        if (!driver.membershipStartDate) {
+          console.warn('[generateNextPaymentPeriod] No membershipStartDate disponible, abortando');
+          return;
+        }
+        const [y, m, d] = driver.membershipStartDate.split('-').map(Number);
+        const periodStart = new Date(y, m - 1, d);
+        const periodEnd = new Date(periodStart);
+
+        if (driver.membershipDuration === 'weekly') periodEnd.setDate(periodEnd.getDate() + 7);
+        else if (driver.membershipDuration === 'monthly') periodEnd.setMonth(periodEnd.getMonth() + 1);
+        else periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+
+        const dueDate = new Date(periodEnd);
+        const amount = driver.membershipPricing?.[serviceType] ||
+          (serviceType === 'economy' ? settings?.membershipFeeEconomy :
+            serviceType === 'comfort' ? settings?.membershipFeeComfort :
+            settings?.membershipFeeExclusive) || 0;
+
+        const newPaymentRef = doc(collection(db, "membershipPayments"));
+        await setDoc(newPaymentRef, {
+          driverId: driver.id,
+          amount,
+          dueDate: dueDate.toISOString(),
+          periodStart: periodStart.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          status: new Date() > dueDate ? 'overdue' : 'pending',
+          serviceType,
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        const payments = paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MembershipPayment));
+        payments.sort((a, b) => new Date(b.periodEnd).getTime() - new Date(a.periodEnd).getTime());
+        const lastPayment = payments[0];
+
+        // Calcular siguiente período a partir del end del último pago
+        let currentStart = new Date(lastPayment.periodEnd);
+        let currentEnd = new Date(currentStart);
+
+        if (driver.membershipDuration === 'weekly') currentEnd.setDate(currentEnd.getDate() + 7);
+        else if (driver.membershipDuration === 'monthly') currentEnd.setMonth(currentEnd.getMonth() + 1);
+        else currentEnd.setFullYear(currentEnd.getFullYear() + 1);
+
+        const dueDate = new Date(currentEnd);
+        const amount = driver.membershipPricing?.[serviceType] ||
+          (serviceType === 'economy' ? settings?.membershipFeeEconomy :
+            serviceType === 'comfort' ? settings?.membershipFeeComfort :
+            settings?.membershipFeeExclusive) || 0;
+
+        const newPaymentRef = doc(collection(db, "membershipPayments"));
+        await setDoc(newPaymentRef, {
+          driverId: driver.id,
+          amount,
+          dueDate: dueDate.toISOString(),
+          periodStart: currentStart.toISOString(),
+          periodEnd: currentEnd.toISOString(),
+          status: new Date() > dueDate ? 'overdue' : 'pending',
+          serviceType,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // Recargar historial
+      const updatedPayments = await getDocs(query(collection(db, "membershipPayments"), where("driverId", "==", driver.id)));
+      const updatedList = updatedPayments.docs.map(doc => ({ id: doc.id, ...doc.data() } as MembershipPayment));
+      updatedList.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      setPaymentHistory(updatedList);
+    } catch (error) {
+      console.error('Error generating next payment period:', error);
+    }
   };
 
   const handleOpenRecalculateDialog = async () => {
@@ -1379,40 +1502,65 @@ export default function DriverDetailsPage() {
     }
   };
 
-  const handlePauseMembership = async () => {
+  // Pausar membresía: por defecto solo marca la membresía como pausada.
+  // Si se pasa `cancelPending = true` también cancela pagos pendientes/vencidos
+  // (esto se usa al cambiar a modelo de comisión).
+  const handlePauseMembership = async (cancelPending = false) => {
     if (!driver) return;
 
+    setIsUpdating(true);
     try {
-      // Buscar todos los pagos pendientes o vencidos
-      const paymentsQuery = query(
-        collection(db, "membershipPayments"),
-        where("driverId", "==", driver.id),
-        where("status", "in", ["pending", "overdue"])
-      );
-      const paymentsSnap = await getDocs(paymentsQuery);
+      const driverRef = doc(db, "drivers", driver.id);
 
-      // Cancelar todos los pagos pendientes
-      const cancelPromises = paymentsSnap.docs.map(async (paymentDoc) => {
-        await updateDoc(doc(db, "membershipPayments", paymentDoc.id), {
-          status: 'cancelled',
+      // Al pausar, marcar como pausada y limpiar fechas de próximo pago y vencimiento
+      await updateDoc(driverRef, {
+        membershipPausedDate: new Date().toISOString(),
+        nextPaymentDue: deleteField() as any,
+        membershipExpiryDate: deleteField() as any,
+      });
+
+      // Actualizar estado local (remover campos de fechas para la UI)
+      const updatedDriver = { ...driver, membershipPausedDate: new Date().toISOString() } as EnrichedDriver;
+      delete (updatedDriver as any).nextPaymentDue;
+      delete (updatedDriver as any).membershipExpiryDate;
+      setDriver(updatedDriver);
+
+      if (cancelPending) {
+        // Cancelar todos los pagos pendientes o vencidos
+        const paymentsQuery = query(
+          collection(db, "membershipPayments"),
+          where("driverId", "==", driver.id),
+          where("status", "in", ["pending", "overdue"])
+        );
+        const paymentsSnap = await getDocs(paymentsQuery);
+
+        const cancelPromises = paymentsSnap.docs.map(async (paymentDoc) => {
+          await updateDoc(doc(db, "membershipPayments", paymentDoc.id), {
+            status: 'cancelled',
+          });
         });
-      });
+        await Promise.all(cancelPromises);
 
-      await Promise.all(cancelPromises);
+        // Actualizar estado local del historial
+        setPaymentHistory(prev => 
+          prev.map(p => 
+            p.status === 'pending' || p.status === 'overdue'
+              ? { ...p, status: 'cancelled' as const }
+              : p
+          )
+        );
 
-      // Actualizar estado local
-      setPaymentHistory(prev => 
-        prev.map(p => 
-          p.status === 'pending' || p.status === 'overdue'
-            ? { ...p, status: 'cancelled' as const }
-            : p
-        )
-      );
-
-      toast({
-        title: "Membresía pausada",
-        description: `Se cancelaron ${paymentsSnap.size} pagos pendientes.`,
-      });
+        toast({
+          title: "Membresía pausada y pagos cancelados",
+          description: `La membresía se ha pausado y se cancelaron ${paymentsSnap.size} pagos pendientes.`,
+        });
+      } else {
+        // No se tocan los pagos existentes: el conductor sigue obligado a pagarlos
+        toast({
+          title: "Membresía pausada",
+          description: "La membresía está pausada. No se generarán nuevos períodos mientras dure la pausa. Los pagos ya generados siguen siendo adeudados.",
+        });
+      }
     } catch (error) {
       console.error(" Error pausando membresía:", error);
       toast({
@@ -1420,6 +1568,8 @@ export default function DriverDetailsPage() {
         title: "Error",
         description: "No se pudo pausar la membresía correctamente.",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -1430,7 +1580,8 @@ export default function DriverDetailsPage() {
     try {
       const driverRef = doc(db, "drivers", driver.id);
       
-      // Eliminar membershipPausedDate para reactivar
+      // Capturar fecha de reactivación y reactivar
+      const reactivationDate = new Date().toISOString();
       await updateDoc(driverRef, {
         membershipPausedDate: deleteField(),
       });
@@ -1440,12 +1591,12 @@ export default function DriverDetailsPage() {
       delete updatedDriver.membershipPausedDate;
       setDriver(updatedDriver as EnrichedDriver);
 
-      // Generar nuevo período de pago
-      await generatePaymentPeriod(updatedDriver as EnrichedDriver, driver.vehicle);
+      // Generar nuevo período de pago A PARTIR de la fecha de reactivación
+      await generatePaymentPeriod(updatedDriver as EnrichedDriver, driver.vehicle, { fromDate: reactivationDate });
 
       toast({
         title: "Membresía reactivada",
-        description: "La membresía ha sido reactivada exitosamente.",
+        description: "La membresía ha sido reactivada exitosamente. Se generará un único período a partir de la fecha de reactivación; no se crearán períodos correspondientes al intervalo en el que estuvo pausada.",
       });
 
       // Recargar historial de pagos
@@ -2534,13 +2685,28 @@ export default function DriverDetailsPage() {
                             <Label htmlFor="membershipStartDate" className="text-sm font-medium">
                               Fecha de Inicio
                             </Label>
-                            <Input
-                              id="membershipStartDate"
-                              type="date"
-                              value={membershipStartDate}
-                              onChange={(e) => setMembershipStartDate(e.target.value)}
-                              disabled={isUpdating}
-                            />
+                            {/* Si la membresía está pausada, ocultamos el input y mostramos nota informativa
+                                preservando la fecha de inicio histórica en el backend */}
+                            {driver?.membershipPausedDate ? (
+                              <div className="text-sm text-muted-foreground">
+                                {driver.membershipStartDate && !isNaN(new Date(driver.membershipStartDate).getTime()) ? (
+                                  <div>Fecha de inicio registrada: {format(new Date(driver.membershipStartDate), "dd MMM yyyy", { locale: es })}</div>
+                                ) : (
+                                  <div>Fecha de inicio: no especificada</div>
+                                )}
+                                <div className="text-xs text-amber-700 mt-1">
+                                  Membresía pausada desde {driver.membershipPausedDate && !isNaN(new Date(driver.membershipPausedDate).getTime()) ? format(new Date(driver.membershipPausedDate), "dd MMM yyyy", { locale: es }) : 'fecha desconocida'}. No se podrá editar la fecha hasta reactivar.
+                                </div>
+                              </div>
+                            ) : (
+                              <Input
+                                id="membershipStartDate"
+                                type="date"
+                                value={membershipStartDate}
+                                onChange={(e) => setMembershipStartDate(e.target.value)}
+                                disabled={isUpdating}
+                              />
+                            )}
                           </div>
                         </div>
 
@@ -2626,7 +2792,7 @@ export default function DriverDetailsPage() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={handlePauseMembership}
+                          onClick={() => handlePauseMembership()}
                           disabled={isUpdating}
                           variant="outline"
                           className="w-full border-amber-300 text-amber-700 hover:text-amber-500 hover:bg-amber-50"

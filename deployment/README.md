@@ -74,17 +74,17 @@ El sistema incluye:
 
 ### Verificar servicios:
 ```bash
-docker-compose -f docker-compose.yml ps
+docker compose -f docker-compose.yml ps
 ```
 
 ### Ver logs:
 ```bash
-docker-compose -f docker-compose.yml logs -f
+docker compose -f docker-compose.yml logs -f
 ```
 
 ### Verificar SSL:
 ```bash
-docker-compose -f docker-compose.yml exec certbot certbot certificates
+docker compose -f docker-compose.yml exec certbot certbot certificates
 ```
 
 ## 🔄 Actualizaciones
@@ -101,17 +101,17 @@ git pull
 2. Verificar puertos 80 y 443 abiertos
 3. Revisar logs de certbot:
    ```bash
-   docker-compose -f docker-compose.prod.yml logs certbot
+   docker compose -f docker-compose.prod.yml logs certbot
    ```
 
 ### App no responde
 1. Verificar que el contenedor esté corriendo:
    ```bash
-   docker-compose -f docker-compose.prod.yml ps
+   docker compose -f docker-compose.prod.yml ps
    ```
 2. Revisar logs de la app:
    ```bash
-   docker-compose -f docker-compose.prod.yml logs hellotaxi-web
+   docker compose -f docker-compose.prod.yml logs hellotaxi-web
    ```
 
 ### Error de variables de entorno
@@ -119,12 +119,12 @@ git pull
 2. Verificar todas las variables requeridas están configuradas
 3. Reiniciar servicios:
    ```bash
-   docker-compose -f docker-compose.prod.yml restart
+   docker compose -f docker-compose.prod.yml restart
    ```
 
 ## 📞 Soporte
 
 Para problemas específicos, revisar:
-- Logs de Docker: `docker-compose logs`
-- Estado de servicios: `docker-compose ps`
+- Logs de Docker: `docker compose logs`
+- Estado de servicios: `docker compose ps`
 - Uso de recursos: `docker stats`
