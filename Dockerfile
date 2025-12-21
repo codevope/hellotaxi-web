@@ -43,6 +43,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Cambiar a usuario no-root
 USER nextjs
 
+# Deshabilitar ejecución de comandos del sistema
+ENV NODE_OPTIONS="--no-warnings"
+
+# Solo archivos de solo lectura
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+RUN chmod -R 555 .
+
 # Variables de entorno
 ENV PORT=3000
 ENV NODE_ENV=production
