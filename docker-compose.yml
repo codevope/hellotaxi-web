@@ -1,9 +1,8 @@
-# Docker Compose completo con SSL automático para hellotaxi.pe
-
 services:
-  # Aplicación Next.js
   hellotaxi-web:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.secure  # Usar el nuevo Dockerfile
     container_name: hellotaxi-web-app
     environment:
       - NODE_ENV=production
@@ -14,8 +13,27 @@ services:
     restart: unless-stopped
     networks:
       - hellotaxi-network
+    
+    # 🔒 LÍMITES DE RECURSOS (previene cryptominers)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 256M
+    
+    # 🔒 SEGURIDAD ADICIONAL
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100M
 
-  # Nginx Proxy
   nginx:
     image: nginx:alpine
     container_name: hellotaxi-nginx
@@ -31,24 +49,17 @@ services:
     restart: unless-stopped
     networks:
       - hellotaxi-network
-
-  # Certbot para SSL (se ejecuta manualmente la primera vez)
-  certbot:
-    image: certbot/certbot
-    container_name: hellotaxi-certbot
-    volumes:
-      - ./ssl:/etc/letsencrypt
-      - ./webroot:/var/www/html
-    # Primera vez: obtener certificados
-    command: certonly --webroot --webroot-path=/var/www/html --email hellotaxi70@gmail.com --agree-tos --no-eff-email -d hellotaxi.pe -d www.hellotaxi.pe
-    networks:
-      - hellotaxi-network
+    
+    # 🔒 LÍMITES NGINX
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 networks:
   hellotaxi-network:
     driver: bridge
 
 volumes:
-  ssl_data:
-  webroot_data:
   documents_data:
