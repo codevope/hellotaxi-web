@@ -2,7 +2,7 @@ services:
   hellotaxi-web:
     build: 
       context: .
-      dockerfile: Dockerfile.secure  # Usar el nuevo Dockerfile
+      dockerfile: Dockerfile  # Usar el nuevo Dockerfile
     container_name: hellotaxi-web-app
     environment:
       - NODE_ENV=production
